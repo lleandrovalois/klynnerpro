@@ -131,6 +131,50 @@
         pdfViewerFrame.src = '';
       }
     });
+
+    // Botões de Cópia do PIX
+    const btnCopyPixKey = document.getElementById('btn-copy-pix-key');
+    const pixKeyInput = document.getElementById('pix-key-input');
+    if (btnCopyPixKey && pixKeyInput) {
+      btnCopyPixKey.addEventListener('click', () => {
+        copyToClipboard(pixKeyInput.value, 'Chave PIX copiada para a área de transferência! Muito obrigado pelo apoio! ☕');
+      });
+    }
+
+    const btnCopyPixPayload = document.getElementById('btn-copy-pix-payload');
+    const pixPayloadInput = document.getElementById('pix-payload-input');
+    if (btnCopyPixPayload && pixPayloadInput) {
+      btnCopyPixPayload.addEventListener('click', () => {
+        copyToClipboard(pixPayloadInput.value, 'Código PIX Copia e Cola copiado! Abra o app do seu banco para colar. ☕');
+      });
+    }
+  }
+
+  function copyToClipboard(text, successMsg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => showToast(successMsg, 'success'))
+        .catch(() => fallbackCopyText(text, successMsg));
+    } else {
+      fallbackCopyText(text, successMsg);
+    }
+  }
+
+  function fallbackCopyText(text, successMsg) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      showToast(successMsg, 'success');
+    } catch (err) {
+      showToast('Não foi possível copiar automaticamente. Selecione e copie o texto.', 'error');
+    }
+    document.body.removeChild(textArea);
   }
 
   function cleanFileNameToTitle(filename) {

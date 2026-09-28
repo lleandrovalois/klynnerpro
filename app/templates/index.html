@@ -51,6 +51,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             <span>Arquivos Gigantes (GBs)</span>
           </div>
+          <a href="#donation-section" class="pill pill-pink pill-hoverable" id="header-btn-donate" title="Apoie o desenvolvedor">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <span>Apoiar ☕</span>
+          </a>
         </div>
       </div>
     </header>
@@ -255,6 +259,10 @@
               <span>Juntar Novos Arquivos</span>
             </button>
           </div>
+
+          <div class="result-support-box">
+            <p>☕ <em>Se o <strong>Klynner PDF</strong> te ajudou a poupar tempo, <a href="#donation-section" class="link-highlight">fique à vontade para retribuir com um café via PIX!</a></em></p>
+          </div>
         </div>
 
       </section>
@@ -283,6 +291,66 @@
           </div>
           <h4 class="feature-title">Acesso Rápido (Linearização)</h4>
           <p class="feature-text">Abertura instantânea da primeira página e do menu em leitores de PDF, ideal para relatórios volumosos, catálogos técnicos e processos judiciais.</p>
+        </div>
+      </section>
+
+      <!-- Seção de Apoio / Doação ao Desenvolvedor -->
+      <section class="donation-section" id="donation-section">
+        <div class="donation-card">
+          <div class="donation-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+            <span>Apoie o Desenvolvedor</span>
+          </div>
+
+          <h2 class="donation-title">Se te ajudou, fique à vontade para retribuir o favor ! ☕</h2>
+          <p class="donation-desc">
+            O <strong>Klynner PDF</strong> é uma ferramenta gratuita, livre de anúncios e construída com motor de alta performance. Qualquer contribuição via PIX ajuda nos custos de infraestrutura e apoia a evolução contínua da plataforma!
+          </p>
+
+          <div class="pix-container">
+            <div class="pix-qr-wrapper">
+              <div class="pix-qr-frame">
+                <img src="/static/img/pix_qr.svg" alt="QR Code PIX para Doação" class="pix-qr-image" width="180" height="180">
+              </div>
+              <span class="pix-scan-hint">Abra o app do seu banco e escaneie o QR Code</span>
+            </div>
+
+            <div class="pix-details-wrapper">
+              <div class="pix-field-group">
+                <label for="pix-key-input" class="pix-field-label">Chave PIX (E-mail):</label>
+                <div class="pix-copy-box">
+                  <input type="text" id="pix-key-input" class="pix-input-readonly" value="lleandrovalois@gmail.com" readonly>
+                  <button type="button" id="btn-copy-pix-key" class="btn btn-secondary btn-sm btn-copy" title="Copiar chave PIX">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>Copiar Chave</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="pix-field-group">
+                <label for="pix-payload-input" class="pix-field-label">PIX Copia e Cola (Código Completo):</label>
+                <div class="pix-copy-box">
+                  <input type="text" id="pix-payload-input" class="pix-input-readonly" value="00020101021226460014br.gov.bcb.pix0124lleandrovalois@gmail.com5204000053039865802BR5914Leandro Valois6006BRASIL62070503***6304C69F" readonly>
+                  <button type="button" id="btn-copy-pix-payload" class="btn btn-primary btn-sm btn-copy" title="Copiar código PIX copia e cola">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>Copiar Código</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="pix-merchant-info">
+                <span>Beneficiário: <strong>Leandro Valois</strong> &bull; Chave: <strong>lleandrovalois@gmail.com</strong></span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

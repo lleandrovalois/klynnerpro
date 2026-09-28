@@ -1317,3 +1317,211 @@ body {
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   Seção de Doação & Apoio (PIX)
+   ========================================================================== */
+
+.pill-pink {
+  color: #F472B6;
+  border-color: rgba(244, 114, 182, 0.35);
+  background: rgba(244, 114, 182, 0.08);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.pill-pink:hover {
+  background: rgba(244, 114, 182, 0.18);
+  border-color: rgba(244, 114, 182, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(244, 114, 182, 0.25);
+}
+
+.donation-section {
+  margin-top: 3.5rem;
+  scroll-margin-top: 5rem;
+}
+
+.donation-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(17, 24, 39, 0.85) 100%);
+  border: 1px solid rgba(236, 72, 153, 0.25);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2.25rem;
+  box-shadow: var(--shadow-lg), 0 0 35px rgba(236, 72, 153, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.donation-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #EC4899, #8B5CF6, transparent);
+}
+
+.donation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #F472B6;
+  background: rgba(244, 114, 182, 0.12);
+  border: 1px solid rgba(244, 114, 182, 0.3);
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-full);
+  margin-bottom: 1rem;
+}
+
+.donation-title {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.donation-desc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  max-width: 680px;
+  line-height: 1.55;
+  margin-bottom: 2rem;
+}
+
+.pix-container {
+  display: flex;
+  align-items: center;
+  gap: 2.25rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.pix-qr-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.pix-qr-frame {
+  background: #FFFFFF;
+  padding: 0.75rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast);
+}
+
+.pix-qr-frame:hover {
+  transform: scale(1.02);
+}
+
+.pix-qr-image {
+  display: block;
+  width: 170px;
+  height: 170px;
+  border-radius: 4px;
+}
+
+.pix-scan-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.pix-details-wrapper {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.pix-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pix-field-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pix-copy-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.4rem 0.3rem 0.85rem;
+  transition: border-color var(--transition-fast);
+}
+
+.pix-copy-box:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.pix-input-readonly {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: #38BDF8;
+  outline: none;
+  width: 100%;
+}
+
+.btn-copy {
+  flex-shrink: 0;
+  gap: 0.4rem;
+}
+
+.pix-merchant-info {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pix-merchant-info strong {
+  color: var(--text-secondary);
+}
+
+.result-support-box {
+  margin-top: 2rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-sm);
+  background: rgba(236, 72, 153, 0.08);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.link-highlight {
+  color: #F472B6;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: color var(--transition-fast);
+}
+
+.link-highlight:hover {
+  color: #EC4899;
+}
+
