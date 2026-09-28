@@ -46,6 +46,29 @@ O **PDF Merger Pro** foi projetado com uma arquitetura industrial de alto rendim
 
 ---
 
+## 🌐 Como Hospedar no Render (Render.com)
+
+O projeto já inclui o arquivo `render.yaml` e `Dockerfile` configurados para deploy gratuito e instantâneo no Render.
+
+### Método 1: Deploy Automático via Blueprint (Recomendado)
+1. Acesse o painel do [Render Dashboard](https://dashboard.render.com).
+2. Clique em **New +** e selecione **Blueprint**.
+3. Conecte o repositório `https://github.com/lleandrovalois/klynnerpro`.
+4. O Render detectará automaticamente o arquivo `render.yaml` e provisionará o serviço web.
+5. Clique em **Apply** e sua aplicação estará online em poucos minutos com URL pública HTTPS (ex: `https://klynner-pdf.onrender.com`).
+
+### Método 2: Criação Manual de Web Service no Render
+1. No [Render Dashboard](https://dashboard.render.com), clique em **New +** &rarr; **Web Service**.
+2. Conecte seu repositório `klynnerpro`.
+3. Preencha os campos:
+   - **Name:** `klynner-pdf`
+   - **Runtime:** `Python`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+4. Selecione o plano **Free** e clique em **Deploy Web Service**.
+
+---
+
 ## 🖥️ Recursos da Interface Web
 
 - **Arrastar e Soltar (Drag & Drop):** Envie múltiplos PDFs simultaneamente ou adicione mais arquivos a qualquer momento.
