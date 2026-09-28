@@ -2172,4 +2172,424 @@ body {
   }
 }
 
+/* ==========================================================================
+   Tool Categories Ribbon
+   ========================================================================== */
+.tool-categories-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: none;
+}
+.tool-categories-ribbon::-webkit-scrollbar {
+  display: none;
+}
+
+.tool-category-pill {
+  all: unset;
+  box-sizing: border-box;
+  font-family: var(--font-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.tool-category-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.tool-category-pill.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.15));
+  border-color: var(--accent-primary);
+  color: #FFFFFF;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.3);
+}
+
+/* ==========================================================================
+   Security & Conversion Card Boxes
+   ========================================================================== */
+.security-card-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.security-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.security-badge-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.security-box-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+}
+
+.security-box-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.sub-section-title {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.65rem;
+}
+
+/* Passwords Grid */
+.passwords-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .passwords-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pwd-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pwd-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pwd-input-wrap .text-input {
+  width: 100%;
+  padding-right: 2.75rem;
+}
+
+.btn-pwd-toggle {
+  all: unset;
+  position: absolute;
+  right: 0.75rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color var(--transition-fast);
+  user-select: none;
+}
+
+.btn-pwd-toggle:hover {
+  color: var(--text-main);
+}
+
+.pwd-meter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.pwd-meter-bar {
+  height: 4px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.pwd-meter-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: var(--meter-pct, 0%);
+  background: var(--meter-color, #EF4444);
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.pwd-meter-text {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.field-help-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* Encryption & Radio Cards */
+.encryption-radios,
+.p2w-pages-radios {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .encryption-radios,
+  .p2w-pages-radios {
+    grid-template-columns: 1fr;
+  }
+}
+
+.enc-radio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.enc-radio-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.enc-radio-card:has(input:checked) {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+}
+
+.enc-radio-card input[type="radio"] {
+  accent-color: var(--accent-primary);
+  margin-top: 0.2rem;
+  cursor: pointer;
+}
+
+.enc-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.enc-card-body strong {
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.enc-card-body small {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Preset Chips Grid */
+.preset-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.preset-chip-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.preset-chip-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+.preset-chip-card:has(input:checked) {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: var(--accent-rose);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.25);
+}
+
+.preset-chip-card input[type="checkbox"] {
+  accent-color: var(--accent-rose);
+  cursor: pointer;
+}
+
+.preset-chip-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.preset-chip-content strong {
+  font-size: 0.82rem;
+  color: var(--text-main);
+}
+
+.preset-chip-content small {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* Custom Terms Box */
+.custom-terms-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.term-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.term-input-row .text-input {
+  flex: 1;
+}
+
+.terms-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-height: 28px;
+}
+
+.term-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #FECDD3;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease;
+}
+
+.term-tag-remove {
+  all: unset;
+  cursor: pointer;
+  color: rgba(254, 205, 211, 0.6);
+  font-weight: bold;
+  font-size: 0.95rem;
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+
+.term-tag-remove:hover {
+  color: #FFFFFF;
+}
+
+/* Custom Range Inputs */
+.custom-range-inputs {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.range-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.range-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.range-sublabel {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.range-sep {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-top: 1rem;
+}
+
+.num-input {
+  width: 90px;
+  padding: 0.5rem 0.65rem;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+.num-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+/* Word to PDF Highlight */
+.word-info-highlight {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+}
+
+.info-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tech-tag {
+  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #C7D2FE;
+}
+
+
 

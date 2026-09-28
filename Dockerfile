@@ -6,9 +6,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Instala dependências do sistema necessárias para libqpdf / gráficos
+# Instala dependências do sistema necessárias para libqpdf / gráficos e conversão LibreOffice headless
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libreoffice-writer-nogui \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia requisitos e instala dependências Python

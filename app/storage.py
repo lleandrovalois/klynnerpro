@@ -48,11 +48,12 @@ async def save_uploaded_file_stream(
     safe_filename = Path(safe_filename).name
     destination_path = session_dir / safe_filename
     
-    # Se já existir arquivo com mesmo nome, gera um sufixo numérico
+    # Preserva a extensão original do arquivo
+    ext = destination_path.suffix or ".pdf"
     counter = 1
     base_stem = destination_path.stem
     while destination_path.exists():
-        destination_path = session_dir / f"{base_stem}_{counter}.pdf"
+        destination_path = session_dir / f"{base_stem}_{counter}{ext}"
         counter += 1
 
     total_bytes = 0
@@ -75,14 +76,26 @@ async def save_uploaded_file_stream(
         "path": str(destination_path),
         "size": total_bytes,
         "page_count": page_count,
+        "extension": ext.lower(),
     }
 
 
 def extract_page_count(file_path: Path) -> int:
     """
     Obtém a contagem de páginas de forma ultra-rápida.
-    Primeiro tenta com pikepdf (C++/QPDF) e recorre ao pypdf se necessário.
+    Para PDFs, usa pikepdf/pypdf. Para Word (.docx), estima páginas baseadas em parágrafos.
     """
+    ext = file_path.suffix.lower()
+    if ext in [".docx", ".doc"]:
+        try:
+            import docx
+            doc = docx.Document(str(file_path))
+            # Estima 1 página para cada ~25 parágrafos (mínimo 1)
+            p_count = len([p for p in doc.paragraphs if p.text.strip()])
+            return max(1, (p_count // 25) + (1 if p_count % 25 else 0))
+        except Exception:
+            return 1
+
     try:
         with pikepdf.open(file_path) as pdf:
             return len(pdf.pages)

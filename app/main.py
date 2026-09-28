@@ -21,6 +21,10 @@ from app.splitter import execute_pdf_split
 from app.organizer import execute_pdf_organize
 from app.rotator import execute_pdf_rotate
 from app.extractor import execute_pdf_extract
+from app.protector import execute_pdf_protect, execute_pdf_unlock
+from app.redactor import execute_pdf_redact
+from app.pdf_to_word import execute_pdf_to_word
+from app.word_to_pdf import execute_word_to_pdf
 from app.storage import (
     BASE_TEMP_DIR,
     cleanup_expired_sessions,
@@ -157,6 +161,60 @@ class ExtractRequest(BaseModel):
     linearize: bool = Field(default=True)
 
 
+class ProtectRequest(BaseModel):
+    session_id: str
+    file_id: str
+    user_password: Optional[str] = Field(default=None, description="Senha para abertura do PDF")
+    owner_password: Optional[str] = Field(default=None, description="Senha mestra de permissões")
+    encryption_level: Optional[str] = Field(default="aes-256", description="'aes-256' ou 'aes-128'")
+    encryption_algorithm: Optional[str] = Field(default=None, description="Alias para encryption_level")
+    allow_printing: bool = Field(default=False, description="Permite imprimir o PDF")
+    allow_copying: bool = Field(default=False, description="Permite copiar/extrair textos e imagens")
+    allow_modifying: bool = Field(default=False, description="Permite modificar o documento")
+    allow_annotations: bool = Field(default=False, description="Permite anotações e preenchimento")
+    permissions: Optional[Dict[str, bool]] = Field(default=None, description="Permissões em formato de dicionário")
+    output_filename: Optional[str] = Field(default="documento_protegido.pdf")
+    linearize: bool = Field(default=True)
+
+
+class UnlockRequest(BaseModel):
+    session_id: str
+    file_id: str
+    password: Optional[str] = Field(default=None, description="Senha conhecida do documento")
+    output_filename: Optional[str] = Field(default="documento_desprotegido.pdf")
+    linearize: bool = Field(default=True)
+
+
+class RedactRequest(BaseModel):
+    session_id: str
+    file_id: str
+    custom_terms: Optional[List[str]] = Field(default=None, description="Lista de termos ou nomes para tarjar")
+    preset_patterns: Optional[List[str]] = Field(
+        default=None,
+        description="Filtros sensíveis pré-definidos: 'cpf', 'cnpj', 'email', 'phone', 'credit_card'"
+    )
+    patterns: Optional[List[str]] = Field(default=None, description="Alias para preset_patterns")
+    clean_metadata: bool = Field(default=True, description="Remove dados de autor, criador e XMP")
+    output_filename: Optional[str] = Field(default="documento_anonimizado.pdf")
+    linearize: bool = Field(default=True)
+
+
+class PdfToWordRequest(BaseModel):
+    session_id: str
+    file_id: str
+    output_filename: Optional[str] = Field(default="documento_convertido.docx")
+    start_page: Optional[int] = Field(default=None, description="Página inicial (1-based)")
+    end_page: Optional[int] = Field(default=None, description="Página final (1-based)")
+
+
+class WordToPdfRequest(BaseModel):
+    session_id: str
+    file_id: str
+    output_filename: Optional[str] = Field(default="documento_convertido.pdf")
+    linearize: bool = Field(default=True)
+
+
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     index_file = TEMPLATES_DIR / "index.html"
@@ -198,10 +256,12 @@ async def upload_files(
     for file in files:
         if not file.filename:
             continue
-        if not file.filename.lower().endswith(".pdf"):
+        valid_exts = {".pdf", ".docx", ".doc"}
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in valid_exts:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"O arquivo '{file.filename}' não é um documento PDF válido."
+                detail=f"O arquivo '{file.filename}' não possui um formato suportado (.pdf, .docx, .doc)."
             )
         
         try:
@@ -497,6 +557,261 @@ async def extract_pdf_endpoint(request: ExtractRequest):
         )
 
 
+@app.post("/api/protect")
+async def protect_pdf(request: ProtectRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o arquivo novamente."
+        )
+
+    safe_name = Path(request.file_id).name
+    file_path = session_dir / safe_name
+    if not file_path.exists() and (session_dir / "output" / safe_name).exists():
+        file_path = session_dir / "output" / safe_name
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo '{safe_name}' não encontrado na sessão."
+        )
+
+    try:
+        enc_level = request.encryption_algorithm or request.encryption_level or "aes-256"
+        perms = request.permissions or {}
+        allow_print = perms.get("allow_printing", request.allow_printing)
+        allow_copy = perms.get("allow_copying", request.allow_copying)
+        allow_modify = perms.get("allow_modifying", request.allow_modifying)
+        allow_annot = perms.get("allow_annotating", perms.get("allow_annotations", request.allow_annotations))
+
+        result = await asyncio.to_thread(
+            execute_pdf_protect,
+            session_dir=session_dir,
+            file_id=safe_name,
+            user_password=request.user_password,
+            owner_password=request.owner_password,
+            encryption_level=enc_level,
+            allow_printing=allow_print,
+            allow_copying=allow_copy,
+            allow_modifying=allow_modify,
+            allow_annotations=allow_annot,
+            output_basename=request.output_filename,
+            linearize=request.linearize,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "metrics": result,
+        })
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Erro ao proteger PDF: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao proteger PDF: {str(e)}"
+        )
+
+
+@app.post("/api/unlock")
+async def unlock_pdf(request: UnlockRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o arquivo novamente."
+        )
+
+    safe_name = Path(request.file_id).name
+    file_path = session_dir / safe_name
+    if not file_path.exists() and (session_dir / "output" / safe_name).exists():
+        file_path = session_dir / "output" / safe_name
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo '{safe_name}' não encontrado na sessão."
+        )
+
+    try:
+        result = await asyncio.to_thread(
+            execute_pdf_unlock,
+            session_dir=session_dir,
+            file_id=safe_name,
+            password=request.password,
+            output_basename=request.output_filename,
+            linearize=request.linearize,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "metrics": result,
+        })
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Erro ao desproteger PDF: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao desproteger PDF: {str(e)}"
+        )
+
+
+@app.post("/api/redact")
+async def redact_pdf(request: RedactRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o arquivo novamente."
+        )
+
+    safe_name = Path(request.file_id).name
+    file_path = session_dir / safe_name
+    if not file_path.exists() and (session_dir / "output" / safe_name).exists():
+        file_path = session_dir / "output" / safe_name
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo '{safe_name}' não encontrado na sessão."
+        )
+
+    try:
+        patterns_to_use = request.patterns if request.patterns is not None else request.preset_patterns
+        if patterns_to_use is None:
+            patterns_to_use = ["cpf", "email", "phone"]
+
+        result = await asyncio.to_thread(
+            execute_pdf_redact,
+            session_dir=session_dir,
+            file_id=safe_name,
+            custom_terms=request.custom_terms,
+            preset_patterns=patterns_to_use,
+            clean_metadata=request.clean_metadata,
+            output_basename=request.output_filename,
+            linearize=request.linearize,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "metrics": result,
+        })
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Erro ao redigir/anonimizar PDF: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao redigir/anonimizar PDF: {str(e)}"
+        )
+
+
+@app.post("/api/convert/pdf-to-word")
+async def convert_pdf_to_word(request: PdfToWordRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o arquivo novamente."
+        )
+
+    safe_name = Path(request.file_id).name
+    file_path = session_dir / safe_name
+    if not file_path.exists() and (session_dir / "output" / safe_name).exists():
+        file_path = session_dir / "output" / safe_name
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo '{safe_name}' não encontrado na sessão."
+        )
+
+    try:
+        result = await asyncio.to_thread(
+            execute_pdf_to_word,
+            session_dir=session_dir,
+            file_id=safe_name,
+            output_basename=request.output_filename,
+            start_page=request.start_page,
+            end_page=request.end_page,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": None,
+            "is_docx": True,
+            "metrics": result,
+        })
+    except Exception as e:
+        logger.error(f"Erro ao converter PDF para Word: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao converter PDF para Word: {str(e)}"
+        )
+
+
+@app.post("/api/convert/word-to-pdf")
+async def convert_word_to_pdf(request: WordToPdfRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o arquivo novamente."
+        )
+
+    safe_name = Path(request.file_id).name
+    file_path = session_dir / safe_name
+    if not file_path.exists() and (session_dir / "output" / safe_name).exists():
+        file_path = session_dir / "output" / safe_name
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo '{safe_name}' não encontrado na sessão."
+        )
+
+    try:
+        result = await asyncio.to_thread(
+            execute_word_to_pdf,
+            session_dir=session_dir,
+            file_id=safe_name,
+            output_basename=request.output_filename,
+            linearize=request.linearize,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "metrics": result,
+        })
+    except Exception as e:
+        logger.error(f"Erro ao converter Word para PDF: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao converter Word para PDF: {str(e)}"
+        )
+
+
 @app.get("/api/download/{session_id}")
 async def download_merged_pdf(session_id: str, filename: Optional[str] = "documento_unificado.pdf"):
     clean_name = Path(filename).name
@@ -506,7 +821,7 @@ async def download_merged_pdf(session_id: str, filename: Optional[str] = "docume
     if not output_path.exists():
         out_dir = session_dir / "output"
         if out_dir.exists():
-            files = list(out_dir.glob("*.pdf")) + list(out_dir.glob("*.zip"))
+            files = list(out_dir.glob("*.pdf")) + list(out_dir.glob("*.zip")) + list(out_dir.glob("*.docx"))
             if files:
                 files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
                 output_path = files[0]
@@ -519,7 +834,13 @@ async def download_merged_pdf(session_id: str, filename: Optional[str] = "docume
         )
 
     is_zip = clean_name.lower().endswith(".zip")
-    media_type = "application/zip" if is_zip else "application/pdf"
+    is_docx = clean_name.lower().endswith(".docx")
+    if is_docx:
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    elif is_zip:
+        media_type = "application/zip"
+    else:
+        media_type = "application/pdf"
 
     encoded_filename = urllib.parse.quote(clean_name)
     headers = {
@@ -538,10 +859,11 @@ async def download_merged_pdf(session_id: str, filename: Optional[str] = "docume
 @app.get("/api/preview/{session_id}")
 async def preview_merged_pdf(session_id: str, filename: Optional[str] = "documento_unificado.pdf"):
     clean_name = Path(filename).name
-    if clean_name.lower().endswith(".zip"):
+    lower_name = clean_name.lower()
+    if lower_name.endswith(".zip") or lower_name.endswith(".docx") or lower_name.endswith(".doc"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Arquivos compactados (.ZIP) não possuem pré-visualização inline no leitor. Baixe o arquivo para abrir."
+            detail="Arquivos compactados (.ZIP) e documentos Word (.DOCX) não possuem pré-visualização inline no leitor. Baixe o arquivo para abrir."
         )
 
     session_dir = get_session_dir(session_id)
@@ -585,15 +907,20 @@ async def cleanup_session(session_id: str):
 async def health_check():
     return {
         "status": "healthy",
-        "service": "Klynner PDF",
+        "service": "Klynner PDF PRO",
         "storage_dir": str(BASE_TEMP_DIR),
-        "engines": ["PikePDF/QPDF (C++)", "PyPDF (Fallback)"],
+        "engines": ["PikePDF/QPDF (C++)", "PyMuPDF (C++)", "LibreOffice Headless", "pdf2docx", "ReportLab"],
         "features": [
             "Juntar PDF (Merge)",
             "Dividir PDF (Split)",
             "Organizar Páginas (Reorder)",
             "Girar Páginas (Rotate)",
             "Extrair Páginas (Extract)",
+            "Proteger com Senha (Encrypt)",
+            "Desproteger PDF (Decrypt)",
+            "Redigir / Anonimizar (Redact)",
+            "Converter PDF para Word (PDF to Word)",
+            "Converter Word para PDF (Word to PDF)",
         ],
         "streaming_upload": "Ativo (Zero-RAM Chunking)",
         "menu_system": "Ativo (Página de Menu Visual + Marcadores com UseOutlines)",

@@ -68,6 +68,56 @@
       enginePill: 'Extrator QPDF Ativo',
       stageId: 'stage-extract',
     },
+    protect: {
+      heroTitle: 'Proteja seu PDF com Senha e Criptografia AES-256',
+      heroSub: 'Criptografia militar de alta segurança (AES-128 / AES-256 bits). Bloqueie impressões, cópias de texto e alterações não autorizadas com restrições granulares de permissão.',
+      dropHeading: 'Arraste o arquivo PDF que deseja proteger com senha',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Criptografia AES-256 / AES-128', 'Bloqueio de cópia e impressão', 'Senhas de usuário e mestre'],
+      multiple: false,
+      enginePill: 'Criptografia QPDF Ativa',
+      stageId: 'stage-protect',
+    },
+    unlock: {
+      heroTitle: 'Desproteja e Remova Restrições do seu PDF',
+      heroSub: 'Elimine senhas e bloqueios de permissão (impressão, cópia, edição) de documentos conhecidos pelo usuário, gerando uma versão livre e editável.',
+      dropHeading: 'Arraste o arquivo PDF protegido',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Desbloqueio de permissões instantâneo', 'Remoção de senha de abertura', 'Saída limpa e desprotegida'],
+      multiple: false,
+      enginePill: 'Desbloqueador QPDF Ativo',
+      stageId: 'stage-unlock',
+    },
+    redact: {
+      heroTitle: 'Anonimize e Tarje Dados Sensíveis Irreversivelmente',
+      heroSub: 'Expurgo físico permanente sob as tarjas: elimine CPF, CNPJ, e-mails, telefones, cartões e palavras-chave. Higienização total de metadados ocultos e XMP (LGPD e sigilo).',
+      dropHeading: 'Arraste o arquivo PDF para tarjar e anonimizar',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Tarjas físicas permanentes (LGPD)', 'Filtro automático de CPF, e-mail e fone', 'Expurgo de metadados XMP ocultos'],
+      multiple: false,
+      enginePill: 'Anonimizador PyMuPDF Ativo',
+      stageId: 'stage-redact',
+    },
+    'pdf-to-word': {
+      heroTitle: 'Converta Documentos PDF para Microsoft Word (.docx)',
+      heroSub: 'Reconstrução de tabelas, fontes, parágrafos e imagens para um documento DOCX 100% editável com fidelidade estrutural.',
+      dropHeading: 'Arraste o arquivo PDF para converter em Word',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Word 100% editável (.docx)', 'Reconstrução de tabelas e estilos', 'Conversão total ou por páginas'],
+      multiple: false,
+      enginePill: 'Conversor PDF2DOCX Ativo',
+      stageId: 'stage-pdf-to-word',
+    },
+    'word-to-pdf': {
+      heroTitle: 'Converta Arquivos Word (.docx, .doc) para PDF',
+      heroSub: 'Conversão de alta fidelidade com motor dual (LibreOffice + Python Fallback), gerando PDF padronizado para impressão e envio seguro.',
+      dropHeading: 'Arraste seu documento Word (.docx ou .doc) aqui',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Suporte a .docx e .doc', 'Formatação e paginação preservadas', 'Otimização com Fast Web View'],
+      multiple: false,
+      enginePill: 'Conversor Word2PDF Ativo',
+      stageId: 'stage-word-to-pdf',
+    },
   };
 
   // Estado Central da Aplicação
@@ -79,11 +129,12 @@
     previewUrl: null,
     outputFilename: '',
     isZipResult: false,
+    isDocxResult: false,
 
     // Juntar PDF
     mergeFiles: [], // { id, name, menuTitle, size, pageCount, fileObj, isUploaded, serverSavedName }
 
-    // Ferramentas de 1 Documento (Split, Organize, Rotate, Extract)
+    // Ferramentas de 1 Documento
     activeDoc: null, // { name, size, pageCount, serverSavedName, fileObj, pdfDoc }
 
     // Organizar
@@ -95,6 +146,9 @@
 
     // Extrair
     extractSelected: new Set(), // Set<number> (1-based)
+
+    // Redigir / Anonimizar
+    redactCustomTerms: [],
   };
 
   // Cache de miniaturas geradas
@@ -219,6 +273,78 @@
   const extractSelectedLabel = document.getElementById('extract-selected-label');
   const btnStartExtract = document.getElementById('btn-start-extract');
 
+  // Elementos Proteger PDF
+  const stageProtect = document.getElementById('stage-protect');
+  const protectDocName = document.getElementById('protect-doc-name');
+  const protectDocPages = document.getElementById('protect-doc-pages');
+  const protectDocSize = document.getElementById('protect-doc-size');
+  const btnProtectChangeDoc = document.getElementById('btn-protect-change-doc');
+  const protectUserPwd = document.getElementById('protect-user-pwd');
+  const protectOwnerPwd = document.getElementById('protect-owner-pwd');
+  const pwdMeterBar = document.getElementById('pwd-meter-bar');
+  const pwdMeterText = document.getElementById('pwd-meter-text');
+  const toggleAllowPrint = document.getElementById('toggle-allow-print');
+  const toggleAllowCopy = document.getElementById('toggle-allow-copy');
+  const toggleAllowModify = document.getElementById('toggle-allow-modify');
+  const toggleAllowAnnotate = document.getElementById('toggle-allow-annotate');
+  const protectOutputFilename = document.getElementById('protect-output-filename');
+  const toggleProtectLinearize = document.getElementById('toggle-protect-linearize');
+  const btnStartProtect = document.getElementById('btn-start-protect');
+
+  // Elementos Desproteger PDF
+  const stageUnlock = document.getElementById('stage-unlock');
+  const unlockDocName = document.getElementById('unlock-doc-name');
+  const unlockDocPages = document.getElementById('unlock-doc-pages');
+  const unlockDocSize = document.getElementById('unlock-doc-size');
+  const btnUnlockChangeDoc = document.getElementById('btn-unlock-change-doc');
+  const unlockPassword = document.getElementById('unlock-password');
+  const unlockOutputFilename = document.getElementById('unlock-output-filename');
+  const toggleUnlockLinearize = document.getElementById('toggle-unlock-linearize');
+  const btnStartUnlock = document.getElementById('btn-start-unlock');
+
+  // Elementos Redigir / Anonimizar PDF
+  const stageRedact = document.getElementById('stage-redact');
+  const redactDocName = document.getElementById('redact-doc-name');
+  const redactDocPages = document.getElementById('redact-doc-pages');
+  const redactDocSize = document.getElementById('redact-doc-size');
+  const btnRedactChangeDoc = document.getElementById('btn-redact-change-doc');
+  const presetCpf = document.getElementById('preset-cpf');
+  const presetCnpj = document.getElementById('preset-cnpj');
+  const presetEmail = document.getElementById('preset-email');
+  const presetPhone = document.getElementById('preset-phone');
+  const presetCard = document.getElementById('preset-card');
+  const redactCustomTermInput = document.getElementById('redact-custom-term-input');
+  const btnAddRedactTerm = document.getElementById('btn-add-redact-term');
+  const redactTermsContainer = document.getElementById('redact-terms-container');
+  const toggleCleanMetadata = document.getElementById('toggle-clean-metadata');
+  const redactOutputFilename = document.getElementById('redact-output-filename');
+  const toggleRedactLinearize = document.getElementById('toggle-redact-linearize');
+  const btnStartRedact = document.getElementById('btn-start-redact');
+
+  // Elementos PDF para Word (.docx)
+  const stagePdfToWord = document.getElementById('stage-pdf-to-word');
+  const p2wDocName = document.getElementById('p2w-doc-name');
+  const p2wDocPages = document.getElementById('p2w-doc-pages');
+  const p2wDocSize = document.getElementById('p2w-doc-size');
+  const btnP2wChangeDoc = document.getElementById('btn-p2w-change-doc');
+  const p2wModeAll = document.getElementById('p2w-mode-all');
+  const p2wModeRange = document.getElementById('p2w-mode-range');
+  const p2wRangeInputsBox = document.getElementById('p2w-range-inputs-box');
+  const p2wStartPage = document.getElementById('p2w-start-page');
+  const p2wEndPage = document.getElementById('p2w-end-page');
+  const p2wOutputFilename = document.getElementById('p2w-output-filename');
+  const btnStartP2w = document.getElementById('btn-start-p2w');
+
+  // Elementos Word para PDF (.pdf)
+  const stageWordToPdf = document.getElementById('stage-word-to-pdf');
+  const w2pDocName = document.getElementById('w2p-doc-name');
+  const w2pDocPages = document.getElementById('w2p-doc-pages');
+  const w2pDocSize = document.getElementById('w2p-doc-size');
+  const btnW2pChangeDoc = document.getElementById('btn-w2p-change-doc');
+  const w2pOutputFilename = document.getElementById('w2p-output-filename');
+  const toggleW2pLinearize = document.getElementById('toggle-w2p-linearize');
+  const btnStartW2p = document.getElementById('btn-start-w2p');
+
   // =========================================================================
   // INICIALIZAÇÃO
   // =========================================================================
@@ -227,15 +353,22 @@
   function init() {
     generateSessionId();
     setupNavigation();
+    setupCategoryRibbon();
     setupDropzone();
+    setupPasswordToggles();
     setupMergeEvents();
     setupSplitEvents();
     setupOrganizeEvents();
     setupRotateEvents();
     setupExtractEvents();
+    setupProtectEvents();
+    setupUnlockEvents();
+    setupRedactEvents();
+    setupPdfToWordEvents();
+    setupWordToPdfEvents();
     setupModalAndPix();
 
-    // Suporte a hash da URL (ex: #split, #organize)
+    // Suporte a hash da URL (ex: #split, #protect, #pdf-to-word)
     const hash = window.location.hash.replace('#', '');
     if (TOOL_CONFIGS[hash]) {
       switchTool(hash);
@@ -291,6 +424,9 @@
     dropzoneHeading.textContent = cfg.dropHeading;
     dropzoneSub.textContent = cfg.dropSub;
     fileInput.multiple = cfg.multiple;
+    fileInput.accept = (toolKey === 'word-to-pdf') 
+      ? '.docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword'
+      : '.pdf,application/pdf';
 
     dropzoneBadges.innerHTML = cfg.dropBadges
       .map(b => `<span class="dropzone-badge">${escapeHtml(b)}</span>`)
@@ -342,6 +478,16 @@
       initRotateWorkspace();
     } else if (toolKey === 'extract') {
       initExtractWorkspace();
+    } else if (toolKey === 'protect') {
+      initProtectWorkspace();
+    } else if (toolKey === 'unlock') {
+      initUnlockWorkspace();
+    } else if (toolKey === 'redact') {
+      initRedactWorkspace();
+    } else if (toolKey === 'pdf-to-word') {
+      initPdfToWordWorkspace();
+    } else if (toolKey === 'word-to-pdf') {
+      initWordToPdfWorkspace();
     }
   }
 
@@ -383,21 +529,32 @@
   }
 
   async function handleIncomingFiles(fileListObj) {
-    const validPdfs = [];
+    const isWordUpload = state.activeTool === 'word-to-pdf';
+    const validFiles = [];
+
     for (let i = 0; i < fileListObj.length; i++) {
       const file = fileListObj[i];
-      if (file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf') {
-        validPdfs.push(file);
+      const lower = file.name.toLowerCase();
+      if (isWordUpload) {
+        if (lower.endsWith('.docx') || lower.endsWith('.doc')) {
+          validFiles.push(file);
+        } else {
+          showToast(`O arquivo "${file.name}" foi ignorado. Selecione um arquivo Word (.docx ou .doc).`, 'error');
+        }
       } else {
-        showToast(`O arquivo "${file.name}" foi ignorado por não ser PDF.`, 'error');
+        if (lower.endsWith('.pdf') || file.type === 'application/pdf') {
+          validFiles.push(file);
+        } else {
+          showToast(`O arquivo "${file.name}" foi ignorado por não ser PDF.`, 'error');
+        }
       }
     }
 
-    if (validPdfs.length === 0) return;
+    if (validFiles.length === 0) return;
 
     if (state.activeTool === 'merge') {
       // Adiciona à lista de mesclagem
-      validPdfs.forEach(file => {
+      validFiles.forEach(file => {
         const fileId = 'f_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
         state.mergeFiles.push({
           id: fileId,
@@ -414,11 +571,11 @@
       dropzone.classList.add('hidden');
       stageMerge.classList.remove('hidden');
       renderMergeFileList();
-      showToast(`${validPdfs.length} arquivo(s) adicionado(s) à unificação.`, 'info');
+      showToast(`${validFiles.length} arquivo(s) adicionado(s) à unificação.`, 'info');
 
     } else {
-      // Ferramenta de documento único (Split, Organize, Rotate, Extract)
-      const targetFile = validPdfs[0];
+      // Ferramenta de documento único
+      const targetFile = validFiles[0];
       await loadActiveDocument(targetFile);
     }
   }
@@ -427,18 +584,26 @@
     try {
       showToast(`Carregando documento "${fileObj.name}"...`, 'info');
 
-      // Lê com PDF.js para renderização de miniaturas
+      const isWord = fileObj.name.toLowerCase().endsWith('.docx') || fileObj.name.toLowerCase().endsWith('.doc');
       let pdfDoc = null;
-      if (window.pdfjsLib) {
-        const arrayBuffer = await fileObj.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-        pdfDoc = await loadingTask.promise;
+      let pageCount = 1;
+
+      // Lê com PDF.js para renderização de miniaturas (apenas para PDFs)
+      if (!isWord && window.pdfjsLib) {
+        try {
+          const arrayBuffer = await fileObj.arrayBuffer();
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          pdfDoc = await loadingTask.promise;
+          pageCount = pdfDoc ? pdfDoc.numPages : 1;
+        } catch (pdfErr) {
+          console.warn('PDF.js aviso ao abrir pré-visualização:', pdfErr);
+        }
       }
 
       state.activeDoc = {
         name: fileObj.name,
         size: fileObj.size,
-        pageCount: pdfDoc ? pdfDoc.numPages : 1,
+        pageCount: pageCount,
         serverSavedName: null,
         fileObj: fileObj,
         pdfDoc: pdfDoc,
@@ -449,14 +614,14 @@
 
       dropzone.classList.add('hidden');
       activateSingleDocToolStage(state.activeTool);
-      showToast(`Documento carregado com ${state.activeDoc.pageCount} páginas.`, 'success');
+      showToast(isWord ? `Documento Word "${fileObj.name}" carregado!` : `Documento carregado com ${state.activeDoc.pageCount} páginas.`, 'success');
 
       // Dispara upload em segundo plano para já deixar pronto no servidor
       uploadSingleDocInBackground();
 
     } catch (err) {
-      console.error('Erro ao ler PDF:', err);
-      showToast('Falha ao abrir o documento PDF no navegador.', 'error');
+      console.error('Erro ao ler documento:', err);
+      showToast('Falha ao abrir o documento no navegador.', 'error');
     }
   }
 
@@ -479,6 +644,9 @@
           state.activeDoc.serverSavedName = data.files[0].saved_filename;
           if (data.files[0].page_count) {
             state.activeDoc.pageCount = data.files[0].page_count;
+            if (state.activeTool === 'word-to-pdf' && w2pDocPages) {
+              w2pDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+            }
           }
         }
       }
@@ -492,6 +660,7 @@
     state.organizeItems = [];
     state.rotateMap = {};
     state.extractSelected.clear();
+    state.redactCustomTerms = [];
     thumbnailCache.clear();
 
     document.querySelectorAll('.tool-stage').forEach(el => el.classList.add('hidden'));
@@ -1626,6 +1795,7 @@
     state.previewUrl = opts.previewUrl;
     state.outputFilename = opts.filename;
     state.isZipResult = opts.isZip;
+    state.isDocxResult = !!opts.isDocx;
 
     resultStatusTitle.textContent = opts.title;
     resultFilenameDisplay.textContent = opts.filename;
@@ -1639,9 +1809,15 @@
 
     btnDownload.href = opts.downloadUrl;
     btnDownload.setAttribute('download', opts.filename);
-    btnDownloadText.textContent = opts.isZip ? 'Baixar Arquivos (.ZIP)' : 'Baixar Documento (.PDF)';
+    if (opts.isZip) {
+      btnDownloadText.textContent = 'Baixar Arquivos (.ZIP)';
+    } else if (opts.isDocx) {
+      btnDownloadText.textContent = 'Baixar Documento Word (.DOCX)';
+    } else {
+      btnDownloadText.textContent = 'Baixar Documento (.PDF)';
+    }
 
-    if (opts.isZip || !opts.previewUrl) {
+    if (opts.isZip || opts.isDocx || !opts.previewUrl) {
       btnPreview.style.display = 'none';
     } else {
       btnPreview.style.display = 'inline-flex';
@@ -1733,10 +1909,627 @@
   }
 
   // =========================================================================
+  // RIBBON DE CATEGORIAS E FILTRAGEM
+  // =========================================================================
+  function setupCategoryRibbon() {
+    const ribbon = document.getElementById('tool-categories-ribbon');
+    if (!ribbon) return;
+    const pills = ribbon.querySelectorAll('.tool-category-pill');
+    pills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        const cat = pill.dataset.cat;
+        pills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+
+        const navBtns = document.querySelectorAll('.tool-nav-btn');
+        let currentStillVisible = false;
+        let firstVisibleTool = null;
+
+        navBtns.forEach(btn => {
+          const btnCat = btn.dataset.category;
+          if (cat === 'all' || btnCat === cat) {
+            btn.style.display = 'flex';
+            if (!firstVisibleTool) firstVisibleTool = btn.dataset.tool;
+            if (btn.dataset.tool === state.activeTool) currentStillVisible = true;
+          } else {
+            btn.style.display = 'none';
+          }
+        });
+
+        if (!currentStillVisible && firstVisibleTool) {
+          switchTool(firstVisibleTool);
+        }
+      });
+    });
+  }
+
+  // =========================================================================
+  // ALTERNÂNCIA DE SENHAS E MEDIDOR DE FORÇA
+  // =========================================================================
+  function setupPasswordToggles() {
+    document.querySelectorAll('.btn-pwd-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = btn.dataset.target;
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        if (input.type === 'password') {
+          input.type = 'text';
+          btn.textContent = '🙈';
+        } else {
+          input.type = 'password';
+          btn.textContent = '👁';
+        }
+      });
+    });
+  }
+
+  function updatePasswordMeter(pwd) {
+    if (!pwdMeterBar || !pwdMeterText) return;
+    if (!pwd) {
+      pwdMeterBar.style.setProperty('--meter-pct', '0%');
+      pwdMeterBar.style.setProperty('--meter-color', '#EF4444');
+      pwdMeterText.textContent = 'Força da senha';
+      pwdMeterText.style.color = 'var(--text-muted)';
+      return;
+    }
+
+    let score = 0;
+    if (pwd.length >= 6) score += 20;
+    if (pwd.length >= 10) score += 20;
+    if (pwd.length >= 14) score += 10;
+    if (/[A-Z]/.test(pwd)) score += 15;
+    if (/[a-z]/.test(pwd)) score += 10;
+    if (/[0-9]/.test(pwd)) score += 15;
+    if (/[^A-Za-z0-9]/.test(pwd)) score += 10;
+    score = Math.min(100, score);
+
+    let text = 'Fraca';
+    let color = '#EF4444';
+    if (score >= 85) {
+      text = 'Excelente (Militar)';
+      color = '#06B6D4';
+    } else if (score >= 65) {
+      text = 'Forte';
+      color = '#10B981';
+    } else if (score >= 40) {
+      text = 'Média';
+      color = '#F59E0B';
+    }
+
+    pwdMeterBar.style.setProperty('--meter-pct', `${score}%`);
+    pwdMeterBar.style.setProperty('--meter-color', color);
+    pwdMeterText.textContent = `Força: ${text}`;
+    pwdMeterText.style.color = color;
+  }
+
+  // =========================================================================
+  // FERRAMENTA 6: PROTEGER PDF (ENCRYPT / AES-256)
+  // =========================================================================
+  function setupProtectEvents() {
+    if (btnProtectChangeDoc) btnProtectChangeDoc.addEventListener('click', resetCurrentDocument);
+    if (protectUserPwd) {
+      protectUserPwd.addEventListener('input', (e) => {
+        updatePasswordMeter(e.target.value);
+      });
+    }
+    if (btnStartProtect) btnStartProtect.addEventListener('click', onExecuteProtect);
+  }
+
+  function initProtectWorkspace() {
+    if (!state.activeDoc) return;
+    if (protectDocName) protectDocName.textContent = state.activeDoc.name;
+    if (protectDocPages) protectDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (protectDocSize) protectDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (protectOutputFilename) protectOutputFilename.value = `${base}_protegido`;
+  }
+
+  async function onExecuteProtect() {
+    if (!state.activeDoc) return;
+
+    const userPwd = (protectUserPwd.value || '').trim();
+    const ownerPwd = (protectOwnerPwd.value || '').trim();
+
+    if (!userPwd && !ownerPwd) {
+      showToast('Por favor, defina ao menos a senha de abertura ou a senha mestra para proteger o PDF.', 'error');
+      protectUserPwd.focus();
+      return;
+    }
+
+    await ensureDocUploaded(state.activeDoc);
+
+    const encLevelRadio = document.querySelector('input[name="enc-level"]:checked');
+    const encAlgorithm = encLevelRadio ? encLevelRadio.value : 'aes-256';
+
+    const permissions = {
+      allow_printing: toggleAllowPrint ? toggleAllowPrint.checked : false,
+      allow_copying: toggleAllowCopy ? toggleAllowCopy.checked : false,
+      allow_modifying: toggleAllowModify ? toggleAllowModify.checked : false,
+      allow_annotating: toggleAllowAnnotate ? toggleAllowAnnotate.checked : false,
+    };
+
+    let cleanName = protectOutputFilename.value.trim() || 'documento_protegido';
+    if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+    startProcessingUI('Protegendo Documento PDF...', `Aplicando criptografia ${encAlgorithm.toUpperCase()} e restrições com QPDF C++...`);
+
+    try {
+      updateProcessingStep(1, 'Validando chaves de segurança e permissões...', 30);
+      await delay(200);
+
+      updateProcessingStep(2, `Criptografando com ${encAlgorithm.toUpperCase()} militar...`, 60);
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        user_password: userPwd,
+        owner_password: ownerPwd,
+        encryption_algorithm: encAlgorithm,
+        permissions: permissions,
+        output_filename: cleanName,
+        linearize: toggleProtectLinearize ? toggleProtectLinearize.checked : true,
+      };
+
+      updateProcessingStep(3, 'Finalizando dicionário de segurança e permissões...', 85);
+
+      const res = await fetch('/api/protect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao proteger o documento PDF.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'PDF protegido com sucesso!');
+      await delay(300);
+
+      showResultUI({
+        title: 'Documento Protegido com Sucesso!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        label1: 'Criptografia',
+        val1: data.metrics.encryption_applied.toUpperCase(),
+        label2: 'Total de Páginas',
+        val2: `${data.metrics.total_pages} págs`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro ao proteger o PDF.', 'error');
+      stopProcessingUI(stageProtect);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA 7: DESPROTEGER PDF (DECRYPT / UNLOCK)
+  // =========================================================================
+  function setupUnlockEvents() {
+    if (btnUnlockChangeDoc) btnUnlockChangeDoc.addEventListener('click', resetCurrentDocument);
+    if (btnStartUnlock) btnStartUnlock.addEventListener('click', onExecuteUnlock);
+  }
+
+  function initUnlockWorkspace() {
+    if (!state.activeDoc) return;
+    if (unlockDocName) unlockDocName.textContent = state.activeDoc.name;
+    if (unlockDocPages) unlockDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (unlockDocSize) unlockDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (unlockOutputFilename) unlockOutputFilename.value = `${base}_desprotegido`;
+  }
+
+  async function onExecuteUnlock() {
+    if (!state.activeDoc) return;
+
+    await ensureDocUploaded(state.activeDoc);
+
+    const pwd = (unlockPassword ? unlockPassword.value : '').trim();
+    let cleanName = unlockOutputFilename.value.trim() || 'documento_desprotegido';
+    if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+    startProcessingUI('Desprotegendo Documento PDF...', 'Removendo senhas e restrições de permissão com motor QPDF C++...');
+
+    try {
+      updateProcessingStep(1, 'Autenticando credenciais do PDF...', 30);
+      await delay(200);
+
+      updateProcessingStep(2, 'Expurgando travas de impressão, cópia e edição...', 65);
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        password: pwd,
+        output_filename: cleanName,
+        linearize: toggleUnlockLinearize ? toggleUnlockLinearize.checked : true,
+      };
+
+      updateProcessingStep(3, 'Gravando arquivo sem criptografia e otimizando...', 85);
+
+      const res = await fetch('/api/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao desproteger o documento PDF.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'PDF desbloqueado com sucesso!');
+      await delay(300);
+
+      showResultUI({
+        title: 'Documento Desbloqueado com Sucesso!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        label1: 'Status Criptografia',
+        val1: 'Livre / Removida',
+        label2: 'Total de Páginas',
+        val2: `${data.metrics.total_pages} págs`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro ao desbloquear o PDF. Verifique se a senha informada está correta.', 'error');
+      stopProcessingUI(stageUnlock);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA 8: REDIGIR / ANONIMIZAR DADOS (LGPD)
+  // =========================================================================
+  function setupRedactEvents() {
+    if (btnRedactChangeDoc) btnRedactChangeDoc.addEventListener('click', resetCurrentDocument);
+
+    if (btnAddRedactTerm && redactCustomTermInput) {
+      btnAddRedactTerm.addEventListener('click', addRedactTerm);
+      redactCustomTermInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addRedactTerm();
+        }
+      });
+    }
+
+    if (btnStartRedact) btnStartRedact.addEventListener('click', onExecuteRedact);
+  }
+
+  function initRedactWorkspace() {
+    if (!state.activeDoc) return;
+    if (redactDocName) redactDocName.textContent = state.activeDoc.name;
+    if (redactDocPages) redactDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (redactDocSize) redactDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (redactOutputFilename) redactOutputFilename.value = `${base}_anonimizado`;
+    renderRedactTerms();
+  }
+
+  function renderRedactTerms() {
+    if (!redactTermsContainer) return;
+    redactTermsContainer.innerHTML = '';
+    state.redactCustomTerms.forEach((term, idx) => {
+      const tag = document.createElement('span');
+      tag.className = 'term-tag';
+      tag.innerHTML = `<span>${escapeHtml(term)}</span><button type="button" class="term-tag-remove" data-idx="${idx}" title="Remover termo">&times;</button>`;
+      tag.querySelector('.term-tag-remove').addEventListener('click', () => {
+        state.redactCustomTerms.splice(idx, 1);
+        renderRedactTerms();
+      });
+      redactTermsContainer.appendChild(tag);
+    });
+  }
+
+  function addRedactTerm() {
+    const val = (redactCustomTermInput.value || '').trim();
+    if (!val) return;
+    if (!state.redactCustomTerms.includes(val)) {
+      state.redactCustomTerms.push(val);
+      renderRedactTerms();
+    }
+    redactCustomTermInput.value = '';
+    redactCustomTermInput.focus();
+  }
+
+  async function onExecuteRedact() {
+    if (!state.activeDoc) return;
+
+    const presets = [];
+    if (presetCpf && presetCpf.checked) presets.push('cpf');
+    if (presetCnpj && presetCnpj.checked) presets.push('cnpj');
+    if (presetEmail && presetEmail.checked) presets.push('email');
+    if (presetPhone && presetPhone.checked) presets.push('phone');
+    if (presetCard && presetCard.checked) presets.push('credit_card');
+
+    if (presets.length === 0 && state.redactCustomTerms.length === 0) {
+      showToast('Selecione ao menos um padrão pré-configurado (CPF, CNPJ, E-mail, etc.) ou adicione palavras-chave para tarjar.', 'error');
+      return;
+    }
+
+    await ensureDocUploaded(state.activeDoc);
+
+    let cleanName = redactOutputFilename.value.trim() || 'documento_anonimizado';
+    if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+    startProcessingUI('Tarjando e Anonimizando PDF...', 'Expurgando glifos, imagens e metadados sensíveis irreversivelmente...');
+
+    try {
+      updateProcessingStep(1, 'Escaneando texto das páginas em busca de padrões sensíveis...', 30);
+      await delay(200);
+
+      updateProcessingStep(2, 'Aplicando tarjas físicas definitivas (expurgo binário)...', 65);
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        patterns: presets,
+        custom_terms: state.redactCustomTerms,
+        clean_metadata: toggleCleanMetadata ? toggleCleanMetadata.checked : true,
+        output_filename: cleanName,
+        linearize: toggleRedactLinearize ? toggleRedactLinearize.checked : true,
+      };
+
+      updateProcessingStep(3, 'Higienizando metadados XMP ocultos e linearizando...', 85);
+
+      const res = await fetch('/api/redact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao tarjar e anonimizar o documento.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Anonimização concluída com sucesso!');
+      await delay(300);
+
+      showResultUI({
+        title: 'Documento Anonimizado com Sucesso!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        label1: 'Tarjas Aplicadas',
+        val1: `${data.metrics.redactions_applied} itens`,
+        label2: 'Páginas Processadas',
+        val2: `${data.metrics.total_pages} págs`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro durante a anonimização do PDF.', 'error');
+      stopProcessingUI(stageRedact);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA 9: PDF PARA WORD (.DOCX)
+  // =========================================================================
+  function setupPdfToWordEvents() {
+    if (btnP2wChangeDoc) btnP2wChangeDoc.addEventListener('click', resetCurrentDocument);
+
+    const rangeRadios = document.querySelectorAll('input[name="p2w-range-mode"]');
+    rangeRadios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (p2wRangeInputsBox) {
+          if (radio.value === 'range' && radio.checked) {
+            p2wRangeInputsBox.classList.remove('hidden');
+          } else {
+            p2wRangeInputsBox.classList.add('hidden');
+          }
+        }
+      });
+    });
+
+    if (btnStartP2w) btnStartP2w.addEventListener('click', onExecutePdfToWord);
+  }
+
+  function initPdfToWordWorkspace() {
+    if (!state.activeDoc) return;
+    if (p2wDocName) p2wDocName.textContent = state.activeDoc.name;
+    if (p2wDocPages) p2wDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (p2wDocSize) p2wDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    if (p2wStartPage) {
+      p2wStartPage.min = 1;
+      p2wStartPage.max = state.activeDoc.pageCount;
+      p2wStartPage.value = 1;
+    }
+    if (p2wEndPage) {
+      p2wEndPage.min = 1;
+      p2wEndPage.max = state.activeDoc.pageCount;
+      p2wEndPage.value = state.activeDoc.pageCount;
+    }
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (p2wOutputFilename) p2wOutputFilename.value = `${base}_word`;
+  }
+
+  async function onExecutePdfToWord() {
+    if (!state.activeDoc) return;
+
+    await ensureDocUploaded(state.activeDoc);
+
+    const rangeModeRadio = document.querySelector('input[name="p2w-range-mode"]:checked');
+    const isRange = rangeModeRadio && rangeModeRadio.value === 'range';
+
+    let startPage = null;
+    let endPage = null;
+
+    if (isRange) {
+      startPage = parseInt(p2wStartPage.value, 10) || 1;
+      endPage = parseInt(p2wEndPage.value, 10) || state.activeDoc.pageCount;
+      if (startPage > endPage) [startPage, endPage] = [endPage, startPage];
+    }
+
+    let cleanName = p2wOutputFilename.value.trim() || 'documento_convertido';
+    if (!cleanName.toLowerCase().endsWith('.docx')) cleanName += '.docx';
+
+    startProcessingUI('Convertendo PDF para Word (.docx)...', 'Reconstruindo fluxo de parágrafos, tabelas e estilos...');
+
+    try {
+      updateProcessingStep(1, 'Extraindo e analisando geometrias de texto e tabelas...', 30);
+      await delay(250);
+
+      updateProcessingStep(2, 'Gerando documento Microsoft Word estruturado (.docx)...', 65);
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        start_page: startPage,
+        end_page: endPage,
+        output_filename: cleanName,
+      };
+
+      updateProcessingStep(3, 'Finalizando empacotamento DOCX e tabelas de estilos...', 85);
+
+      const res = await fetch('/api/convert/pdf-to-word', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao converter PDF para Word.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Conversão para Word concluída!');
+      await delay(300);
+
+      showResultUI({
+        title: 'Arquivo Word (.docx) Criado com Sucesso!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        isDocx: true,
+        label1: 'Páginas Convertidas',
+        val1: `${data.metrics.pages_converted} págs`,
+        label2: 'Formato de Saída',
+        val2: 'DOCX Editável',
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro durante a conversão de PDF para Word.', 'error');
+      stopProcessingUI(stagePdfToWord);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA 10: WORD PARA PDF (.PDF)
+  // =========================================================================
+  function setupWordToPdfEvents() {
+    if (btnW2pChangeDoc) btnW2pChangeDoc.addEventListener('click', resetCurrentDocument);
+    if (btnStartW2p) btnStartW2p.addEventListener('click', onExecuteWordToPdf);
+  }
+
+  function initWordToPdfWorkspace() {
+    if (!state.activeDoc) return;
+    if (w2pDocName) w2pDocName.textContent = state.activeDoc.name;
+    if (w2pDocPages) w2pDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (w2pDocSize) w2pDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (w2pOutputFilename) w2pOutputFilename.value = `${base}_pdf`;
+  }
+
+  async function onExecuteWordToPdf() {
+    if (!state.activeDoc) return;
+
+    await ensureDocUploaded(state.activeDoc);
+
+    let cleanName = w2pOutputFilename.value.trim() || 'documento_convertido';
+    if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+    startProcessingUI('Convertendo Word para PDF...', 'Renderizando layout, estilos e tabelas com motor de alta precisão...');
+
+    try {
+      updateProcessingStep(1, 'Compilando documento Word (.docx/.doc)...', 30);
+      await delay(250);
+
+      updateProcessingStep(2, 'Renderizando tipografia e paginação em documento PDF...', 65);
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        output_filename: cleanName,
+        linearize: toggleW2pLinearize ? toggleW2pLinearize.checked : true,
+      };
+
+      updateProcessingStep(3, 'Aplicando Fast Web View (linearização) e finalizando...', 85);
+
+      const res = await fetch('/api/convert/word-to-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao converter Word para PDF.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Conversão para PDF concluída!');
+      await delay(300);
+
+      showResultUI({
+        title: 'Documento PDF Criado com Sucesso!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        isDocx: false,
+        label1: 'Motor Utilizado',
+        val1: data.metrics.engine ? data.metrics.engine.toUpperCase() : 'DUAL ENGINE',
+        label2: 'Total de Páginas',
+        val2: `${data.metrics.total_pages} págs`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro durante a conversão de Word para PDF.', 'error');
+      stopProcessingUI(stageWordToPdf);
+    }
+  }
+
+  // =========================================================================
   // MODAL DE PRÉ-VISUALIZAÇÃO & BOTÕES DE PIX
   // =========================================================================
   function setupModalAndPix() {
     btnPreview.addEventListener('click', () => {
+      if (state.isDocxResult) {
+        showToast('Documentos Word (.docx) devem ser baixados para edição no Microsoft Word ou LibreOffice.', 'info');
+        return;
+      }
       if (state.previewUrl && !state.isZipResult) {
         pdfViewerFrame.src = state.previewUrl;
         modalFilename.textContent = state.outputFilename;

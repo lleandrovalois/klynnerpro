@@ -17,6 +17,44 @@
       margin-bottom: 2rem;
       width: 100%;
     }
+    .tool-categories-ribbon {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+      scrollbar-width: none;
+    }
+    .tool-categories-ribbon::-webkit-scrollbar {
+      display: none;
+    }
+    .tool-category-pill {
+      all: unset;
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.45rem 1rem;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      color: #94A3B8 !important;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tool-category-pill:hover {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: #F8FAFC !important;
+      border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+    .tool-category-pill.active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.15)) !important;
+      border-color: #6366F1 !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.3) !important;
+    }
     .tools-nav-container {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -169,8 +207,16 @@
 
       <!-- MENU DE FUNCIONALIDADES (Barra Superior de Navegação das Ferramentas) -->
       <nav class="tools-nav-bar" id="tools-nav-bar" aria-label="Menu de Ferramentas PDF">
+        <div class="tool-categories-ribbon" id="tool-categories-ribbon">
+          <button type="button" class="tool-category-pill active" data-cat="all">Todas as Ferramentas (10)</button>
+          <button type="button" class="tool-category-pill" data-cat="pages">Edição & Páginas (5)</button>
+          <button type="button" class="tool-category-pill" data-cat="security">Segurança & Sigilo (3)</button>
+          <button type="button" class="tool-category-pill" data-cat="convert">Conversão Word (2)</button>
+        </div>
+
         <div class="tools-nav-container">
-          <button type="button" class="tool-nav-btn active" data-tool="merge" id="tool-nav-merge" title="Junte múltiplos PDFs em um único com Menu de Documentos">
+          <!-- 1. Juntar PDF -->
+          <button type="button" class="tool-nav-btn active" data-tool="merge" data-category="pages" id="tool-nav-merge" title="Junte múltiplos PDFs em um único com Menu de Documentos">
             <div class="tool-btn-icon-box">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -182,7 +228,8 @@
             </div>
           </button>
 
-          <button type="button" class="tool-nav-btn" data-tool="split" id="tool-nav-split" title="Divida seu PDF por intervalos ou exporte cada página avulsa">
+          <!-- 2. Dividir PDF -->
+          <button type="button" class="tool-nav-btn" data-tool="split" data-category="pages" id="tool-nav-split" title="Divida seu PDF por intervalos ou exporte cada página avulsa">
             <div class="tool-btn-icon-box">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
@@ -195,7 +242,8 @@
             </div>
           </button>
 
-          <button type="button" class="tool-nav-btn" data-tool="organize" id="tool-nav-organize" title="Reordene com arrastar-e-soltar, duplique ou exclua páginas">
+          <!-- 3. Organizar Páginas -->
+          <button type="button" class="tool-nav-btn" data-tool="organize" data-category="pages" id="tool-nav-organize" title="Reordene com arrastar-e-soltar, duplique ou exclua páginas">
             <div class="tool-btn-icon-box">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -208,7 +256,8 @@
             </div>
           </button>
 
-          <button type="button" class="tool-nav-btn" data-tool="rotate" id="tool-nav-rotate" title="Gire páginas individualmente ou em lote (90°, 180°, 270°)">
+          <!-- 4. Girar Páginas -->
+          <button type="button" class="tool-nav-btn" data-tool="rotate" data-category="pages" id="tool-nav-rotate" title="Gire páginas individualmente ou em lote (90°, 180°, 270°)">
             <div class="tool-btn-icon-box">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
@@ -220,7 +269,8 @@
             </div>
           </button>
 
-          <button type="button" class="tool-nav-btn" data-tool="extract" id="tool-nav-extract" title="Selecione páginas específicas para gerar um novo PDF ou ZIP">
+          <!-- 5. Extrair Páginas -->
+          <button type="button" class="tool-nav-btn" data-tool="extract" data-category="pages" id="tool-nav-extract" title="Selecione páginas específicas para gerar um novo PDF ou ZIP">
             <div class="tool-btn-icon-box">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
@@ -230,6 +280,77 @@
             <div class="tool-btn-text">
               <span class="tool-btn-title">Extrair Páginas</span>
               <span class="tool-btn-sub">Novo PDF Enxuto</span>
+            </div>
+          </button>
+
+          <!-- 6. Proteger PDF -->
+          <button type="button" class="tool-nav-btn" data-tool="protect" data-category="security" id="tool-nav-protect" title="Proteja com criptografia AES-256 e restrinja impressão, cópia ou edição">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Proteger PDF</span>
+              <span class="tool-btn-sub">AES-256 & Permissões</span>
+            </div>
+          </button>
+
+          <!-- 7. Desproteger PDF -->
+          <button type="button" class="tool-nav-btn" data-tool="unlock" data-category="security" id="tool-nav-unlock" title="Remova senhas e restrições de permissão de documentos conhecidos">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Desproteger PDF</span>
+              <span class="tool-btn-sub">Remover Senhas</span>
+            </div>
+          </button>
+
+          <!-- 8. Redigir / Tarjar -->
+          <button type="button" class="tool-nav-btn" data-tool="redact" data-category="security" id="tool-nav-redact" title="Tarje e remova irreversivelmente dados sensíveis (CPF, emails, telefones) e metadados">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <line x1="8" y1="12" x2="16" y2="12"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Redigir / Tarjar</span>
+              <span class="tool-btn-sub">Anonimizar Dados</span>
+            </div>
+          </button>
+
+          <!-- 9. PDF para Word -->
+          <button type="button" class="tool-nav-btn" data-tool="pdf-to-word" data-category="convert" id="tool-nav-p2w" title="Converta documentos PDF em arquivos Microsoft Word (.docx) editáveis">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <path d="M8 13h2l1 4 1-4h2"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">PDF para Word</span>
+              <span class="tool-btn-sub">Converter em .DOCX</span>
+            </div>
+          </button>
+
+          <!-- 10. Word para PDF -->
+          <button type="button" class="tool-nav-btn" data-tool="word-to-pdf" data-category="convert" id="tool-nav-w2p" title="Converta arquivos Microsoft Word (.docx, .doc) em documentos PDF">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Word para PDF</span>
+              <span class="tool-btn-sub">Converter em PDF</span>
             </div>
           </button>
         </div>
@@ -709,6 +830,497 @@
             <button type="button" class="btn btn-primary btn-lg" id="btn-start-extract">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
               <span>Extrair Páginas Agora</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2F: PROTEGER PDF (CRIPTOGRAFIA E PERMISSÕES)            -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-protect">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento a Proteger:</span>
+              <span class="active-doc-name" id="protect-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="protect-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="protect-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-protect-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Configurações de Criptografia & Senha</h4>
+                <p class="security-box-desc">Defina senhas de nível bancário e restrinja ações não autorizadas de impressão, cópia ou alteração.</p>
+              </div>
+            </div>
+
+            <div class="passwords-grid">
+              <div class="pwd-field-group">
+                <label for="protect-user-pwd" class="option-label">
+                  Senha de Abertura (Usuário)
+                  <span class="tooltip-hint" title="Exigida para abrir e visualizar o arquivo PDF">ⓘ</span>
+                </label>
+                <div class="pwd-input-wrap">
+                  <input type="password" id="protect-user-pwd" class="text-input" placeholder="Digite a senha para abrir o PDF...">
+                  <button type="button" class="btn-pwd-toggle" data-target="protect-user-pwd" title="Mostrar/ocultar senha">👁</button>
+                </div>
+                <div class="pwd-meter-wrap" id="pwd-meter-box">
+                  <div class="pwd-meter-bar" id="pwd-meter-bar"></div>
+                  <span class="pwd-meter-text" id="pwd-meter-text">Força da senha</span>
+                </div>
+              </div>
+
+              <div class="pwd-field-group">
+                <label for="protect-owner-pwd" class="option-label">
+                  Senha Mestra / Proprietário (Opcional)
+                  <span class="tooltip-hint" title="Permite ao administrador alterar permissões no futuro">ⓘ</span>
+                </label>
+                <div class="pwd-input-wrap">
+                  <input type="password" id="protect-owner-pwd" class="text-input" placeholder="Opcional (se vazio, usa a mesma)">
+                  <button type="button" class="btn-pwd-toggle" data-target="protect-owner-pwd" title="Mostrar/ocultar senha">👁</button>
+                </div>
+                <small class="field-help-text">Senha mestra necessária para modificar as restrições.</small>
+              </div>
+            </div>
+
+            <!-- Nível de Criptografia -->
+            <div class="encryption-level-selector">
+              <span class="sub-section-title">Padrão Criptográfico:</span>
+              <div class="encryption-radios">
+                <label class="enc-radio-card">
+                  <input type="radio" name="enc-level" value="aes-256" checked id="enc-aes-256">
+                  <div class="enc-card-body">
+                    <strong>AES-256 bits (Padrão Ouro)</strong>
+                    <small>Criptografia militar compatível com Acrobat X e leitores modernos</small>
+                  </div>
+                </label>
+                <label class="enc-radio-card">
+                  <input type="radio" name="enc-level" value="aes-128" id="enc-aes-128">
+                  <div class="enc-card-body">
+                    <strong>AES-128 bits</strong>
+                    <small>Compatibilidade ampliada com leitores legados (Acrobat 7+)</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Restrições de Permissão -->
+            <div class="permissions-settings-box">
+              <span class="sub-section-title">Permissões de Acesso do Leitor:</span>
+              <div class="toggles-grid">
+                <label class="toggle-control" for="toggle-allow-print">
+                  <input type="checkbox" id="toggle-allow-print">
+                  <div class="toggle-switch"></div>
+                  <div class="toggle-label-group">
+                    <span class="toggle-title">Permitir Impressão</span>
+                    <span class="toggle-desc">Quando desmarcado, bloqueia a impressão do arquivo.</span>
+                  </div>
+                </label>
+                <label class="toggle-control" for="toggle-allow-copy">
+                  <input type="checkbox" id="toggle-allow-copy">
+                  <div class="toggle-switch"></div>
+                  <div class="toggle-label-group">
+                    <span class="toggle-title">Permitir Cópia de Texto</span>
+                    <span class="toggle-desc">Impede extração de texto, tabelas e gráficos da área de transferência.</span>
+                  </div>
+                </label>
+                <label class="toggle-control" for="toggle-allow-modify">
+                  <input type="checkbox" id="toggle-allow-modify">
+                  <div class="toggle-switch"></div>
+                  <div class="toggle-label-group">
+                    <span class="toggle-title">Permitir Modificação</span>
+                    <span class="toggle-desc">Bloqueia rotação, reorganização e edições no conteúdo.</span>
+                  </div>
+                </label>
+                <label class="toggle-control" for="toggle-allow-annotate">
+                  <input type="checkbox" id="toggle-allow-annotate">
+                  <div class="toggle-switch"></div>
+                  <div class="toggle-label-group">
+                    <span class="toggle-title">Permitir Anotações e Formulários</span>
+                    <span class="toggle-desc">Autoriza preenchimento de campos e comentários interativos.</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="protect-output-filename" class="option-label">Nome do Arquivo Protegido</label>
+              <div class="input-with-suffix">
+                <input type="text" id="protect-output-filename" class="text-input" value="documento_protegido">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-protect-linearize">
+                <input type="checkbox" id="toggle-protect-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Carregamento instantâneo mesmo com criptografia.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Segurança:</span>
+              <span class="summary-value" id="protect-summary-label">AES-256 Bits Ativo</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-protect">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Proteger e Criptografar PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2G: DESPROTEGER PDF (REMOVER SENHAS E RESTRIÇÕES)       -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-unlock">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento a Desproteger:</span>
+              <span class="active-doc-name" id="unlock-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="unlock-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="unlock-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-unlock-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(52, 211, 153, 0.15); border-color: rgba(52, 211, 153, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Remoção de Restrições e Criptografia</h4>
+                <p class="security-box-desc">Elimine travas de permissão (impressão, edição, cópia) e gere uma cópia 100% livre e limpa do seu documento.</p>
+              </div>
+            </div>
+
+            <div class="unlock-form-box">
+              <div class="pwd-field-group">
+                <label for="unlock-password" class="option-label">
+                  Senha do Documento (se exigida para abertura)
+                  <span class="tooltip-hint" title="Se o arquivo apenas bloqueia impressão ou cópia, deixe em branco">ⓘ</span>
+                </label>
+                <div class="pwd-input-wrap">
+                  <input type="password" id="unlock-password" class="text-input" placeholder="Digite a senha do PDF (ou deixe vazio se só tiver travas de permissão)...">
+                  <button type="button" class="btn-pwd-toggle" data-target="unlock-password" title="Mostrar/ocultar senha">👁</button>
+                </div>
+                <small class="field-help-text">Arquivos com apenas restrições de permissão são desbloqueados instantaneamente sem senha.</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="unlock-output-filename" class="option-label">Nome do Arquivo Desbloqueado</label>
+              <div class="input-with-suffix">
+                <input type="text" id="unlock-output-filename" class="text-input" value="documento_desprotegido">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-unlock-linearize">
+                <input type="checkbox" id="toggle-unlock-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Otimiza para abertura rápida em qualquer dispositivo.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Status:</span>
+              <span class="summary-value" id="unlock-summary-label">Pronto para Desbloquear</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-unlock">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+              <span>Desproteger PDF Agora</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2H: REDIGIR / TARJAR E ANONIMIZAR DADOS                 -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-redact">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento a Anonimizar:</span>
+              <span class="active-doc-name" id="redact-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="redact-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="redact-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-redact-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(244, 63, 94, 0.15); border-color: rgba(244, 63, 94, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Anonimização & Tarjas Irreversíveis (LGPD / Sigilo)</h4>
+                <p class="security-box-desc">O texto, glifos e imagens sob as tarjas são expurgados permanentemente da estrutura física do PDF, tornando impossível qualquer recuperação ou cópia.</p>
+              </div>
+            </div>
+
+            <!-- Filtros Rápidos Pré-configurados -->
+            <div class="redact-presets-box">
+              <span class="sub-section-title">Tarjar Automaticamente por Padrão de Dado Pessoal:</span>
+              <div class="preset-chips-grid">
+                <label class="preset-chip-card">
+                  <input type="checkbox" id="preset-cpf" value="cpf" checked>
+                  <span class="preset-chip-content">
+                    <strong>CPF</strong>
+                    <small>000.000.000-00</small>
+                  </span>
+                </label>
+                <label class="preset-chip-card">
+                  <input type="checkbox" id="preset-cnpj" value="cnpj" checked>
+                  <span class="preset-chip-content">
+                    <strong>CNPJ</strong>
+                    <small>00.000.000/0000-00</small>
+                  </span>
+                </label>
+                <label class="preset-chip-card">
+                  <input type="checkbox" id="preset-email" value="email" checked>
+                  <span class="preset-chip-content">
+                    <strong>E-mails</strong>
+                    <small>nome@dominio.com</small>
+                  </span>
+                </label>
+                <label class="preset-chip-card">
+                  <input type="checkbox" id="preset-phone" value="phone" checked>
+                  <span class="preset-chip-content">
+                    <strong>Telefones</strong>
+                    <small>(DD) 90000-0000</small>
+                  </span>
+                </label>
+                <label class="preset-chip-card">
+                  <input type="checkbox" id="preset-card" value="credit_card">
+                  <span class="preset-chip-content">
+                    <strong>Cartões / Números</strong>
+                    <small>0000 0000 0000 0000</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Termos e Nomes Personalizados -->
+            <div class="custom-terms-box">
+              <span class="sub-section-title">Palavras-chave, Nomes ou Expressões Personalizadas:</span>
+              <div class="term-input-row">
+                <input type="text" id="redact-custom-term-input" class="text-input" placeholder="Ex: Nome da pessoa, empresa, endereço ou valor confidencial...">
+                <button type="button" class="btn btn-secondary" id="btn-add-redact-term">+ Adicionar Termo</button>
+              </div>
+              <div class="terms-tags-list" id="redact-terms-container">
+                <!-- Tags adicionadas dinamicamente -->
+              </div>
+            </div>
+
+            <!-- Higienização de Metadados -->
+            <div class="metadata-clean-box">
+              <label class="toggle-control" for="toggle-clean-metadata">
+                <input type="checkbox" id="toggle-clean-metadata" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Expurgar Metadados Ocultos e XMP (Recomendado)</span>
+                  <span class="toggle-desc">Apaga autor original, título, datas de criação/modificação, nomes de softwares e trilhas de auditoria ocultas.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="redact-output-filename" class="option-label">Nome do Arquivo Anonimizado</label>
+              <div class="input-with-suffix">
+                <input type="text" id="redact-output-filename" class="text-input" value="documento_anonimizado">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-redact-linearize">
+                <input type="checkbox" id="toggle-redact-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Compacta e lineariza o PDF sanitizado.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Proteção:</span>
+              <span class="summary-value" id="redact-summary-label">Expurgo Físico Ativo</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-redact">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              <span>Tarjar e Anonimizar PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2I: PDF PARA WORD (.DOCX)                              -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-pdf-to-word">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento PDF de Origem:</span>
+              <span class="active-doc-name" id="p2w-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="p2w-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="p2w-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-p2w-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2l1 4 1-4h2"/></svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Conversão Inteligente para Microsoft Word (.DOCX)</h4>
+                <p class="security-box-desc">Reconstrói o fluxo textual, estilos, títulos, tabelas e imagens em documento do Word 100% editável.</p>
+              </div>
+            </div>
+
+            <div class="conversion-options-box">
+              <span class="sub-section-title">Intervalo de Páginas:</span>
+              <div class="p2w-pages-radios">
+                <label class="enc-radio-card">
+                  <input type="radio" name="p2w-range-mode" value="all" checked id="p2w-mode-all">
+                  <div class="enc-card-body">
+                    <strong>Todas as Páginas</strong>
+                    <small>Converte o documento PDF completo para .docx</small>
+                  </div>
+                </label>
+                <label class="enc-radio-card">
+                  <input type="radio" name="p2w-range-mode" value="range" id="p2w-mode-range">
+                  <div class="enc-card-body">
+                    <strong>Faixa Específica de Páginas</strong>
+                    <small>Converte apenas um intervalo selecionado</small>
+                  </div>
+                </label>
+              </div>
+
+              <div class="custom-range-inputs hidden" id="p2w-range-inputs-box">
+                <div class="range-inputs-row">
+                  <div class="range-col">
+                    <label for="p2w-start-page" class="range-sublabel">Página Inicial</label>
+                    <input type="number" id="p2w-start-page" class="num-input" min="1" value="1">
+                  </div>
+                  <div class="range-sep">até</div>
+                  <div class="range-col">
+                    <label for="p2w-end-page" class="range-sublabel">Página Final</label>
+                    <input type="number" id="p2w-end-page" class="num-input" min="1" value="1">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="p2w-output-filename" class="option-label">Nome do Arquivo Word Gerado</label>
+              <div class="input-with-suffix">
+                <input type="text" id="p2w-output-filename" class="text-input" value="documento_convertido">
+                <span class="input-suffix">.docx</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Formato de Saída:</span>
+              <span class="summary-value" id="p2w-summary-label">Microsoft Word (.DOCX)</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-p2w">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2l1 4 1-4h2"/></svg>
+              <span>Converter para Word (.docx)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2J: WORD PARA PDF (.PDF)                               -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-word-to-pdf">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Arquivo Word de Origem:</span>
+              <span class="active-doc-name" id="w2p-doc-name">documento.docx</span>
+              <span class="active-doc-meta" id="w2p-doc-pages">~1 página</span>
+              <span class="active-doc-meta" id="w2p-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-w2p-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(236, 72, 153, 0.15); border-color: rgba(236, 72, 153, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Conversão Profissional de Word para PDF</h4>
+                <p class="security-box-desc">Converte arquivos .docx e .doc para PDF padrão A4 preservando tabelas, negritos, itálicos, cores e estrutura de parágrafos.</p>
+              </div>
+            </div>
+
+            <div class="word-info-highlight">
+              <div class="info-pill-row">
+                <span class="tech-tag">✓ Motor Dual: LibreOffice Headless + Pure-Python</span>
+                <span class="tech-tag">✓ Pronto para Impressão e Compartilhamento</span>
+                <span class="tech-tag">✓ Otimização com QPDF C++</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="w2p-output-filename" class="option-label">Nome do Arquivo PDF Gerado</label>
+              <div class="input-with-suffix">
+                <input type="text" id="w2p-output-filename" class="text-input" value="documento_convertido">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-w2p-linearize">
+                <input type="checkbox" id="toggle-w2p-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Carregamento instantâneo em leitores de PDF.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Formato de Saída:</span>
+              <span class="summary-value" id="w2p-summary-label">Documento PDF (.PDF)</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-w2p">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+              <span>Converter para PDF Agora</span>
             </button>
           </div>
         </div>
