@@ -382,7 +382,7 @@
   }
 
   // =========================================================================
-  // NAVEGAÇÃO ENTRE FERRAMENTAS
+  // NAVEGAÇÃO ENTRE FERRAMENTAS & CATEGORIAS
   // =========================================================================
   function setupNavigation() {
     const navButtons = document.querySelectorAll('.tool-nav-btn');
@@ -403,9 +403,71 @@
     });
   }
 
+  function setupCategoryRibbon() {
+    const categoryPills = document.querySelectorAll('.tool-category-pill');
+    if (!categoryPills.length) return;
+
+    categoryPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        const selectedCat = pill.dataset.cat || 'all';
+        applyCategoryFilter(selectedCat);
+      });
+    });
+  }
+
+  function applyCategoryFilter(selectedCat) {
+    const categoryPills = document.querySelectorAll('.tool-category-pill');
+    const navButtons = document.querySelectorAll('.tool-nav-btn');
+
+    // 1. Atualiza visual da pílula selecionada
+    categoryPills.forEach(p => {
+      if (p.dataset.cat === selectedCat) {
+        p.classList.add('active');
+      } else {
+        p.classList.remove('active');
+      }
+    });
+
+    let currentToolVisible = false;
+    let firstVisibleTool = null;
+
+    // 2. Mostra/Oculta apenas as ferramentas pertinentes à categoria selecionada
+    navButtons.forEach(btn => {
+      const btnCat = btn.dataset.category;
+      const isVisible = (selectedCat === 'all' || btnCat === selectedCat);
+
+      if (isVisible) {
+        btn.classList.remove('hidden-by-category');
+        btn.style.display = '';
+        if (!firstVisibleTool) {
+          firstVisibleTool = btn.dataset.tool;
+        }
+        if (btn.dataset.tool === state.activeTool) {
+          currentToolVisible = true;
+        }
+      } else {
+        btn.classList.add('hidden-by-category');
+        btn.style.display = 'none';
+      }
+    });
+
+    // 3. Se a ferramenta atual não pertence à categoria selecionada,
+    // comuta automaticamente para a primeira ferramenta visível
+    if (!currentToolVisible && firstVisibleTool) {
+      switchTool(firstVisibleTool);
+    }
+  }
+
   function switchTool(toolKey) {
     if (!TOOL_CONFIGS[toolKey]) return;
     state.activeTool = toolKey;
+
+    // Se a ferramenta alvo estiver oculta pela categoria atual, sincroniza a categoria
+    const targetBtn = document.querySelector(`.tool-nav-btn[data-tool="${toolKey}"]`);
+    if (targetBtn && targetBtn.classList.contains('hidden-by-category')) {
+      const toolCat = targetBtn.dataset.category || 'all';
+      applyCategoryFilter(toolCat);
+    }
 
     // Atualiza classes ativas na barra de ferramentas
     document.querySelectorAll('.tool-nav-btn').forEach(btn => {
