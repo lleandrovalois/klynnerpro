@@ -20,8 +20,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia código da aplicação
 COPY . .
 
-# Garante a existência do diretório temporário
-RUN mkdir -p temp_workspaces
+# Garante a existência dos diretórios temporário e de dados
+RUN mkdir -p temp_workspaces data
 
 # Porta padrão exposta
 EXPOSE 8000

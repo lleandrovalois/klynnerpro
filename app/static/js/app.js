@@ -367,6 +367,7 @@
     setupPdfToWordEvents();
     setupWordToPdfEvents();
     setupModalAndPix();
+    setupVisitCounter();
 
     // Suporte a hash da URL (ex: #split, #protect, #pdf-to-word)
     const hash = window.location.hash.replace('#', '');
@@ -2640,6 +2641,49 @@
         copyToClipboard(pixPayloadInput.value, 'Código PIX Copia e Cola copiado com sucesso!');
       });
     }
+  }
+
+  // =========================================================================
+  // CONTADOR DE VISITAS PERSISTENTE
+  // =========================================================================
+  function setupVisitCounter() {
+    const counterPillText = document.getElementById('visit-counter-text');
+    const footerVisitsText = document.getElementById('footer-visits-count');
+    if (!counterPillText && !footerVisitsText) return;
+
+    let visitorToken = null;
+    try {
+      visitorToken = localStorage.getItem('klynner_visitor_token');
+      if (!visitorToken) {
+        visitorToken = 'vis_' + Math.random().toString(36).substring(2, 12) + '_' + Date.now();
+        localStorage.setItem('klynner_visitor_token', visitorToken);
+      }
+    } catch (e) {
+      visitorToken = 'vis_' + Date.now();
+    }
+
+    fetch('/api/stats/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitor_token: visitorToken })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.stats) {
+          const total = data.stats.total_visits || 1;
+          const formatted = Number(total).toLocaleString('pt-BR');
+          if (counterPillText) {
+            counterPillText.textContent = `${formatted} visitas`;
+          }
+          if (footerVisitsText) {
+            footerVisitsText.textContent = `${formatted} acessos registrados`;
+          }
+        }
+      })
+      .catch(err => {
+        console.debug('Analytics offline:', err);
+        if (counterPillText) counterPillText.textContent = '1+ visitas';
+      });
   }
 
   // =========================================================================

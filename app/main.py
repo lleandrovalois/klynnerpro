@@ -10,12 +10,13 @@ from typing import Any, Dict, List, Optional, Union
 import uuid
 import urllib.parse
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from app.analytics import get_current_stats, init_analytics_db, record_page_visit
 from app.merger import execute_pdf_merge
 from app.splitter import execute_pdf_split
 from app.organizer import execute_pdf_organize
@@ -58,8 +59,9 @@ async def periodic_cleanup_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_analytics_db()
     cleanup_task = asyncio.create_task(periodic_cleanup_task())
-    logger.info("Klynner PDF iniciado com suporte a Menu de Documentos e QPDF C++.")
+    logger.info("Klynner PDF iniciado com suporte a Menu de Documentos, QPDF C++ e Analytics.")
     yield
     cleanup_task.cancel()
     try:
@@ -926,3 +928,24 @@ async def health_check():
         "menu_system": "Ativo (Página de Menu Visual + Marcadores com UseOutlines)",
         "linearization": "Suportado (Fast Web View)",
     }
+
+
+class VisitRequest(BaseModel):
+    visitor_token: Optional[str] = None
+
+
+@app.post("/api/stats/visit")
+async def record_visit_endpoint(request: Request, body: Optional[VisitRequest] = None):
+    token = body.visitor_token if body else None
+    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "127.0.0.1")
+    if "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    stats = await asyncio.to_thread(record_page_visit, token, client_ip)
+    return JSONResponse({"success": True, "stats": stats})
+
+
+@app.get("/api/stats")
+async def get_stats_endpoint():
+    stats = await asyncio.to_thread(get_current_stats)
+    return JSONResponse({"success": True, "stats": stats})
+

@@ -239,6 +239,12 @@ body {
   background: rgba(56, 189, 248, 0.08);
 }
 
+.pill-purple {
+  color: #C084FC;
+  border-color: rgba(192, 132, 252, 0.3);
+  background: rgba(192, 132, 252, 0.08);
+}
+
 /* Main Container */
 .main-container {
   max-width: 980px;

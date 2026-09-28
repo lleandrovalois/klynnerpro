@@ -5,3 +5,5 @@ temp_workspaces/*
 !temp_workspaces/.gitkeep
 .DS_Store
 *.log
+data/*.db
+*.db
