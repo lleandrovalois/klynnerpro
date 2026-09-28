@@ -79,6 +79,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_cache_control_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+    elif request.url.path == "/":
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
@@ -150,7 +162,27 @@ async def serve_index():
     index_file = TEMPLATES_DIR / "index.html"
     if not index_file.exists():
         raise HTTPException(status_code=404, detail="Template index.html não encontrado")
-    return index_file.read_text(encoding="utf-8")
+    
+    content = index_file.read_text(encoding="utf-8")
+    
+    # Versionamento dinâmico baseado na modificação dos arquivos estáticos para quebra de cache infalível
+    import re
+    css_path = STATIC_DIR / "css" / "style.css"
+    js_path = STATIC_DIR / "js" / "app.js"
+    v_css = int(css_path.stat().st_mtime) if css_path.exists() else 2100
+    v_js = int(js_path.stat().st_mtime) if js_path.exists() else 2100
+    
+    content = re.sub(r'/static/css/style\.css(\?[^"\'\s>]*)?', f'/static/css/style.css?v={v_css}', content)
+    content = re.sub(r'/static/js/app\.js(\?[^"\'\s>]*)?', f'/static/js/app.js?v={v_js}', content)
+    
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
 
 
 @app.post("/api/upload")
