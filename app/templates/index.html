@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Klynner PDF - Unificador Inteligente de Grandes Documentos</title>
-  <meta name="description" content="Klynner PDF: junte grandes arquivos PDF com geração automática de Menu de Documentos, marcadores clicáveis no leitor e motor QPDF de alta performance.">
+  <title>Klynner PDF PRO - Suíte de Alta Performance para Documentos PDF</title>
+  <meta name="description" content="Klynner PDF PRO: Junte grandes PDFs com Menu e Marcadores, divida por intervalos ou páginas avulsas, organize com arrastar-e-soltar, gire e extraia páginas com velocidade máxima QPDF.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
+  <!-- PDF.js para renderização de miniaturas no navegador com zero sobrecarga de RAM do servidor -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
   <div class="background-glows">
@@ -38,14 +40,14 @@
           </div>
           <div class="brand-text">
             <span class="brand-title">Klynner <span class="badge-pro">PRO</span></span>
-            <span class="brand-tagline">União inteligente e limpa de documentos</span>
+            <span class="brand-tagline">Suíte inteligente e limpa de PDFs</span>
           </div>
         </div>
 
         <div class="system-pills">
           <div class="pill pill-green" id="engine-status-pill">
             <span class="pill-dot"></span>
-            <span>Menu Interativo Ativo</span>
+            <span id="engine-status-text">Motor QPDF C++ Ativo</span>
           </div>
           <div class="pill pill-blue">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
@@ -61,9 +63,79 @@
 
     <!-- Main Content -->
     <main class="main-container">
+
+      <!-- MENU DE FUNCIONALIDADES (Barra Superior de Navegação das Ferramentas) -->
+      <nav class="tools-nav-bar" id="tools-nav-bar" aria-label="Menu de Ferramentas PDF">
+        <div class="tools-nav-container">
+          <button type="button" class="tool-nav-btn active" data-tool="merge" id="tool-nav-merge" title="Junte múltiplos PDFs em um único com Menu de Documentos">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Juntar PDF</span>
+              <span class="tool-btn-sub">Menu & Marcadores</span>
+            </div>
+          </button>
+
+          <button type="button" class="tool-nav-btn" data-tool="split" id="tool-nav-split" title="Divida seu PDF por intervalos ou exporte cada página avulsa">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
+                <line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Dividir PDF</span>
+              <span class="tool-btn-sub">Intervalos ou Avulsas</span>
+            </div>
+          </button>
+
+          <button type="button" class="tool-nav-btn" data-tool="organize" id="tool-nav-organize" title="Reordene com arrastar-e-soltar, duplique ou exclua páginas">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Organizar Páginas</span>
+              <span class="tool-btn-sub">Grade & Drag-and-Drop</span>
+            </div>
+          </button>
+
+          <button type="button" class="tool-nav-btn" data-tool="rotate" id="tool-nav-rotate" title="Gire páginas individualmente ou em lote (90°, 180°, 270°)">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Girar Páginas</span>
+              <span class="tool-btn-sub">90°, 180° ou Lote</span>
+            </div>
+          </button>
+
+          <button type="button" class="tool-nav-btn" data-tool="extract" id="tool-nav-extract" title="Selecione páginas específicas para gerar um novo PDF ou ZIP">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                <polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Extrair Páginas</span>
+              <span class="tool-btn-sub">Novo PDF Enxuto</span>
+            </div>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Hero Dinâmico que se adapta à funcionalidade ativa -->
       <div class="hero-section">
-        <h1 class="hero-title">Junte arquivos PDF grandes com Menu de Documentos</h1>
-        <p class="hero-subtitle">
+        <h1 class="hero-title" id="hero-title">Junte arquivos PDF grandes com Menu de Documentos</h1>
+        <p class="hero-subtitle" id="hero-subtitle">
           O arquivo final incluirá um <strong>Menu Interativo</strong> onde cada item corresponde ao nome do arquivo original, com navegação instantânea tanto na primeira página quanto no menu lateral do leitor de PDF.
         </p>
       </div>
@@ -71,21 +143,21 @@
       <!-- Card Central da Aplicação -->
       <section class="card-workspace" id="workspace-card">
         
-        <!-- Estado 1: Upload Dropzone -->
+        <!-- Estado 1: Upload Dropzone (Compartilhado e Contextual) -->
         <div class="dropzone-area" id="dropzone">
           <input type="file" id="file-input" multiple accept=".pdf,application/pdf" class="file-input-hidden">
           
           <div class="dropzone-content">
-            <div class="dropzone-icon-wrapper">
+            <div class="dropzone-icon-wrapper" id="dropzone-icon-wrapper">
               <svg class="dropzone-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="17 8 12 3 7 8"/>
                 <line x1="12" y1="3" x2="12" y2="15"/>
               </svg>
             </div>
-            <h2 class="dropzone-heading">Arraste seus arquivos PDF aqui</h2>
-            <p class="dropzone-sub">ou clique para selecionar do computador</p>
-            <div class="dropzone-badges">
+            <h2 class="dropzone-heading" id="dropzone-heading">Arraste seus arquivos PDF aqui</h2>
+            <p class="dropzone-sub" id="dropzone-sub">ou clique para selecionar do computador</p>
+            <div class="dropzone-badges" id="dropzone-badges">
               <span class="dropzone-badge">Menu de itens por arquivo</span>
               <span class="dropzone-badge">Suporte a múltiplos gigabytes</span>
               <span class="dropzone-badge">Reordenação interativa</span>
@@ -93,8 +165,10 @@
           </div>
         </div>
 
-        <!-- Estado 2: Lista de Arquivos e Controles de Ordenação e Menu -->
-        <div class="files-stage hidden" id="files-stage">
+        <!-- ============================================================== -->
+        <!-- ESTADO 2.1: WORKSPACE JUNTAR PDF (MERGE)                       -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-merge">
           <div class="files-header">
             <div class="files-title-box">
               <h3 class="files-section-title">
@@ -173,7 +247,372 @@
           </div>
         </div>
 
-        <!-- Estado 3: Progresso de Processamento -->
+        <!-- ============================================================== -->
+        <!-- ESTADO 2.2: WORKSPACE DIVIDIR PDF (SPLIT)                      -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-split">
+          <div class="active-doc-bar">
+            <div class="doc-badge-info">
+              <div class="doc-icon-mini">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div class="doc-meta-texts">
+                <strong class="doc-meta-name" id="split-doc-name">documento.pdf</strong>
+                <span class="doc-meta-details"><span id="split-doc-pages">0</span> páginas &bull; <span id="split-doc-size">0 MB</span></span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm btn-change-doc" id="btn-split-change-doc">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Trocar Documento
+            </button>
+          </div>
+
+          <!-- Seletor de Modo de Divisão -->
+          <div class="split-mode-selector">
+            <label class="mode-pill">
+              <input type="radio" name="split-mode" value="ranges" checked id="split-mode-ranges">
+              <span class="mode-pill-content">
+                <strong>Por Intervalos</strong>
+                <small>ex: 1-5, 6-10 ou faixas personalizadas</small>
+              </span>
+            </label>
+            <label class="mode-pill">
+              <input type="radio" name="split-mode" value="all_pages" id="split-mode-all">
+              <span class="mode-pill-content">
+                <strong>Todas as Páginas Avulsas</strong>
+                <small>Exporta cada página em um PDF avulso (.ZIP)</small>
+              </span>
+            </label>
+            <label class="mode-pill">
+              <input type="radio" name="split-mode" value="specific" id="split-mode-specific">
+              <span class="mode-pill-content">
+                <strong>Páginas Específicas</strong>
+                <small>Separar páginas pontuais (ex: 2, 4, 7-9)</small>
+              </span>
+            </label>
+          </div>
+
+          <!-- Configuração de Intervalos -->
+          <div class="split-controls-box" id="split-controls-ranges">
+            <label for="split-ranges-input" class="option-label">Intervalos de Páginas a Separar</label>
+            <div class="input-with-helper">
+              <input type="text" id="split-ranges-input" class="text-input" placeholder="ex: 1-5, 6-10, 15-20" value="1-3, 4-6">
+              <span class="input-hint">Separe intervalos com vírgula. Ex: <strong>1-5, 6-10</strong> ou <strong>1, 3, 5-8</strong></span>
+            </div>
+            
+            <div class="ranges-preview-container">
+              <span class="preview-label">Visualização das partes resultantes:</span>
+              <div class="ranges-chips-list" id="ranges-chips-list">
+                <!-- Preenchido dinamicamente via JS -->
+              </div>
+            </div>
+          </div>
+
+          <div class="split-controls-box hidden" id="split-controls-all">
+            <div class="info-alert-box">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <div>
+                <strong>Exportação Avulsa (Burst)</strong>
+                <p>Todas as <span id="split-burst-count" class="highlight-num">0</span> páginas deste documento serão separadas em arquivos PDF individuais (ex: <em>pagina_01.pdf</em>, <em>pagina_02.pdf</em>) e compactadas em um pacote ZIP para download rápido.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opções de Saída -->
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="split-output-filename" class="option-label">Nome Base dos Arquivos Gerados</label>
+              <div class="input-with-suffix">
+                <input type="text" id="split-output-filename" class="text-input" value="documento_dividido">
+                <span class="input-suffix">.zip / .pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-split-linearize">
+                <input type="checkbox" id="toggle-split-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Otimiza os PDFs divididos para carregamento imediato em navegadores web.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-split">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+              <span>Dividir PDF Agora</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2.3: WORKSPACE ORGANIZAR E REORDENAR PÁGINAS            -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-organize">
+          <div class="active-doc-bar">
+            <div class="doc-badge-info">
+              <div class="doc-icon-mini">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+              </div>
+              <div class="doc-meta-texts">
+                <strong class="doc-meta-name" id="organize-doc-name">documento.pdf</strong>
+                <span class="doc-meta-details"><span id="organize-pages-counter">0</span> páginas no novo documento &bull; <span id="organize-doc-size">0 MB</span></span>
+              </div>
+            </div>
+            <div class="doc-bar-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-organize-reset" title="Restaurar a sequência original do documento">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                Ordem Original
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm btn-change-doc" id="btn-organize-change-doc">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Trocar Arquivo
+              </button>
+            </div>
+          </div>
+
+          <div class="grid-instructions-bar">
+            <span>Arraste as miniaturas para reordenar. Use os botões no card para girar (🔄), duplicar (➕) ou excluir (🗑️) páginas.</span>
+          </div>
+
+          <!-- Loading das miniaturas -->
+          <div class="thumbnails-loading" id="organize-loading">
+            <div class="spinner-mini"></div>
+            <span>Renderizando miniaturas das páginas com alta resolução...</span>
+          </div>
+
+          <!-- Grade de Miniaturas Drag & Drop -->
+          <div class="thumbnails-grid" id="organize-grid" aria-label="Grade de miniaturas de páginas do PDF">
+            <!-- Cards de páginas injetados dinamicamente -->
+          </div>
+
+          <!-- Configurações e Ação de Salvar -->
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="organize-output-filename" class="option-label">Nome do Arquivo Reorganizado</label>
+              <div class="input-with-suffix">
+                <input type="text" id="organize-output-filename" class="text-input" value="documento_reorganizado">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-organize-linearize">
+                <input type="checkbox" id="toggle-organize-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Otimiza a leitura imediata em leitores de PDF.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Páginas no resultado:</span>
+              <span class="summary-value" id="organize-total-label">0 páginas</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-organize">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <span>Salvar PDF Reorganizado</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2.4: WORKSPACE GIRAR PÁGINAS (ROTATE)                   -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-rotate">
+          <div class="active-doc-bar">
+            <div class="doc-badge-info">
+              <div class="doc-icon-mini">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              </div>
+              <div class="doc-meta-texts">
+                <strong class="doc-meta-name" id="rotate-doc-name">documento.pdf</strong>
+                <span class="doc-meta-details"><span id="rotate-doc-pages">0</span> páginas &bull; <span id="rotate-doc-size">0 MB</span></span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm btn-change-doc" id="btn-rotate-change-doc">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Trocar Documento
+            </button>
+          </div>
+
+          <!-- Barra de Rotação em Lote -->
+          <div class="batch-rotate-toolbar">
+            <div class="batch-group-title">Ações em Lote:</div>
+            <div class="batch-buttons">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-rotate-all-cw" title="Girar todas as páginas 90° no sentido horário">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                Todas +90° Horário
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-rotate-all-ccw" title="Girar todas as páginas 90° no sentido anti-horário">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38L-2.4 1.52"/></svg>
+                Todas -90° Anti-horário
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-rotate-all-180" title="Girar todas as páginas 180° (de cabeça para baixo)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                Todas 180°
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-rotate-evens" title="Girar apenas páginas pares (2, 4, 6...)">
+                Páginas Pares (+90°)
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-rotate-odds" title="Girar apenas páginas ímpares (1, 3, 5...)">
+                Páginas Ímpares (+90°)
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm btn-danger-hover" id="btn-rotate-reset" title="Restaurar orientação original de todas as páginas">
+                Resetar Todas
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading das miniaturas -->
+          <div class="thumbnails-loading" id="rotate-loading">
+            <div class="spinner-mini"></div>
+            <span>Carregando páginas para visualização e rotação...</span>
+          </div>
+
+          <!-- Grade de Páginas para Rotação -->
+          <div class="thumbnails-grid" id="rotate-grid" aria-label="Grade de rotação de páginas">
+            <!-- Cards de rotação injetados dinamicamente -->
+          </div>
+
+          <!-- Opções e Ação de Salvar -->
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="rotate-output-filename" class="option-label">Nome do Arquivo Rotacionado</label>
+              <div class="input-with-suffix">
+                <input type="text" id="rotate-output-filename" class="text-input" value="documento_rotacionado">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-rotate-linearize">
+                <input type="checkbox" id="toggle-rotate-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Otimiza para abertura veloz após a rotação.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Páginas com rotação modificada:</span>
+              <span class="summary-value" id="rotate-modified-label">0 páginas</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-rotate">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>Aplicar Rotações e Baixar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2.5: WORKSPACE EXTRAIR PÁGINAS (EXTRACT)                -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-extract">
+          <div class="active-doc-bar">
+            <div class="doc-badge-info">
+              <div class="doc-icon-mini">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+              </div>
+              <div class="doc-meta-texts">
+                <strong class="doc-meta-name" id="extract-doc-name">documento.pdf</strong>
+                <span class="doc-meta-details"><span id="extract-doc-pages">0</span> páginas totais &bull; <span id="extract-doc-size">0 MB</span></span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm btn-change-doc" id="btn-extract-change-doc">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Trocar Documento
+            </button>
+          </div>
+
+          <!-- Barra de Controles Rápidos de Seleção -->
+          <div class="extract-selection-bar">
+            <div class="selection-input-box">
+              <label for="extract-ranges-input" class="selection-label">Páginas Selecionadas:</label>
+              <input type="text" id="extract-ranges-input" class="text-input" placeholder="ex: 1, 3, 5-8" value="">
+            </div>
+            <div class="selection-quick-chips">
+              <button type="button" class="chip-btn" id="btn-extract-all">Selecionar Todas</button>
+              <button type="button" class="chip-btn" id="btn-extract-none">Desmarcar Todas</button>
+              <button type="button" class="chip-btn" id="btn-extract-invert">Inverter Seleção</button>
+              <button type="button" class="chip-btn" id="btn-extract-evens">Apenas Pares</button>
+              <button type="button" class="chip-btn" id="btn-extract-odds">Apenas Ímpares</button>
+            </div>
+          </div>
+
+          <!-- Modo de Extração (PDF único vs Arquivos Avulsos ZIP) -->
+          <div class="extract-mode-selector">
+            <label class="mode-pill">
+              <input type="radio" name="extract-mode" value="merge" checked id="extract-mode-merge">
+              <span class="mode-pill-content">
+                <strong>Mesclar em 1 único PDF</strong>
+                <small>Gera um novo documento contendo apenas as páginas selecionadas</small>
+              </span>
+            </label>
+            <label class="mode-pill">
+              <input type="radio" name="extract-mode" value="split" id="extract-mode-split">
+              <span class="mode-pill-content">
+                <strong>Exportar páginas avulsas (.ZIP)</strong>
+                <small>Salva cada página selecionada em um arquivo PDF individual compactado</small>
+              </span>
+            </label>
+          </div>
+
+          <!-- Loading das miniaturas -->
+          <div class="thumbnails-loading" id="extract-loading">
+            <div class="spinner-mini"></div>
+            <span>Carregando páginas para seleção visual...</span>
+          </div>
+
+          <!-- Grade de Seleção Visual de Páginas -->
+          <div class="thumbnails-grid" id="extract-grid" aria-label="Grade de seleção de páginas para extração">
+            <!-- Cards de extração injetados dinamicamente -->
+          </div>
+
+          <!-- Opções e Ação de Extração -->
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="extract-output-filename" class="option-label">Nome do Arquivo Extraído</label>
+              <div class="input-with-suffix">
+                <input type="text" id="extract-output-filename" class="text-input" value="paginas_extraidas">
+                <span class="input-suffix">.pdf / .zip</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-extract-linearize">
+                <input type="checkbox" id="toggle-extract-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Otimiza para carregamento imediato.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Seleção atual:</span>
+              <span class="summary-value" id="extract-selected-label">0 páginas selecionadas</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-extract">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+              <span>Extrair Páginas Agora</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 3: PROGRESSO DE PROCESSAMENTO (COMPARTILHADO)           -->
+        <!-- ============================================================== -->
         <div class="processing-stage hidden" id="processing-stage">
           <div class="processing-spinner-box">
             <div class="pulse-ring"></div>
@@ -184,35 +623,37 @@
             </div>
           </div>
           
-          <h3 class="processing-title" id="processing-status-title">Processando e gerando o menu...</h3>
-          <p class="processing-subtitle" id="processing-status-desc">Construindo o sumário e unificando páginas com QPDF...</p>
+          <h3 class="processing-title" id="processing-status-title">Processando documento...</h3>
+          <p class="processing-subtitle" id="processing-status-desc">Executando operação com motor C++ QPDF de alta velocidade...</p>
           
           <div class="progress-bar-container">
             <div class="progress-bar-fill" id="progress-fill"></div>
           </div>
           <span class="progress-percentage" id="progress-pct">0%</span>
 
-          <div class="processing-steps">
+          <div class="processing-steps" id="processing-steps-container">
             <div class="step-item step-completed" id="step-1">
               <span class="step-bullet">✓</span>
-              <span>Upload e gravação segura dos arquivos em disco rígido</span>
+              <span id="step-1-text">Carregamento e validação dos dados em disco</span>
             </div>
             <div class="step-item step-active" id="step-2">
               <span class="step-bullet">⚙</span>
-              <span>Cálculo estrutural de páginas e geração da página de Menu</span>
+              <span id="step-2-text">Processamento das páginas com motor QPDF</span>
             </div>
             <div class="step-item" id="step-3">
               <span class="step-bullet">⚙</span>
-              <span>Inserção dos hiperlinks clicáveis e marcadores laterais</span>
+              <span id="step-3-text">Otimização binária e preservação de metadados</span>
             </div>
             <div class="step-item" id="step-4">
               <span class="step-bullet">⚙</span>
-              <span>Linearização e configuração de abertura automática do Menu</span>
+              <span id="step-4-text">Finalização do arquivo e geração do link de download</span>
             </div>
           </div>
         </div>
 
-        <!-- Estado 4: Sucesso e Disponibilização do Arquivo Unificado -->
+        <!-- ============================================================== -->
+        <!-- ESTADO 4: SUCESSO E DISPONIBILIZAÇÃO (COMPARTILHADO)           -->
+        <!-- ============================================================== -->
         <div class="result-stage hidden" id="result-stage">
           <div class="success-icon-badge">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -220,17 +661,17 @@
             </svg>
           </div>
 
-          <h3 class="result-title">PDF com Menu de Documentos Criado!</h3>
-          <p class="result-filename" id="result-filename-display">documento_unificado.pdf</p>
+          <h3 class="result-title" id="result-status-title">Arquivo Processado com Sucesso!</h3>
+          <p class="result-filename" id="result-filename-display">documento.pdf</p>
 
           <!-- Métricas de Desempenho -->
           <div class="metrics-grid">
             <div class="metric-card">
-              <span class="metric-label">Itens no Menu</span>
+              <span class="metric-label" id="metric-label-1">Itens / Páginas</span>
               <span class="metric-val" id="metric-files">0</span>
             </div>
             <div class="metric-card">
-              <span class="metric-label">Total de Páginas</span>
+              <span class="metric-label" id="metric-label-2">Total de Páginas</span>
               <span class="metric-val" id="metric-pages">0</span>
             </div>
             <div class="metric-card">
@@ -246,7 +687,7 @@
           <div class="result-actions">
             <a href="#" id="btn-download" class="btn btn-primary btn-lg" download>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              <span>Baixar Arquivo com Menu</span>
+              <span id="btn-download-text">Baixar Arquivo</span>
             </a>
 
             <button type="button" id="btn-preview" class="btn btn-secondary btn-lg">
@@ -256,7 +697,7 @@
 
             <button type="button" id="btn-reset" class="btn btn-ghost btn-lg">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-              <span>Juntar Novos Arquivos</span>
+              <span id="btn-reset-text">Processar Novo Arquivo</span>
             </button>
           </div>
 
@@ -273,16 +714,16 @@
           <div class="feature-icon icon-cyan">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
           </div>
-          <h4 class="feature-title">Menu Duplo de Navegação</h4>
-          <p class="feature-text">Gera uma página 1 com sumário visual clicável além dos marcadores da barra lateral do leitor (Acrobat/Edge) que já abrem expandidos automaticamente.</p>
+          <h4 class="feature-title">Suíte Completa de Ferramentas</h4>
+          <p class="feature-text">Junte com Menu de Documentos, divida por faixas, organize páginas visualmente com drag-and-drop, gire ou extraia páginas selecionadas.</p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon icon-violet">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
           </div>
-          <h4 class="feature-title">Streaming Zero-RAM</h4>
-          <p class="feature-text">O pipeline grava em disco em chunks de 1MB e concatena no nível binário com motor C++ QPDF, suportando múltiplos gigabytes sem consumir excesso de memória RAM.</p>
+          <h4 class="feature-title">Streaming Zero-RAM (QPDF C++)</h4>
+          <p class="feature-text">O pipeline grava em disco em chunks de 1MB e manipula no nível binário com motor C++ QPDF, suportando múltiplos gigabytes sem consumir excesso de memória RAM.</p>
         </div>
 
         <div class="feature-card">
@@ -290,7 +731,7 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           </div>
           <h4 class="feature-title">Acesso Rápido (Linearização)</h4>
-          <p class="feature-text">Abertura instantânea da primeira página e do menu em leitores de PDF, ideal para relatórios volumosos, catálogos técnicos e processos judiciais.</p>
+          <p class="feature-text">Todos os arquivos são otimizados com Fast Web View para abertura imediata nos leitores de PDF, sem travar documentos de centenas de páginas.</p>
         </div>
       </section>
 
@@ -360,7 +801,7 @@
       <div class="modal-container">
         <div class="modal-header">
           <div class="modal-title-box">
-            <h3 class="modal-title" id="modal-title">Pré-Visualização do Documento Unificado</h3>
+            <h3 class="modal-title" id="modal-title">Pré-Visualização do Documento</h3>
             <span class="modal-badge" id="modal-filename">documento.pdf</span>
           </div>
           <div class="modal-actions">
@@ -382,7 +823,7 @@
     <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
     <footer class="app-footer">
-      <p>Klynner PDF &bull; União Inteligente e Limpa de Documentos &bull; Versão 1.2.0</p>
+      <p>Klynner PDF &bull; Suíte de Alta Performance para Documentos &bull; Versão 2.0.0</p>
     </footer>
   </div>
 
