@@ -137,7 +137,7 @@
     const pixKeyInput = document.getElementById('pix-key-input');
     if (btnCopyPixKey && pixKeyInput) {
       btnCopyPixKey.addEventListener('click', () => {
-        copyToClipboard(pixKeyInput.value, 'Chave PIX copiada para a área de transferência! Muito obrigado pelo apoio! ☕');
+        copyToClipboard(pixKeyInput.value, 'Chave PIX copiada para a área de transferência! Obrigado pelo apoio ao projeto.');
       });
     }
 
@@ -145,7 +145,7 @@
     const pixPayloadInput = document.getElementById('pix-payload-input');
     if (btnCopyPixPayload && pixPayloadInput) {
       btnCopyPixPayload.addEventListener('click', () => {
-        copyToClipboard(pixPayloadInput.value, 'Código PIX Copia e Cola copiado! Abra o app do seu banco para colar. ☕');
+        copyToClipboard(pixPayloadInput.value, 'Código PIX Copia e Cola copiado com sucesso! Abra o app do seu banco para colar.');
       });
     }
   }
