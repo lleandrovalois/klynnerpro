@@ -1,0 +1,12 @@
+services:
+  klynnerpro:
+    build: .
+    container_name: klynnerpro
+    restart: always
+    ports:
+      - "80:8000"
+    environment:
+      - PORT=8000
+    volumes:
+      - ./data:/app/data
+      - ./temp_workspaces:/app/temp_workspaces
