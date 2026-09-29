@@ -213,214 +213,95 @@
     <!-- Main Content -->
     <main class="main-container">
 
-      <!-- MENU DE FUNCIONALIDADES (Barra Superior de Navegação das Ferramentas) -->
-      <nav class="tools-nav-bar" id="tools-nav-bar" aria-label="Menu de Ferramentas PDF">
-        <div class="tool-categories-ribbon" id="tool-categories-ribbon">
-          <button type="button" class="tool-category-pill active" data-cat="all">Todas as Ferramentas (14)</button>
-          <button type="button" class="tool-category-pill" data-cat="pages">Edição & Páginas (7)</button>
-          <button type="button" class="tool-category-pill" data-cat="security">Segurança & Marcação (4)</button>
-          <button type="button" class="tool-category-pill" data-cat="convert">Conversão & Imagens (3)</button>
-        </div>
-
-        <div class="tools-nav-container">
+      <!-- BARRA DE NAVEGAÇÃO COMPACTA (Atalhos Principais + Botão Todas as Ferramentas) -->
+      <nav class="compact-tools-bar" id="compact-tools-bar" aria-label="Menu de Ferramentas PDF">
+        <div class="compact-quick-tools" id="compact-quick-tools">
           <!-- 1. Juntar PDF -->
-          <button type="button" class="tool-nav-btn active" data-tool="merge" data-category="pages" id="tool-nav-merge" title="Junte múltiplos PDFs em um único com Menu de Documentos">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button type="button" class="tool-nav-btn compact-tool-btn active" data-tool="merge" title="Junte múltiplos PDFs em um único com Menu de Documentos">
+            <div class="compact-tool-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
               </svg>
             </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Juntar PDF</span>
-              <span class="tool-btn-sub">Menu & Marcadores</span>
-            </div>
+            <span class="compact-tool-label">Juntar PDF</span>
           </button>
 
           <!-- 2. Dividir PDF -->
-          <button type="button" class="tool-nav-btn" data-tool="split" data-category="pages" id="tool-nav-split" title="Divida seu PDF por intervalos ou exporte cada página avulsa">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button type="button" class="tool-nav-btn compact-tool-btn" data-tool="split" title="Divida seu PDF por intervalos ou exporte cada página avulsa">
+            <div class="compact-tool-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
                 <line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>
               </svg>
             </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Dividir PDF</span>
-              <span class="tool-btn-sub">Intervalos ou Avulsas</span>
-            </div>
+            <span class="compact-tool-label">Dividir PDF</span>
           </button>
 
           <!-- 3. Organizar Páginas -->
-          <button type="button" class="tool-nav-btn" data-tool="organize" data-category="pages" id="tool-nav-organize" title="Reordene com arrastar-e-soltar, duplique ou exclua páginas">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button type="button" class="tool-nav-btn compact-tool-btn" data-tool="organize" title="Reordene com arrastar-e-soltar, duplique ou exclua páginas">
+            <div class="compact-tool-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
                 <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
               </svg>
             </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Organizar Páginas</span>
-              <span class="tool-btn-sub">Grade & Drag-and-Drop</span>
-            </div>
+            <span class="compact-tool-label">Organizar Páginas</span>
           </button>
 
-          <!-- 4. Girar Páginas -->
-          <button type="button" class="tool-nav-btn" data-tool="rotate" data-category="pages" id="tool-nav-rotate" title="Gire páginas individualmente ou em lote (90°, 180°, 270°)">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-              </svg>
-            </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Girar Páginas</span>
-              <span class="tool-btn-sub">90°, 180° ou Lote</span>
-            </div>
-          </button>
-
-          <!-- 5. Extrair Páginas -->
-          <button type="button" class="tool-nav-btn" data-tool="extract" data-category="pages" id="tool-nav-extract" title="Selecione páginas específicas para gerar um novo PDF ou ZIP">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                <polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/>
-              </svg>
-            </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Extrair Páginas</span>
-              <span class="tool-btn-sub">Novo PDF Enxuto</span>
-            </div>
-          </button>
-
-          <!-- 6. Proteger PDF -->
-          <button type="button" class="tool-nav-btn" data-tool="protect" data-category="security" id="tool-nav-protect" title="Proteja com criptografia AES-256 e restrinja impressão, cópia ou edição">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Proteger PDF</span>
-              <span class="tool-btn-sub">AES-256 & Permissões</span>
-            </div>
-          </button>
-
-          <!-- 7. Desproteger PDF -->
-          <button type="button" class="tool-nav-btn" data-tool="unlock" data-category="security" id="tool-nav-unlock" title="Remova senhas e restrições de permissão de documentos conhecidos">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
-              </svg>
-            </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Desproteger PDF</span>
-              <span class="tool-btn-sub">Remover Senhas</span>
-            </div>
-          </button>
-
-          <!-- 8. Redigir / Tarjar -->
-          <button type="button" class="tool-nav-btn" data-tool="redact" data-category="security" id="tool-nav-redact" title="Tarje e remova irreversivelmente dados sensíveis (CPF, emails, telefones) e metadados">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                <line x1="8" y1="12" x2="16" y2="12"/>
-              </svg>
-            </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Redigir / Tarjar</span>
-              <span class="tool-btn-sub">Anonimizar Dados</span>
-            </div>
-          </button>
-
-          <!-- 9. PDF para Word -->
-          <button type="button" class="tool-nav-btn" data-tool="pdf-to-word" data-category="convert" id="tool-nav-p2w" title="Converta documentos PDF em arquivos Microsoft Word (.docx) editáveis">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <path d="M8 13h2l1 4 1-4h2"/>
-              </svg>
-            </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">PDF para Word</span>
-              <span class="tool-btn-sub">Converter em .DOCX</span>
-            </div>
-          </button>
-
-          <!-- 10. Word para PDF -->
-          <button type="button" class="tool-nav-btn" data-tool="word-to-pdf" data-category="convert" id="tool-nav-w2p" title="Converta arquivos Microsoft Word (.docx, .doc) em documentos PDF">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
-            </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Word para PDF</span>
-              <span class="tool-btn-sub">Converter em PDF</span>
-            </div>
-          </button>
-
-          <!-- 11. Imagem para PDF -->
-          <button type="button" class="tool-nav-btn" data-tool="image-to-pdf" data-category="convert" id="tool-nav-i2p" title="Converta imagens JPG, PNG, WebP para um documento PDF estruturado">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-            </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Imagem para PDF</span>
-              <span class="tool-btn-sub">JPG, PNG & WebP</span>
-            </div>
-          </button>
-
-          <!-- 12. Marca d'água -->
-          <button type="button" class="tool-nav-btn" data-tool="watermark" data-category="security" id="tool-nav-watermark" title="Insira marcas d'água de texto ou logotipo com transparência e rotação">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                <circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/>
-              </svg>
-            </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Marca d'água</span>
-              <span class="tool-btn-sub">Texto ou Logotipo</span>
-            </div>
-          </button>
-
-          <!-- 13. Personalizar Rodapé & Numeração -->
-          <button type="button" class="tool-nav-btn" data-tool="footer" data-category="pages" id="tool-nav-footer" title="Adicione rodapé, cabeçalho e numeração de páginas personalizada com tags">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <!-- 4. Personalizar Rodapé -->
+          <button type="button" class="tool-nav-btn compact-tool-btn" data-tool="footer" title="Adicione rodapé, cabeçalho e numeração de páginas personalizada com tags">
+            <div class="compact-tool-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                 <line x1="7" y1="18" x2="17" y2="18"/>
                 <line x1="12" y1="14" x2="12" y2="15"/>
               </svg>
             </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Personalizar Rodapé</span>
-              <span class="tool-btn-sub">Texto & Numeração</span>
-            </div>
+            <span class="compact-tool-label">Rodapé & Numeração</span>
           </button>
 
-          <!-- 14. Remover Rodapé & Cabeçalho -->
-          <button type="button" class="tool-nav-btn" data-tool="remove-footer" data-category="pages" id="tool-nav-remove-footer" title="Remova rodapés, cabeçalhos, numeração de páginas ou faixas de corte de arquivos PDF">
-            <div class="tool-btn-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                <line x1="10" y1="11" x2="10" y2="17"/>
-                <line x1="14" y1="11" x2="14" y2="17"/>
+          <!-- 5. Proteger PDF -->
+          <button type="button" class="tool-nav-btn compact-tool-btn" data-tool="protect" title="Proteja com criptografia AES-256 e restrinja impressão, cópia ou edição">
+            <div class="compact-tool-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
             </div>
-            <div class="tool-btn-text">
-              <span class="tool-btn-title">Remover Rodapé</span>
-              <span class="tool-btn-sub">Limpar Margens</span>
-            </div>
+            <span class="compact-tool-label">Proteger PDF</span>
           </button>
+
+          <!-- 6. PDF para Word -->
+          <button type="button" class="tool-nav-btn compact-tool-btn" data-tool="pdf-to-word" title="Converta documentos PDF em arquivos Microsoft Word (.docx) editáveis">
+            <div class="compact-tool-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <path d="M8 13h2l1 4 1-4h2"/>
+              </svg>
+            </div>
+            <span class="compact-tool-label">PDF para Word</span>
+          </button>
+
+          <!-- Indicador Dinâmico para ferramentas ativas que não estão nos 6 atalhos rápidos -->
+          <div class="compact-active-indicator hidden" id="compact-active-indicator" title="Ferramenta ativa no momento">
+            <span class="active-indicator-dot"></span>
+            <span id="compact-active-tool-title">Ferramenta Ativa</span>
+          </div>
         </div>
+
+        <!-- Botão Abrir Catálogo com Todas as Ferramentas -->
+        <button type="button" class="btn-all-tools-trigger" id="btn-open-all-tools" aria-haspopup="dialog" title="Ver todas as 14 ferramentas com busca rápida (Ctrl + K)">
+          <div class="trigger-icon-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <span class="trigger-label">Todas as Ferramentas</span>
+          <span class="all-tools-badge">14</span>
+          <kbd class="shortcut-kbd">Ctrl K</kbd>
+        </button>
       </nav>
 
       <!-- Hero Dinâmico que se adapta à funcionalidade ativa -->
@@ -2412,6 +2293,261 @@
       </div>
     </div>
 
+    <!-- Modal do Catálogo Completo de Ferramentas (com Busca em Tempo Real e Atalho Ctrl+K) -->
+    <div class="modal-overlay hidden" id="all-tools-modal" role="dialog" aria-modal="true" aria-labelledby="all-tools-modal-title">
+      <div class="modal-container all-tools-modal-container">
+        
+        <div class="all-tools-modal-header">
+          <div class="all-tools-header-left">
+            <div class="all-tools-header-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="all-tools-title" id="all-tools-modal-title">Todas as Ferramentas</h3>
+              <p class="all-tools-subtitle">Encontre e acesse instantaneamente qualquer uma das 14 ferramentas da plataforma</p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-all-tools-modal" aria-label="Fechar catálogo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Barra de Busca Rápida com Ícone e Tecla de Atalho -->
+        <div class="all-tools-search-box">
+          <svg class="tools-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="all-tools-search-input" class="all-tools-search-input" placeholder="Digite para buscar ferramenta (ex: rodapé, juntar, senha, word, girar, extrair)..." autocomplete="off">
+          <button type="button" class="tools-search-clear-btn hidden" id="btn-clear-tools-search" title="Limpar busca">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Lista Rolável das Ferramentas por Categoria -->
+        <div class="all-tools-scroll-area" id="all-tools-scroll-area">
+          
+          <!-- SEÇÃO 1: PÁGINAS & ORGANIZAÇÃO -->
+          <div class="tools-cat-group" data-cat-group="pages">
+            <div class="tools-cat-header">
+              <span class="tools-cat-pill">Páginas & Organização</span>
+              <span class="tools-cat-count">5 ferramentas</span>
+            </div>
+            <div class="tools-cat-grid">
+              
+              <!-- 1. Juntar PDF -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="merge" data-keywords="juntar unir mesclar combinar documentos menu marcadores anexar">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Juntar PDF</span>
+                  <span class="card-desc">Unir múltiplos arquivos com sumário e menu interativo</span>
+                </div>
+              </button>
+
+              <!-- 2. Dividir PDF -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="split" data-keywords="dividir separar quebrar faixas intervalos avulsas zip">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Dividir PDF</span>
+                  <span class="card-desc">Separar por intervalos (ex: 1-5, 6-10) ou páginas avulsas</span>
+                </div>
+              </button>
+
+              <!-- 3. Organizar Páginas -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="organize" data-keywords="organizar reordenar ordem duplicar excluir arrastar drag drop lupa">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Organizar Páginas</span>
+                  <span class="card-desc">Grade visual para reordenar, duplicar ou deletar páginas</span>
+                </div>
+              </button>
+
+              <!-- 4. Girar Páginas -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="rotate" data-keywords="girar rotacionar angulo 90 180 270 orientacao inverter deitar em pé">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Girar Páginas</span>
+                  <span class="card-desc">Rotacionar páginas em lote ou individualmente</span>
+                </div>
+              </button>
+
+              <!-- 5. Extrair Páginas -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="extract" data-keywords="extrair isolar retirar paginas novo pdf enxuto exportar">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Extrair Páginas</span>
+                  <span class="card-desc">Isolar páginas selecionadas em um novo PDF ou ZIP</span>
+                </div>
+              </button>
+
+            </div>
+          </div>
+
+          <!-- SEÇÃO 2: CABEÇALHO, RODAPÉ & MARCA -->
+          <div class="tools-cat-group" data-cat-group="edit">
+            <div class="tools-cat-header">
+              <span class="tools-cat-pill">Cabeçalho, Rodapé & Marca</span>
+              <span class="tools-cat-count">3 ferramentas</span>
+            </div>
+            <div class="tools-cat-grid">
+              
+              <!-- 6. Personalizar Rodapé -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="footer" data-keywords="rodape cabecalho numeracao pagina numero carimbo texto estampar">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="18" x2="17" y2="18"/><line x1="12" y1="14" x2="12" y2="15"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Personalizar Rodapé</span>
+                  <span class="card-desc">Adicionar rodapés, cabeçalhos e numeração de páginas</span>
+                </div>
+              </button>
+
+              <!-- 7. Remover Rodapé -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="remove-footer" data-keywords="remover apagar excluir rodape cabecalho limpar cortar margens texto">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Remover Rodapé</span>
+                  <span class="card-desc">Excluir rodapés, números de páginas ou cortar faixas</span>
+                </div>
+              </button>
+
+              <!-- 8. Marca d'água -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="watermark" data-keywords="marca dagua watermark carimbo logo texto confidencia copia transparência">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Marca d'água</span>
+                  <span class="card-desc">Carimbar texto ou logotipo com transparência e repetição</span>
+                </div>
+              </button>
+
+            </div>
+          </div>
+
+          <!-- SEÇÃO 3: SEGURANÇA & PRIVACIDADE -->
+          <div class="tools-cat-group" data-cat-group="security">
+            <div class="tools-cat-header">
+              <span class="tools-cat-pill">Segurança & Privacidade</span>
+              <span class="tools-cat-count">3 ferramentas</span>
+            </div>
+            <div class="tools-cat-grid">
+              
+              <!-- 9. Proteger PDF -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="protect" data-keywords="proteger criptografar senha aes 256 travar bloquear impressao copia">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Proteger PDF</span>
+                  <span class="card-desc">Criptografia AES-256 bits e restrições de permissão</span>
+                </div>
+              </button>
+
+              <!-- 10. Desproteger PDF -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="unlock" data-keywords="desproteger desbloquear remover senha destravar tirar bloqueio">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Desproteger PDF</span>
+                  <span class="card-desc">Remover restrições e senhas de abertura de PDFs conhecidos</span>
+                </div>
+              </button>
+
+              <!-- 11. Redigir / Tarjar -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="redact" data-keywords="redigir tarjar anonimizar lgpd sigilo censurar cpf cnpj email telefone">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Redigir / Tarjar</span>
+                  <span class="card-desc">Expurgo permanente de dados confidenciais sob a LGPD</span>
+                </div>
+              </button>
+
+            </div>
+          </div>
+
+          <!-- SEÇÃO 4: CONVERSÃO & IMAGENS -->
+          <div class="tools-cat-group" data-cat-group="convert">
+            <div class="tools-cat-header">
+              <span class="tools-cat-pill">Conversão & Imagens</span>
+              <span class="tools-cat-count">3 ferramentas</span>
+            </div>
+            <div class="tools-cat-grid">
+              
+              <!-- 12. PDF para Word -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="pdf-to-word" data-keywords="pdf para word converter docx doc texto editavel tabelas formatacao">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2l1 4 1-4h2"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">PDF para Word</span>
+                  <span class="card-desc">Transformar PDF em documento Microsoft Word (.docx) editável</span>
+                </div>
+              </button>
+
+              <!-- 13. Word para PDF -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="word-to-pdf" data-keywords="word para pdf docx doc converter exportar criar pdf">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Word para PDF</span>
+                  <span class="card-desc">Converter arquivos .docx e .doc em PDFs estruturados</span>
+                </div>
+              </button>
+
+              <!-- 14. Imagem para PDF -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="image-to-pdf" data-keywords="imagem para pdf foto jpg jpeg png webp converter ilustracao">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Imagem para PDF</span>
+                  <span class="card-desc">Converter fotos e imagens (JPG, PNG, WebP) em PDF</span>
+                </div>
+              </button>
+
+            </div>
+          </div>
+
+          <!-- Mensagem para busca vazia -->
+          <div class="tools-search-empty hidden" id="tools-search-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <p class="empty-title">Nenhuma ferramenta encontrada</p>
+            <p class="empty-sub">Tente pesquisar por outro termo (ex: "juntar", "rodapé", "senha", "word", "imagem")</p>
+          </div>
+
+        </div>
+
+        <div class="all-tools-modal-footer">
+          <span style="font-size: 0.8rem; color: var(--text-secondary);">
+            Dica: Pressione <kbd class="shortcut-kbd">Ctrl</kbd> + <kbd class="shortcut-kbd">K</kbd> ou <kbd class="shortcut-kbd">/</kbd> para abrir esta busca a qualquer momento.
+          </span>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-close-all-tools-footer">Fechar</button>
+        </div>
+
+      </div>
+    </div>
+
     <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
     <footer class="app-footer">
@@ -2419,6 +2555,6 @@
     </footer>
   </div>
 
-  <script src="/static/js/app.js?v=2.3.0"></script>
+  <script src="/static/js/app.js?v=2.4.0"></script>
 </body>
 </html>

@@ -201,7 +201,37 @@
   const thumbnailCache = new Map();
 
   // Elementos do DOM Compartilhados
-  const toolsNavContainer = document.getElementById('tools-nav-bar');
+  const compactToolsBar = document.getElementById('compact-tools-bar');
+  const compactActiveIndicator = document.getElementById('compact-active-indicator');
+  const compactActiveToolTitle = document.getElementById('compact-active-tool-title');
+  const btnOpenAllTools = document.getElementById('btn-open-all-tools');
+
+  const allToolsModal = document.getElementById('all-tools-modal');
+  const btnCloseAllToolsModal = document.getElementById('btn-close-all-tools-modal');
+  const btnCloseAllToolsFooter = document.getElementById('btn-close-all-tools-footer');
+  const allToolsSearchInput = document.getElementById('all-tools-search-input');
+  const btnClearToolsSearch = document.getElementById('btn-clear-tools-search');
+  const toolsSearchEmpty = document.getElementById('tools-search-empty');
+
+  const QUICK_TOOLS = new Set(['merge', 'split', 'organize', 'footer', 'protect', 'pdf-to-word']);
+
+  const TOOL_SHORT_NAMES = {
+    merge: 'Juntar PDF',
+    split: 'Dividir PDF',
+    organize: 'Organizar Páginas',
+    rotate: 'Girar Páginas',
+    extract: 'Extrair Páginas',
+    protect: 'Proteger PDF',
+    unlock: 'Desproteger PDF',
+    redact: 'Tarjar & Anonimizar',
+    'pdf-to-word': 'PDF para Word',
+    'word-to-pdf': 'Word para PDF',
+    'image-to-pdf': 'Imagem para PDF',
+    watermark: 'Marca d\'água',
+    footer: 'Rodapé & Numeração',
+    'remove-footer': 'Remover Rodapé',
+  };
+
   const heroTitle = document.getElementById('hero-title');
   const heroSubtitle = document.getElementById('hero-subtitle');
   const engineStatusText = document.getElementById('engine-status-text');
@@ -551,6 +581,7 @@
     setupModalAndPix();
     setupVisitCounter();
     setupZoomModalEvents();
+    setupAllToolsCatalogEvents();
 
     // Suporte a hash da URL (ex: #split, #protect, #image-to-pdf, #watermark)
     const hash = window.location.hash.replace('#', '');
@@ -573,8 +604,16 @@
     navButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const targetTool = btn.dataset.tool;
-        if (targetTool && targetTool !== state.activeTool) {
-          switchTool(targetTool);
+        if (targetTool) {
+          if (targetTool !== state.activeTool) {
+            switchTool(targetTool);
+          } else {
+            // Se o usuário clicar na ferramenta já ativa e o modal estiver aberto, apenas fecha o modal
+            if (allToolsModal && !allToolsModal.classList.contains('hidden')) {
+              allToolsModal.classList.add('hidden');
+              document.body.style.overflow = '';
+            }
+          }
         }
       });
     });
@@ -642,9 +681,174 @@
     }
   }
 
+  function setupAllToolsCatalogEvents() {
+    if (!allToolsModal) return;
+
+    function openCatalog() {
+      allToolsModal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      if (allToolsSearchInput) {
+        allToolsSearchInput.value = '';
+        if (btnClearToolsSearch) btnClearToolsSearch.classList.add('hidden');
+        filterToolsCatalog('');
+        setTimeout(() => allToolsSearchInput.focus(), 60);
+      }
+    }
+
+    function closeCatalog() {
+      allToolsModal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    if (btnOpenAllTools) {
+      btnOpenAllTools.addEventListener('click', openCatalog);
+    }
+
+    if (btnCloseAllToolsModal) {
+      btnCloseAllToolsModal.addEventListener('click', closeCatalog);
+    }
+
+    if (btnCloseAllToolsFooter) {
+      btnCloseAllToolsFooter.addEventListener('click', closeCatalog);
+    }
+
+    // Fechar ao clicar no backdrop (overlay)
+    allToolsModal.addEventListener('click', (e) => {
+      if (e.target === allToolsModal) {
+        closeCatalog();
+      }
+    });
+
+    // Tecla de atalho global: Ctrl+K, Cmd+K, ou '/' para abrir; Escape para fechar
+    window.addEventListener('keydown', (e) => {
+      // Se pressionar Escape e o modal estiver aberto, fecha
+      if (e.key === 'Escape' && !allToolsModal.classList.contains('hidden')) {
+        closeCatalog();
+        return;
+      }
+
+      // Atalho Ctrl+K ou Cmd+K
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (allToolsModal.classList.contains('hidden')) {
+          openCatalog();
+        } else {
+          closeCatalog();
+        }
+        return;
+      }
+
+      // Atalho '/' quando o usuário não estiver digitando em nenhum input/textarea
+      if (e.key === '/' && allToolsModal.classList.contains('hidden')) {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        const isEditable = document.activeElement ? document.activeElement.isContentEditable : false;
+        if (activeTag !== 'input' && activeTag !== 'textarea' && !isEditable) {
+          e.preventDefault();
+          openCatalog();
+        }
+      }
+    });
+
+    // Busca em tempo real
+    if (allToolsSearchInput) {
+      allToolsSearchInput.addEventListener('input', () => {
+        const query = allToolsSearchInput.value.trim().toLowerCase();
+        if (btnClearToolsSearch) {
+          if (query.length > 0) {
+            btnClearToolsSearch.classList.remove('hidden');
+          } else {
+            btnClearToolsSearch.classList.add('hidden');
+          }
+        }
+        filterToolsCatalog(query);
+      });
+    }
+
+    // Botão de limpar busca
+    if (btnClearToolsSearch) {
+      btnClearToolsSearch.addEventListener('click', () => {
+        allToolsSearchInput.value = '';
+        btnClearToolsSearch.classList.add('hidden');
+        filterToolsCatalog('');
+        allToolsSearchInput.focus();
+      });
+    }
+
+    function removeAccents(str) {
+      return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function filterToolsCatalog(query) {
+      const cards = allToolsModal.querySelectorAll('.all-tools-card');
+      const catGroups = allToolsModal.querySelectorAll('.tools-cat-group');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        if (!query) {
+          card.classList.remove('hidden');
+          card.style.display = '';
+          visibleCount++;
+          return;
+        }
+
+        const toolKey = card.dataset.tool || '';
+        const keywords = (card.dataset.keywords || '').toLowerCase();
+        const titleEl = card.querySelector('.card-title');
+        const descEl = card.querySelector('.card-desc');
+        const titleText = titleEl ? titleEl.textContent.toLowerCase() : '';
+        const descText = descEl ? descEl.textContent.toLowerCase() : '';
+
+        // Normalização de acentos para busca rápida
+        const normQuery = removeAccents(query);
+        const normTarget = removeAccents(`${toolKey} ${keywords} ${titleText} ${descText}`);
+
+        if (normTarget.includes(normQuery)) {
+          card.classList.remove('hidden');
+          card.style.display = '';
+          visibleCount++;
+        } else {
+          card.classList.add('hidden');
+          card.style.display = 'none';
+        }
+      });
+
+      // Oculta/exibe grupos de categoria caso nenhum card do grupo esteja visível
+      catGroups.forEach(group => {
+        const groupCards = group.querySelectorAll('.all-tools-card');
+        const hasVisible = Array.from(groupCards).some(c => !c.classList.contains('hidden') && c.style.display !== 'none');
+        group.style.display = hasVisible ? '' : 'none';
+      });
+
+      // Exibe estado de busca vazia se nada coincidir
+      if (toolsSearchEmpty) {
+        if (visibleCount === 0) {
+          toolsSearchEmpty.classList.remove('hidden');
+        } else {
+          toolsSearchEmpty.classList.add('hidden');
+        }
+      }
+    }
+  }
+
   function switchTool(toolKey) {
     if (!TOOL_CONFIGS[toolKey]) return;
     state.activeTool = toolKey;
+
+    // Se o catálogo modal estiver aberto, fecha
+    if (allToolsModal && !allToolsModal.classList.contains('hidden')) {
+      allToolsModal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // Atualiza indicador da barra compacta para ferramentas que não estão nos 6 atalhos principais
+    if (compactActiveIndicator && compactActiveToolTitle) {
+      if (QUICK_TOOLS.has(toolKey)) {
+        compactActiveIndicator.classList.add('hidden');
+      } else {
+        compactActiveIndicator.classList.remove('hidden');
+        compactActiveToolTitle.textContent = TOOL_SHORT_NAMES[toolKey] || toolKey;
+      }
+    }
 
     // Se a ferramenta alvo estiver oculta pela categoria atual, sincroniza a categoria
     const targetBtn = document.querySelector(`.tool-nav-btn[data-tool="${toolKey}"]`);
@@ -653,7 +857,7 @@
       applyCategoryFilter(toolCat);
     }
 
-    // Atualiza classes ativas na barra de ferramentas
+    // Atualiza classes ativas na barra de ferramentas e no catálogo
     document.querySelectorAll('.tool-nav-btn').forEach(btn => {
       if (btn.dataset.tool === toolKey) {
         btn.classList.add('active');
