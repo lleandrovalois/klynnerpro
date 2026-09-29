@@ -213,7 +213,24 @@
     <!-- Main Content -->
     <main class="main-container">
 
-      <!-- MENU SUSPENSO ORGANIZADO POR CATEGORIAS (SEM TEXTOS QUEBRADOS) -->
+      <!-- 1. BARRA DE BUSCA RÁPIDA (ACIMA DO MENU) -->
+      <div class="top-search-wrapper">
+        <button type="button" class="top-search-bar-trigger" id="btn-open-all-tools" aria-haspopup="dialog" title="Buscar todas as ferramentas (Ctrl + K)">
+          <div class="top-search-left">
+            <div class="top-search-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <span class="top-search-placeholder">Buscar ferramentas ou funcionalidades (ex: juntar, rodapé, senha, word)...</span>
+          </div>
+          <div class="top-search-shortcut">
+            <kbd class="shortcut-kbd">Ctrl K</kbd>
+          </div>
+        </button>
+      </div>
+
+      <!-- 2. MENU SUSPENSO ORGANIZADO POR CATEGORIAS (NO CENTRO) -->
       <nav class="category-nav-bar" id="category-nav-bar" aria-label="Menu de Ferramentas PDF">
         <div class="category-dropdown-group" id="category-dropdown-group">
           
@@ -474,25 +491,16 @@
           </div>
 
         </div>
+      </nav>
 
-        <!-- Indicador da Ferramenta Ativa na Barra -->
+      <!-- 3. TAG DA FUNÇÃO ATIVA (ABAIXO DO MENU) -->
+      <div class="active-tool-banner-wrapper">
         <div class="nav-active-pill" id="nav-active-pill" title="Ferramenta ativa no momento">
           <span class="active-dot-pulse"></span>
-          <span class="active-pill-label">Ativo:</span>
+          <span class="active-pill-label">Função ativa:</span>
           <span class="active-pill-name" id="nav-active-tool-title">Juntar PDF</span>
         </div>
-
-        <!-- Botão Todas as Ferramentas (com Busca e Atalho Ctrl+K) -->
-        <button type="button" class="btn-all-tools-trigger" id="btn-open-all-tools" aria-haspopup="dialog" title="Buscar todas as 14 ferramentas (Ctrl + K)">
-          <div class="trigger-icon-box">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </div>
-          <span class="trigger-label">Buscar</span>
-          <kbd class="shortcut-kbd">Ctrl K</kbd>
-        </button>
-      </nav>
+      </div>
 
       <!-- Hero Dinâmico que se adapta à funcionalidade ativa -->
       <div class="hero-section">
@@ -2745,6 +2753,6 @@
     </footer>
   </div>
 
-  <script src="/static/js/app.js?v=2.5.0"></script>
+  <script src="/static/js/app.js?v=2.6.0"></script>
 </body>
 </html>
