@@ -201,9 +201,9 @@
   const thumbnailCache = new Map();
 
   // Elementos do DOM Compartilhados
-  const compactToolsBar = document.getElementById('compact-tools-bar');
-  const compactActiveIndicator = document.getElementById('compact-active-indicator');
-  const compactActiveToolTitle = document.getElementById('compact-active-tool-title');
+  // Elementos da Barra de Navegação com Menus Suspensos por Categoria
+  const categoryNavBar = document.getElementById('category-nav-bar');
+  const navActiveToolTitle = document.getElementById('nav-active-tool-title');
   const btnOpenAllTools = document.getElementById('btn-open-all-tools');
 
   const allToolsModal = document.getElementById('all-tools-modal');
@@ -213,7 +213,25 @@
   const btnClearToolsSearch = document.getElementById('btn-clear-tools-search');
   const toolsSearchEmpty = document.getElementById('tools-search-empty');
 
-  const QUICK_TOOLS = new Set(['merge', 'split', 'organize', 'footer', 'protect', 'pdf-to-word']);
+  const TOOL_CATEGORIES = {
+    merge: 'pages',
+    split: 'pages',
+    organize: 'pages',
+    rotate: 'pages',
+    extract: 'pages',
+
+    footer: 'edit',
+    'remove-footer': 'edit',
+    watermark: 'edit',
+
+    protect: 'security',
+    unlock: 'security',
+    redact: 'security',
+
+    'pdf-to-word': 'convert',
+    'word-to-pdf': 'convert',
+    'image-to-pdf': 'convert',
+  };
 
   const TOOL_SHORT_NAMES = {
     merge: 'Juntar PDF',
@@ -582,6 +600,7 @@
     setupVisitCounter();
     setupZoomModalEvents();
     setupAllToolsCatalogEvents();
+    setupCategoryDropdowns();
 
     // Suporte a hash da URL (ex: #split, #protect, #image-to-pdf, #watermark)
     const hash = window.location.hash.replace('#', '');
@@ -613,6 +632,7 @@
               allToolsModal.classList.add('hidden');
               document.body.style.overflow = '';
             }
+            closeAllCategoryDropdowns();
           }
         }
       });
@@ -623,6 +643,51 @@
       if (TOOL_CONFIGS[hash] && hash !== state.activeTool) {
         switchTool(hash);
       }
+    });
+  }
+
+  function setupCategoryDropdowns() {
+    const wrappers = document.querySelectorAll('.cat-dropdown-wrapper');
+    if (!wrappers.length) return;
+
+    wrappers.forEach(wrapper => {
+      const trigger = wrapper.querySelector('.cat-dropdown-trigger');
+      if (!trigger) return;
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = wrapper.classList.contains('open');
+
+        // Fecha todos os outros dropdowns
+        closeAllCategoryDropdowns();
+
+        if (!isOpen) {
+          wrapper.classList.add('open');
+          trigger.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+
+    // Fecha dropdowns ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.cat-dropdown-wrapper')) {
+        closeAllCategoryDropdowns();
+      }
+    });
+
+    // Fecha dropdowns ao pressionar Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAllCategoryDropdowns();
+      }
+    });
+  }
+
+  function closeAllCategoryDropdowns() {
+    document.querySelectorAll('.cat-dropdown-wrapper').forEach(w => {
+      w.classList.remove('open');
+      const trigger = w.querySelector('.cat-dropdown-trigger');
+      if (trigger) trigger.setAttribute('aria-expanded', 'false');
     });
   }
 
@@ -834,20 +899,30 @@
     if (!TOOL_CONFIGS[toolKey]) return;
     state.activeTool = toolKey;
 
+    // Fecha todos os menus suspensos de categorias
+    closeAllCategoryDropdowns();
+
     // Se o catálogo modal estiver aberto, fecha
     if (allToolsModal && !allToolsModal.classList.contains('hidden')) {
       allToolsModal.classList.add('hidden');
       document.body.style.overflow = '';
     }
 
-    // Atualiza indicador da barra compacta para ferramentas que não estão nos 6 atalhos principais
-    if (compactActiveIndicator && compactActiveToolTitle) {
-      if (QUICK_TOOLS.has(toolKey)) {
-        compactActiveIndicator.classList.add('hidden');
+    // Atualiza categoria ativa na barra de navegação
+    const activeCat = TOOL_CATEGORIES[toolKey] || 'pages';
+    document.querySelectorAll('.cat-dropdown-wrapper').forEach(wrapper => {
+      const trigger = wrapper.querySelector('.cat-dropdown-trigger');
+      if (!trigger) return;
+      if (wrapper.dataset.category === activeCat) {
+        trigger.classList.add('active-category');
       } else {
-        compactActiveIndicator.classList.remove('hidden');
-        compactActiveToolTitle.textContent = TOOL_SHORT_NAMES[toolKey] || toolKey;
+        trigger.classList.remove('active-category');
       }
+    });
+
+    // Atualiza o indicador da ferramenta ativa na barra
+    if (navActiveToolTitle) {
+      navActiveToolTitle.textContent = TOOL_SHORT_NAMES[toolKey] || toolKey;
     }
 
     // Se a ferramenta alvo estiver oculta pela categoria atual, sincroniza a categoria
