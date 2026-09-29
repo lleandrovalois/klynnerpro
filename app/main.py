@@ -29,6 +29,7 @@ from app.word_to_pdf import execute_word_to_pdf
 from app.image_to_pdf import execute_image_to_pdf
 from app.watermark import execute_pdf_watermark
 from app.footer_customizer import execute_pdf_footer
+from app.footer_remover import execute_pdf_remove_footer
 from app.storage import (
     BASE_TEMP_DIR,
     cleanup_expired_sessions,
@@ -264,6 +265,22 @@ class FooterRequest(BaseModel):
     margin_offset: float = Field(default=25.0)
     output_filename: Optional[str] = Field(default="documento_com_rodape.pdf")
     linearize: bool = Field(default=True)
+
+
+class RemoveFooterRequest(BaseModel):
+    session_id: str
+    file_id: str
+    mode: str = Field(default="margin", description="'margin' (faixa inteira), 'text' (texto específico) ou 'both'")
+    target_area: str = Field(default="footer", description="'footer', 'header' ou 'both'")
+    margin_height: float = Field(default=35.0, description="Altura da margem a expurgar em pontos")
+    fill_color: str = Field(default="#FFFFFF", description="Cor de preenchimento ou 'transparent'")
+    custom_text: Optional[str] = Field(default=None, description="Texto específico a expurgar")
+    remove_page_numbers: bool = Field(default=False, description="Detecta e remove automaticamente numeração de página")
+    skip_first_page: bool = Field(default=False, description="Ignora a primeira página (capa)")
+    pages: str = Field(default="all", description="'all', 'first', ou intervalos '1-5, 8'")
+    output_filename: Optional[str] = Field(default="documento_sem_rodape.pdf")
+    linearize: bool = Field(default=True)
+
 
 
 
@@ -1042,6 +1059,53 @@ async def add_pdf_footer(request: FooterRequest):
         )
 
 
+@app.post("/api/remove-footer")
+async def remove_pdf_footer(request: RemoveFooterRequest):
+    """
+    Remove fisicamente rodapés, cabeçalhos, textos específicos ou numeração de páginas de um PDF.
+    """
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada."
+        )
+
+    try:
+        result = await asyncio.to_thread(
+            execute_pdf_remove_footer,
+            session_dir=session_dir,
+            file_id=request.file_id,
+            mode=request.mode,
+            target_area=request.target_area,
+            margin_height=request.margin_height,
+            fill_color=request.fill_color,
+            custom_text=request.custom_text,
+            remove_page_numbers=request.remove_page_numbers,
+            skip_first_page=request.skip_first_page,
+            pages=request.pages,
+            output_basename=request.output_filename,
+            linearize=request.linearize,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "metrics": result,
+        })
+    except Exception as e:
+        logger.error(f"Erro ao remover rodapé do PDF: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao remover rodapé: {str(e)}"
+        )
+
+
+
 
 @app.get("/api/download/{session_id}")
 async def download_merged_pdf(session_id: str, filename: Optional[str] = "documento_unificado.pdf"):
@@ -1155,6 +1219,7 @@ async def health_check():
             "Converter Imagem para PDF (Image to PDF)",
             "Inserir Marca d'água (Watermark PDF)",
             "Personalizar Rodapé e Numeração (Footer Customizer)",
+            "Remover Rodapé e Cabeçalho (Footer Remover)",
         ],
         "streaming_upload": "Ativo (Zero-RAM Chunking)",
         "menu_system": "Ativo (Página de Menu Visual + Marcadores com UseOutlines)",

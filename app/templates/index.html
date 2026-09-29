@@ -216,8 +216,8 @@
       <!-- MENU DE FUNCIONALIDADES (Barra Superior de Navegação das Ferramentas) -->
       <nav class="tools-nav-bar" id="tools-nav-bar" aria-label="Menu de Ferramentas PDF">
         <div class="tool-categories-ribbon" id="tool-categories-ribbon">
-          <button type="button" class="tool-category-pill active" data-cat="all">Todas as Ferramentas (13)</button>
-          <button type="button" class="tool-category-pill" data-cat="pages">Edição & Páginas (6)</button>
+          <button type="button" class="tool-category-pill active" data-cat="all">Todas as Ferramentas (14)</button>
+          <button type="button" class="tool-category-pill" data-cat="pages">Edição & Páginas (7)</button>
           <button type="button" class="tool-category-pill" data-cat="security">Segurança & Marcação (4)</button>
           <button type="button" class="tool-category-pill" data-cat="convert">Conversão & Imagens (3)</button>
         </div>
@@ -403,6 +403,21 @@
             <div class="tool-btn-text">
               <span class="tool-btn-title">Personalizar Rodapé</span>
               <span class="tool-btn-sub">Texto & Numeração</span>
+            </div>
+          </button>
+
+          <!-- 14. Remover Rodapé & Cabeçalho -->
+          <button type="button" class="tool-nav-btn" data-tool="remove-footer" data-category="pages" id="tool-nav-remove-footer" title="Remova rodapés, cabeçalhos, numeração de páginas ou faixas de corte de arquivos PDF">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Remover Rodapé</span>
+              <span class="tool-btn-sub">Limpar Margens</span>
             </div>
           </button>
         </div>
@@ -1905,6 +1920,212 @@
                 <line x1="12" y1="14" x2="12" y2="15"/>
               </svg>
               <span>Aplicar Rodapé no PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2N: REMOVER RODAPÉ E CABEÇALHO                          -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-remove-footer">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento Alvo:</span>
+              <span class="active-doc-name" id="rf-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="rf-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="rf-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-rf-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  <line x1="10" y1="11" x2="10" y2="17"/>
+                  <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Remoção de Rodapé, Cabeçalho & Faixas</h4>
+                <p class="security-box-desc">Elimine fisicamente rodapés indesejados, marcas de impressão, frases de sistema ou numeração de páginas.</p>
+              </div>
+            </div>
+
+            <!-- Seletor de Modo de Remoção -->
+            <div class="encryption-level-selector">
+              <span class="sub-section-title">Método de Limpeza:</span>
+              <div class="encryption-radios">
+                <label class="enc-radio-card">
+                  <input type="radio" name="rf-mode" value="margin" checked id="rf-mode-margin">
+                  <div class="enc-card-body">
+                    <strong>Limpeza por Faixa de Margem (Recomendado)</strong>
+                    <small>Expurga tudo na borda inferior/superior (ideal para PDFs digitais ou escaneados)</small>
+                  </div>
+                </label>
+                <label class="enc-radio-card">
+                  <input type="radio" name="rf-mode" value="text" id="rf-mode-text">
+                  <div class="enc-card-body">
+                    <strong>Busca Cirúrgica de Texto</strong>
+                    <small>Apaga apenas uma frase ou texto específico localizado no rodapé</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Bloco 1: Controles de Margem (Ativo no modo margin) -->
+            <div class="rf-controls-box" id="rf-margin-controls">
+              <div class="passwords-grid" style="margin-top: 1rem;">
+                <div class="pwd-field-group">
+                  <label for="rf-target-area" class="option-label">Área a Limpar</label>
+                  <select id="rf-target-area" class="text-input">
+                    <option value="footer" selected>Apenas o Rodapé (Borda Inferior)</option>
+                    <option value="header">Apenas o Cabeçalho (Borda Superior)</option>
+                    <option value="both">Ambos (Rodapé e Cabeçalho)</option>
+                  </select>
+                </div>
+
+                <div class="pwd-field-group">
+                  <label for="rf-margin-height" class="option-label">Altura da Faixa de Corte: <span id="rf-margin-height-val">35 pt (~1.2 cm)</span></label>
+                  <input type="range" id="rf-margin-height" class="range-slider" min="15" max="80" step="1" value="35">
+                </div>
+              </div>
+
+              <div class="passwords-grid" style="margin-top: 1rem;">
+                <div class="pwd-field-group">
+                  <label for="rf-fill-color" class="option-label">Tipo de Preenchimento da Limpeza</label>
+                  <select id="rf-fill-color" class="text-input">
+                    <option value="#FFFFFF" selected>Branco Puro (Limpo / Oculta marcas e escaneamentos)</option>
+                    <option value="transparent">Transparente (Expurgo físico de objetos vetoriais)</option>
+                  </select>
+                </div>
+
+                <div class="pwd-field-group">
+                  <label class="option-label" style="opacity: 0;">Espaçador</label>
+                  <div class="custom-checkbox-wrapper" style="margin-top: 0.5rem;">
+                    <label class="checkbox-label" for="rf-auto-page-numbers" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; cursor: pointer; color: var(--text-secondary);">
+                      <input type="checkbox" id="rf-auto-page-numbers" checked>
+                      <span>Detectar e apagar numeração de páginas na faixa</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco 2: Controles de Texto (Ativo no modo text) -->
+            <div class="rf-controls-box hidden" id="rf-text-controls">
+              <div class="pwd-field-group" style="margin-top: 1rem;">
+                <label for="rf-custom-text" class="option-label">Texto ou Frase a ser Removida do Rodapé</label>
+                <input type="text" id="rf-custom-text" class="text-input" placeholder="Ex: Klynner PDF • Gerado com motor C++/QPDF de alta performance">
+                
+                <div style="margin-top: 0.6rem;">
+                  <span style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                    Textos frequentes (clique para preencher):
+                  </span>
+                  <div class="selection-quick-chips">
+                    <button type="button" class="chip-btn rf-preset-btn" data-text="Klynner PDF • Gerado com motor C++/QPDF de alta performance">Klynner PDF • Gerado com motor C++/QPDF...</button>
+                    <button type="button" class="chip-btn rf-preset-btn" data-text="CONFIDENCIAL">CONFIDENCIAL</button>
+                    <button type="button" class="chip-btn rf-preset-btn" data-text="Página">Página</button>
+                    <button type="button" class="chip-btn rf-preset-btn" data-text="Documento impresso em">Documento impresso em</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pwd-field-group" style="margin-top: 1rem;">
+                <label class="checkbox-label" for="rf-text-page-numbers" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; cursor: pointer; color: var(--text-secondary);">
+                  <input type="checkbox" id="rf-text-page-numbers" checked>
+                  <span>Também remover números de página adjacentes (ex: 1, 1/10, Página 1 de 10)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Simulador / Régua Visual em Tempo Real -->
+            <div style="margin-top: 1.25rem;">
+              <span class="sub-section-title" style="font-size: 0.85rem;">Guia Visual de Corte na Folha (Linha Tracejada Vermelha):</span>
+              <div class="footer-preview-sheet" id="rf-preview-sheet" style="position: relative;">
+                <!-- Zona do Cabeçalho -->
+                <div class="rf-cut-zone-header hidden" id="rf-cut-zone-header" style="position: absolute; top: 0; left: 0; right: 0; height: 35px; background: rgba(239, 68, 68, 0.15); border-bottom: 2px dashed #EF4444; display: flex; align-items: center; justify-content: center; color: #EF4444; font-size: 10px; font-weight: bold; pointer-events: none;">
+                  FAIXA EXPURGADA (CABEÇALHO)
+                </div>
+
+                <div class="footer-preview-skeleton-content" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+                  <div class="footer-preview-skeleton-line" style="width: 90%;"></div>
+                  <div class="footer-preview-skeleton-line" style="width: 80%;"></div>
+                  <div class="footer-preview-skeleton-line" style="width: 95%;"></div>
+                  <div class="footer-preview-skeleton-line" style="width: 70%;"></div>
+                </div>
+
+                <!-- Zona do Rodapé -->
+                <div class="rf-cut-zone-footer" id="rf-cut-zone-footer" style="position: absolute; bottom: 0; left: 0; right: 0; height: 35px; background: rgba(239, 68, 68, 0.15); border-top: 2px dashed #EF4444; display: flex; align-items: center; justify-content: center; color: #EF4444; font-size: 10px; font-weight: bold; pointer-events: none;">
+                  FAIXA EXPURGADA (RODAPÉ)
+                </div>
+              </div>
+            </div>
+
+            <!-- Seleção de Páginas -->
+            <div class="passwords-grid" style="margin-top: 1.25rem;">
+              <div class="pwd-field-group">
+                <label for="rf-pages-select" class="option-label">Aplicar em Quais Páginas?</label>
+                <select id="rf-pages-select" class="text-input">
+                  <option value="all" selected>Todas as Páginas</option>
+                  <option value="custom">Intervalo Personalizado...</option>
+                </select>
+                <div class="custom-range-inputs hidden" id="rf-custom-pages-box" style="margin-top: 0.5rem;">
+                  <input type="text" id="rf-custom-pages-input" class="text-input" placeholder="Ex: 2-10, 15-20">
+                  <span class="input-hint">Separe páginas e intervalos por vírgula (ex: <strong>2-8, 12</strong>).</span>
+                </div>
+              </div>
+
+              <div class="pwd-field-group">
+                <label class="option-label">Preservação de Capa</label>
+                <div class="toggles-grid" style="margin-top: 0.25rem;">
+                  <label class="toggle-control" for="toggle-rf-skip-first">
+                    <input type="checkbox" id="toggle-rf-skip-first">
+                    <div class="toggle-switch"></div>
+                    <div class="toggle-label-group">
+                      <span class="toggle-title">Ignorar a 1ª página (Capa)</span>
+                      <span class="toggle-desc">Mantém a capa do arquivo intacta sem aplicar o corte.</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="rf-output-filename" class="option-label">Nome do Arquivo Limpo</label>
+              <div class="input-with-suffix">
+                <input type="text" id="rf-output-filename" class="text-input" value="documento_sem_rodape">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-rf-linearize">
+                <input type="checkbox" id="toggle-rf-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização QPDF)</span>
+                  <span class="toggle-desc">Otimiza o arquivo resultante para carregamento instantâneo.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Modo Ativo:</span>
+              <span class="summary-value" id="rf-summary-label">Limpeza de Rodapé (35 pt)</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-remove-footer">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+              <span>Remover Rodapé do PDF</span>
             </button>
           </div>
         </div>

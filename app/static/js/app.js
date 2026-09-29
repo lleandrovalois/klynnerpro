@@ -148,6 +148,16 @@
       enginePill: 'Estampador Vetorial Ativo',
       stageId: 'stage-footer',
     },
+    'remove-footer': {
+      heroTitle: 'Remova Rodapés, Cabeçalhos e Numeração do PDF',
+      heroSub: 'Elimine fisicamente textos de rodapé, marcas indesejadas, numeração de páginas ou corte faixas de margem com expurgo vetorial irreversível.',
+      dropHeading: 'Arraste o arquivo PDF para remover rodapé ou cabeçalho',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Expurgo físico por margem', 'Remoção cirúrgica de textos específicos', 'Detecção automática de numeração'],
+      multiple: false,
+      enginePill: 'Expurgador QPDF Ativo',
+      stageId: 'stage-remove-footer',
+    },
   };
 
   // Estado Central da Aplicação
@@ -453,6 +463,35 @@
   const footerPreviewHeaderSlot = document.getElementById('footer-preview-header-slot');
   const footerPreviewFooterSlot = document.getElementById('footer-preview-footer-slot');
 
+  // Elementos Remover Rodapé (.pdf)
+  const stageRemoveFooter = document.getElementById('stage-remove-footer');
+  const rfDocName = document.getElementById('rf-doc-name');
+  const rfDocPages = document.getElementById('rf-doc-pages');
+  const rfDocSize = document.getElementById('rf-doc-size');
+  const btnRfChangeDoc = document.getElementById('btn-rf-change-doc');
+  const rfModeMargin = document.getElementById('rf-mode-margin');
+  const rfModeText = document.getElementById('rf-mode-text');
+  const rfMarginControls = document.getElementById('rf-margin-controls');
+  const rfTextControls = document.getElementById('rf-text-controls');
+  const rfTargetArea = document.getElementById('rf-target-area');
+  const rfMarginHeight = document.getElementById('rf-margin-height');
+  const rfMarginHeightVal = document.getElementById('rf-margin-height-val');
+  const rfFillColor = document.getElementById('rf-fill-color');
+  const rfAutoPageNumbers = document.getElementById('rf-auto-page-numbers');
+  const rfCustomText = document.getElementById('rf-custom-text');
+  const rfTextPageNumbers = document.getElementById('rf-text-page-numbers');
+  const rfPreviewSheet = document.getElementById('rf-preview-sheet');
+  const rfCutZoneHeader = document.getElementById('rf-cut-zone-header');
+  const rfCutZoneFooter = document.getElementById('rf-cut-zone-footer');
+  const rfPagesSelect = document.getElementById('rf-pages-select');
+  const rfCustomPagesBox = document.getElementById('rf-custom-pages-box');
+  const rfCustomPagesInput = document.getElementById('rf-custom-pages-input');
+  const toggleRfSkipFirst = document.getElementById('toggle-rf-skip-first');
+  const rfOutputFilename = document.getElementById('rf-output-filename');
+  const toggleRfLinearize = document.getElementById('toggle-rf-linearize');
+  const rfSummaryLabel = document.getElementById('rf-summary-label');
+  const btnStartRemoveFooter = document.getElementById('btn-start-remove-footer');
+
   // =========================================================================
   // INICIALIZAÇÃO
   // =========================================================================
@@ -477,6 +516,7 @@
     setupImageToPdfEvents();
     setupWatermarkEvents();
     setupFooterEvents();
+    setupRemoveFooterEvents();
     setupModalAndPix();
     setupVisitCounter();
 
@@ -676,6 +716,8 @@
       initWatermarkWorkspace();
     } else if (toolKey === 'footer') {
       initFooterWorkspace();
+    } else if (toolKey === 'remove-footer') {
+      initRemoveFooterWorkspace();
     }
   }
 
@@ -3399,6 +3441,208 @@
       console.error(e);
       showToast(e.message || 'Erro ao estampar rodapé no documento.', 'error');
       stopProcessingUI(stageFooter);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA 14: REMOVER RODAPÉ E CABEÇALHO (.PDF)
+  // =========================================================================
+  function setupRemoveFooterEvents() {
+    if (btnRfChangeDoc) btnRfChangeDoc.addEventListener('click', resetCurrentDocument);
+
+    // Alternador de modo (Margem vs Texto)
+    if (rfModeMargin && rfModeText) {
+      rfModeMargin.addEventListener('change', () => {
+        if (rfMarginControls) rfMarginControls.classList.remove('hidden');
+        if (rfTextControls) rfTextControls.classList.add('hidden');
+        updateRemoveFooterPreview();
+      });
+      rfModeText.addEventListener('change', () => {
+        if (rfMarginControls) rfMarginControls.classList.add('hidden');
+        if (rfTextControls) rfTextControls.classList.remove('hidden');
+        updateRemoveFooterPreview();
+      });
+    }
+
+    // Botões de texto pré-configurado
+    document.querySelectorAll('.rf-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (rfCustomText && btn.dataset.text) {
+          rfCustomText.value = btn.dataset.text;
+          updateRemoveFooterPreview();
+        }
+      });
+    });
+
+    // Slider de altura da margem com feedback em tempo real
+    if (rfMarginHeight && rfMarginHeightVal) {
+      rfMarginHeight.addEventListener('input', () => {
+        const val = rfMarginHeight.value;
+        const cm = (val * 0.0352).toFixed(1);
+        rfMarginHeightVal.textContent = `${val} pt (~${cm} cm)`;
+        updateRemoveFooterPreview();
+      });
+    }
+
+    if (rfTargetArea) {
+      rfTargetArea.addEventListener('change', updateRemoveFooterPreview);
+    }
+
+    if (rfCustomText) {
+      rfCustomText.addEventListener('input', updateRemoveFooterPreview);
+    }
+
+    // Seletor de páginas
+    if (rfPagesSelect && rfCustomPagesBox) {
+      rfPagesSelect.addEventListener('change', () => {
+        if (rfPagesSelect.value === 'custom') {
+          rfCustomPagesBox.classList.remove('hidden');
+        } else {
+          rfCustomPagesBox.classList.add('hidden');
+        }
+      });
+    }
+
+    if (btnStartRemoveFooter) {
+      btnStartRemoveFooter.addEventListener('click', onExecuteRemoveFooter);
+    }
+  }
+
+  function initRemoveFooterWorkspace() {
+    if (!state.activeDoc) return;
+    if (rfDocName) rfDocName.textContent = state.activeDoc.name;
+    if (rfDocPages) rfDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (rfDocSize) rfDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (rfOutputFilename) rfOutputFilename.value = `${base}_sem_rodape`;
+
+    updateRemoveFooterPreview();
+  }
+
+  function updateRemoveFooterPreview() {
+    if (!rfPreviewSheet) return;
+
+    const isMarginMode = !rfModeText || !rfModeText.checked;
+    const target = rfTargetArea ? rfTargetArea.value : 'footer';
+    const height = rfMarginHeight ? parseInt(rfMarginHeight.value, 10) || 35 : 35;
+
+    // Escala proporcional para a miniatura (folha tem ~170px de altura total)
+    const previewZoneHeight = Math.max(18, Math.min(55, Math.round(height * 0.9)));
+
+    if (rfCutZoneHeader) {
+      if (isMarginMode && (target === 'header' || target === 'both')) {
+        rfCutZoneHeader.classList.remove('hidden');
+        rfCutZoneHeader.style.height = `${previewZoneHeight}px`;
+      } else {
+        rfCutZoneHeader.classList.add('hidden');
+      }
+    }
+
+    if (rfCutZoneFooter) {
+      if (isMarginMode && (target === 'footer' || target === 'both')) {
+        rfCutZoneFooter.classList.remove('hidden');
+        rfCutZoneFooter.style.height = `${previewZoneHeight}px`;
+      } else {
+        rfCutZoneFooter.classList.add('hidden');
+      }
+    }
+
+    if (rfSummaryLabel) {
+      if (isMarginMode) {
+        const areaLabel = { footer: 'Rodapé', header: 'Cabeçalho', both: 'Rodapé & Cabeçalho' }[target] || target;
+        rfSummaryLabel.textContent = `Faixa: ${areaLabel} (${height} pt)`;
+      } else {
+        const txt = (rfCustomText && rfCustomText.value.trim()) ? `"${rfCustomText.value.trim().substring(0, 15)}..."` : 'Numeração';
+        rfSummaryLabel.textContent = `Busca de Texto: ${txt}`;
+      }
+    }
+  }
+
+  async function onExecuteRemoveFooter() {
+    if (!state.activeDoc) return;
+    await ensureDocUploaded(state.activeDoc);
+
+    const isMarginMode = !rfModeText || !rfModeText.checked;
+    const customTxt = rfCustomText ? rfCustomText.value.trim() : '';
+    const removePageNums = isMarginMode
+      ? (rfAutoPageNumbers ? rfAutoPageNumbers.checked : true)
+      : (rfTextPageNumbers ? rfTextPageNumbers.checked : true);
+
+    if (!isMarginMode && !customTxt && !removePageNums) {
+      showToast('Por favor, informe um texto ou marque para remover números de página.', 'error');
+      return;
+    }
+
+    startProcessingUI('Removendo Rodapé...', 'Expurgando elementos físicos da página com motor C++ QPDF...');
+
+    try {
+      updateProcessingStep(1, 'Lendo estrutura e calculando margens de corte...', 25);
+      await delay(200);
+
+      updateProcessingStep(2, 'Expurgando permanentemente dados e aplicando preenchimento...', 60);
+
+      let cleanName = (rfOutputFilename ? rfOutputFilename.value.trim() : '') || 'documento_sem_rodape';
+      if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+      let pagesVal = rfPagesSelect ? rfPagesSelect.value : 'all';
+      if (pagesVal === 'custom' && rfCustomPagesInput) {
+        pagesVal = rfCustomPagesInput.value.trim() || 'all';
+      }
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        mode: isMarginMode ? 'margin' : 'text',
+        target_area: rfTargetArea ? rfTargetArea.value : 'footer',
+        margin_height: rfMarginHeight ? parseFloat(rfMarginHeight.value) || 35.0 : 35.0,
+        fill_color: rfFillColor ? rfFillColor.value : '#FFFFFF',
+        custom_text: customTxt || null,
+        remove_page_numbers: removePageNums,
+        skip_first_page: toggleRfSkipFirst ? toggleRfSkipFirst.checked : false,
+        pages: pagesVal,
+        output_filename: cleanName,
+        linearize: toggleRfLinearize ? toggleRfLinearize.checked : true,
+      };
+
+      updateProcessingStep(3, 'Reconstruindo documento e linearizando com Fast Web View...', 85);
+
+      const res = await fetch('/api/remove-footer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao remover rodapé do PDF.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Rodapé removido com sucesso!');
+      await delay(300);
+
+      const modeTitle = (data.metrics.mode === 'margin') ? 'Faixa de Margem' : 'Busca Cirúrgica';
+
+      showResultUI({
+        title: 'Rodapé Removido com Sucesso!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        isDocx: false,
+        label1: 'Páginas Processadas',
+        val1: `${data.metrics.pages_processed} de ${data.metrics.total_pages} págs`,
+        label2: 'Método Aplicado',
+        val2: `${modeTitle} (${data.metrics.target_area.toUpperCase()})`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro ao remover rodapé do PDF.', 'error');
+      stopProcessingUI(stageRemoveFooter);
     }
   }
 
