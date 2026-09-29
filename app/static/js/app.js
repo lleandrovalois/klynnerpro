@@ -525,6 +525,10 @@
   init();
 
   function init() {
+    if (fileInput) {
+      fileInput.multiple = true;
+      fileInput.setAttribute('multiple', 'multiple');
+    }
     generateSessionId();
     setupNavigation();
     setupCategoryRibbon();
@@ -664,8 +668,8 @@
     heroSubtitle.innerHTML = cfg.heroSub;
     engineStatusText.textContent = cfg.enginePill;
     dropzoneHeading.textContent = cfg.dropHeading;
-    dropzoneSub.textContent = cfg.dropSub;
-    fileInput.multiple = cfg.multiple;
+    fileInput.multiple = true;
+    fileInput.setAttribute('multiple', 'multiple');
     fileInput.accept = (toolKey === 'word-to-pdf') 
       ? '.docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword'
       : (toolKey === 'image-to-pdf')
@@ -864,6 +868,9 @@
     } else {
       // Ferramenta de documento único
       const targetFile = validFiles[0];
+      if (validFiles.length > 1) {
+        showToast(`Carregado "${targetFile.name}". (Esta ferramenta processa 1 arquivo por vez; para juntar vários documentos, use a aba "Juntar PDF").`, 'info');
+      }
       await loadActiveDocument(targetFile);
     }
   }
@@ -956,6 +963,8 @@
     document.querySelectorAll('.tool-stage').forEach(el => el.classList.add('hidden'));
     dropzone.classList.remove('hidden');
     fileInput.value = '';
+    fileInput.multiple = true;
+    fileInput.setAttribute('multiple', 'multiple');
   }
 
   // =========================================================================
