@@ -17,6 +17,12 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app.analytics import get_current_stats, init_analytics_db, record_page_visit
+from app.feedback import (
+    get_feedback_count,
+    get_recent_feedbacks,
+    init_feedback_db,
+    save_feedback,
+)
 from app.merger import execute_pdf_merge
 from app.splitter import execute_pdf_split
 from app.organizer import execute_pdf_organize
@@ -64,6 +70,7 @@ async def periodic_cleanup_task():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_analytics_db()
+    init_feedback_db()
     cleanup_task = asyncio.create_task(periodic_cleanup_task())
     logger.info("Klynner PDF iniciado com suporte a Menu de Documentos, QPDF C++ e Analytics.")
     yield
@@ -1245,4 +1252,40 @@ async def record_visit_endpoint(request: Request, body: Optional[VisitRequest] =
 async def get_stats_endpoint():
     stats = await asyncio.to_thread(get_current_stats)
     return JSONResponse({"success": True, "stats": stats})
+
+
+class FeedbackRequest(BaseModel):
+    category: str = Field("sugestao", description="Tipo do feedback (sugestao, bug, elogio, outro)")
+    name: Optional[str] = Field(None, max_length=100)
+    email: Optional[str] = Field(None, max_length=150)
+    rating: int = Field(5, ge=1, le=5)
+    message: str = Field(..., min_length=3, max_length=2000)
+    tool_context: Optional[str] = Field(None, max_length=50)
+
+
+@app.post("/api/feedback")
+async def create_feedback_endpoint(request: Request, body: FeedbackRequest):
+    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "127.0.0.1")
+    if "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+
+    result = await asyncio.to_thread(
+        save_feedback,
+        category=body.category,
+        message=body.message,
+        name=body.name,
+        email=body.email,
+        rating=body.rating,
+        tool_context=body.tool_context,
+        client_ip=client_ip,
+    )
+    return JSONResponse(result)
+
+
+@app.get("/api/feedback/recent")
+async def get_recent_feedbacks_endpoint():
+    feedbacks = await asyncio.to_thread(get_recent_feedbacks, 6)
+    total_count = await asyncio.to_thread(get_feedback_count)
+    return JSONResponse({"success": True, "feedbacks": feedbacks, "total": total_count})
+
 

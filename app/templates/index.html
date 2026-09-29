@@ -202,6 +202,12 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <span id="visit-counter-text">... visitas</span>
           </div>
+          <a href="#feedback-section" class="pill pill-cyan pill-hoverable" id="header-btn-feedback" title="Deixe sua sugestão ou comentário">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Sugestões 💬</span>
+          </a>
           <a href="#donation-section" class="pill pill-pink pill-hoverable" id="header-btn-donate" title="Apoie o desenvolvedor">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             <span>Apoiar ☕</span>
@@ -2334,6 +2340,131 @@
         </div>
       </section>
 
+      <!-- Seção de Sugestões e Comentários (Ouvidoria da Comunidade) -->
+      <section class="feedback-section" id="feedback-section">
+        <div class="feedback-card">
+          <div class="feedback-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+            <span>Ouvidoria & Sugestões</span>
+          </div>
+
+          <h2 class="feedback-title">Tem uma ideia, sugestão de ferramenta ou comentário?</h2>
+          <p class="feedback-desc">
+            Sua opinião molda o futuro do <strong>Klynner PRO</strong>. Conte-nos o que você gostaria de ver na plataforma, sugira novas ferramentas ou relate qualquer problema encontrado.
+          </p>
+
+          <!-- Formulário Interativo de Feedback -->
+          <form class="feedback-form" id="feedback-form">
+            <!-- 1. Tipo de Mensagem (Chips) -->
+            <div class="feedback-field-group">
+              <label class="feedback-field-label">Tipo de mensagem:</label>
+              <div class="feedback-cat-chips" id="feedback-cat-chips" role="radiogroup" aria-label="Categoria da mensagem">
+                <button type="button" class="feedback-cat-chip active" data-cat="sugestao" role="radio" aria-checked="true">
+                  <span>💡</span> Sugestão de Ferramenta
+                </button>
+                <button type="button" class="feedback-cat-chip" data-cat="bug" role="radio" aria-checked="false">
+                  <span>🐛</span> Relato de Problema / Bug
+                </button>
+                <button type="button" class="feedback-cat-chip" data-cat="elogio" role="radio" aria-checked="false">
+                  <span>⭐</span> Elogio / Depoimento
+                </button>
+                <button type="button" class="feedback-cat-chip" data-cat="outro" role="radio" aria-checked="false">
+                  <span>💬</span> Dúvida ou Outro
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. Avaliação por Estrelas (Star Rating) -->
+            <div class="feedback-rating-box">
+              <label class="feedback-field-label">Como avalia sua experiência com o Klynner PRO?</label>
+              <div class="rating-stars-wrapper">
+                <div class="stars-picker" id="feedback-stars-picker" role="radiogroup" aria-label="Avaliação por estrelas">
+                  <button type="button" class="star-btn active" data-val="1" title="1 estrela" aria-label="1 estrela">★</button>
+                  <button type="button" class="star-btn active" data-val="2" title="2 estrelas" aria-label="2 estrelas">★</button>
+                  <button type="button" class="star-btn active" data-val="3" title="3 estrelas" aria-label="3 estrelas">★</button>
+                  <button type="button" class="star-btn active" data-val="4" title="4 estrelas" aria-label="4 estrelas">★</button>
+                  <button type="button" class="star-btn active" data-val="5" title="5 estrelas" aria-label="5 estrelas">★</button>
+                </div>
+                <span class="rating-legend" id="feedback-rating-legend">Excelente (5/5)</span>
+              </div>
+            </div>
+
+            <!-- 3. Grid de Identificação Opcional -->
+            <div class="feedback-inputs-row">
+              <div class="feedback-input-box">
+                <label for="feedback-input-name" class="feedback-field-label">Seu nome ou apelido <span class="label-optional">(opcional)</span>:</label>
+                <input type="text" id="feedback-input-name" class="feedback-input" placeholder="Ex: Ana Silva" maxlength="100">
+              </div>
+              <div class="feedback-input-box">
+                <label for="feedback-input-email" class="feedback-field-label">E-mail ou WhatsApp <span class="label-optional">(opcional, se desejar retorno)</span>:</label>
+                <input type="text" id="feedback-input-email" class="feedback-input" placeholder="Ex: ana@email.com" maxlength="150">
+              </div>
+            </div>
+
+            <!-- 4. Textarea de Mensagem -->
+            <div class="feedback-field-group">
+              <div class="textarea-header-labels">
+                <label for="feedback-input-message" class="feedback-field-label">Sua sugestão ou comentário <span class="label-required">*</span>:</label>
+                <span class="char-counter" id="feedback-char-counter">0 / 2000</span>
+              </div>
+              <textarea id="feedback-input-message" class="feedback-textarea" rows="4" maxlength="2000" placeholder="Descreva sua sugestão, nova ferramenta que precisa ou detalhe a sua experiência com a plataforma..." required></textarea>
+            </div>
+
+            <!-- 5. Rodapé do Formulário -->
+            <div class="feedback-form-footer">
+              <div class="feedback-privacy-note">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>Privacidade respeitada conforme a LGPD. Zero spam.</span>
+              </div>
+              <button type="submit" class="btn btn-primary btn-feedback-submit" id="btn-submit-feedback">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                <span id="btn-submit-feedback-text">Enviar Mensagem</span>
+                <span class="spinner-sm hidden" id="spinner-feedback"></span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Estado de Sucesso (após envio) -->
+          <div class="feedback-success-card hidden" id="feedback-success-card">
+            <div class="feedback-success-icon">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.5">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <h3 class="feedback-success-title">Mensagem enviada com sucesso!</h3>
+            <p class="feedback-success-desc">Muito obrigado pelo carinho e contribuição. Cada sugestão é revisada pela nossa equipe para tornar o Klynner PRO cada vez mais completo.</p>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-feedback-another">
+              Enviar outra sugestão
+            </button>
+          </div>
+
+          <!-- Mural de Sugestões da Comunidade -->
+          <div class="feedback-board-container" id="feedback-board-container">
+            <div class="feedback-board-header">
+              <div class="board-header-left">
+                <span class="board-title">💬 Mural da Comunidade & Sugestões Recentes</span>
+                <span class="board-badge" id="board-total-count">... mensagens</span>
+              </div>
+              <button type="button" class="btn-refresh-feedbacks" id="btn-refresh-feedbacks" title="Atualizar mensagens">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                <span>Atualizar</span>
+              </button>
+            </div>
+
+            <div class="feedback-cards-grid" id="feedback-cards-grid">
+              <div class="feedback-loading-placeholder">Carregando sugestões da comunidade...</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       <!-- Seção de Apoio / Doação ao Desenvolvedor -->
       <section class="donation-section" id="donation-section">
         <div class="donation-card">
@@ -2753,6 +2884,6 @@
     </footer>
   </div>
 
-  <script src="/static/js/app.js?v=2.6.0"></script>
+  <script src="/static/js/app.js?v=2.7.0"></script>
 </body>
 </html>

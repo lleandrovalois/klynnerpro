@@ -199,6 +199,30 @@ def test_suite_new_features():
     del_res = client.delete(f"/api/session/{session_id}")
     assert del_res.status_code == 200
 
+    # 6. Testando Caixa de Sugestões e Comentários (Feedback API)
+    print("\n[6/6] Testando API de Sugestões e Feedback...")
+    fb_payload = {
+        "category": "sugestao",
+        "name": "Maria Teste",
+        "email": "maria@teste.com",
+        "rating": 5,
+        "message": "Parabéns pela plataforma! Gostaria de sugerir compressão de PDF.",
+        "tool_context": "merge",
+    }
+    fb_res = client.post("/api/feedback", json=fb_payload)
+    assert fb_res.status_code == 200
+    fb_json = fb_res.json()
+    assert fb_json["success"] is True
+    assert "id" in fb_json
+
+    fb_recent = client.get("/api/feedback/recent")
+    assert fb_recent.status_code == 200
+    fb_recent_json = fb_recent.json()
+    assert fb_recent_json["success"] is True
+    assert fb_recent_json["total"] >= 1
+    assert any("Maria" in f["name"] for f in fb_recent_json["feedbacks"])
+    print("  -> Envio de Feedback e Mural da Comunidade validados com sucesso!")
+
     print("\n==================================================")
     print("  SUCESSO ABSOLUTO! TODOS OS TESTES PASSARAM!     ")
     print("==================================================")

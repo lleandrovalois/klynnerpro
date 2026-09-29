@@ -601,6 +601,7 @@
     setupZoomModalEvents();
     setupAllToolsCatalogEvents();
     setupCategoryDropdowns();
+    setupFeedbackSection();
 
     // Suporte a hash da URL (ex: #split, #protect, #image-to-pdf, #watermark)
     const hash = window.location.hash.replace('#', '');
@@ -4533,6 +4534,263 @@
       showToast('Selecione e copie o texto manualmente.', 'error');
     }
     document.body.removeChild(textArea);
+  }
+
+  // =========================================================================
+  // CAIXA DE SUGESTÕES, COMENTÁRIOS E FEEDBACK
+  // =========================================================================
+  function setupFeedbackSection() {
+    const feedbackForm = document.getElementById('feedback-form');
+    const feedbackCatChips = document.querySelectorAll('.feedback-cat-chip');
+    const starsPicker = document.getElementById('feedback-stars-picker');
+    const starBtns = starsPicker ? starsPicker.querySelectorAll('.star-btn') : [];
+    const ratingLegend = document.getElementById('feedback-rating-legend');
+    const inputName = document.getElementById('feedback-input-name');
+    const inputEmail = document.getElementById('feedback-input-email');
+    const inputMessage = document.getElementById('feedback-input-message');
+    const charCounter = document.getElementById('feedback-char-counter');
+    const btnSubmit = document.getElementById('btn-submit-feedback');
+    const btnSubmitText = document.getElementById('btn-submit-feedback-text');
+    const spinnerFeedback = document.getElementById('spinner-feedback');
+    const successCard = document.getElementById('feedback-success-card');
+    const btnAnother = document.getElementById('btn-feedback-another');
+    const cardsGrid = document.getElementById('feedback-cards-grid');
+    const boardTotalCount = document.getElementById('board-total-count');
+    const btnRefresh = document.getElementById('btn-refresh-feedbacks');
+    const headerBtnFeedback = document.getElementById('header-btn-feedback');
+
+    if (!feedbackForm) return;
+
+    let currentCategory = 'sugestao';
+    let currentRating = 5;
+
+    const RATING_TEXTS = {
+      1: 'Precisa melhorar (1/5) ⭐',
+      2: 'Regular (2/5) ⭐⭐',
+      3: 'Bom (3/5) ⭐⭐⭐',
+      4: 'Muito bom (4/5) ⭐⭐⭐⭐',
+      5: 'Excelente (5/5) ⭐⭐⭐⭐⭐',
+    };
+
+    // 1. Seleção de Categoria (Chips)
+    feedbackCatChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        feedbackCatChips.forEach(c => {
+          c.classList.remove('active');
+          c.setAttribute('aria-checked', 'false');
+        });
+        chip.classList.add('active');
+        chip.setAttribute('aria-checked', 'true');
+        currentCategory = chip.dataset.cat || 'sugestao';
+      });
+    });
+
+    // 2. Avaliação por Estrelas
+    function renderStars(rating, isHover = false) {
+      starBtns.forEach(btn => {
+        const val = parseInt(btn.dataset.val, 10);
+        if (isHover) {
+          if (val <= rating) {
+            btn.classList.add('hover-active');
+          } else {
+            btn.classList.remove('hover-active');
+          }
+        } else {
+          btn.classList.remove('hover-active');
+          if (val <= rating) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        }
+      });
+      if (ratingLegend && RATING_TEXTS[rating]) {
+        ratingLegend.textContent = RATING_TEXTS[rating];
+      }
+    }
+
+    starBtns.forEach(btn => {
+      const val = parseInt(btn.dataset.val, 10);
+      btn.addEventListener('mouseenter', () => {
+        renderStars(val, true);
+      });
+      btn.addEventListener('mouseleave', () => {
+        renderStars(currentRating, false);
+      });
+      btn.addEventListener('click', () => {
+        currentRating = val;
+        renderStars(currentRating, false);
+      });
+    });
+
+    // 3. Contador de Caracteres
+    if (inputMessage && charCounter) {
+      inputMessage.addEventListener('input', () => {
+        const len = inputMessage.value.length;
+        charCounter.textContent = `${len} / 2000`;
+        if (len >= 1900) {
+          charCounter.style.color = '#F43F5E';
+        } else {
+          charCounter.style.color = '';
+        }
+      });
+    }
+
+    // 4. Envio do Formulário
+    feedbackForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = (inputMessage ? inputMessage.value : '').trim();
+      if (!message || message.length < 3) {
+        showToast('Por favor, escreva uma mensagem com ao menos 3 caracteres.', 'error');
+        if (inputMessage) inputMessage.focus();
+        return;
+      }
+
+      const nameVal = (inputName ? inputName.value : '').trim();
+      const emailVal = (inputEmail ? inputEmail.value : '').trim();
+
+      // UI Loading
+      if (btnSubmit) btnSubmit.disabled = true;
+      if (spinnerFeedback) spinnerFeedback.classList.remove('hidden');
+      if (btnSubmitText) btnSubmitText.textContent = 'Enviando...';
+
+      try {
+        const resp = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: currentCategory,
+            name: nameVal || null,
+            email: emailVal || null,
+            rating: currentRating,
+            message: message,
+            tool_context: state.activeTool || null,
+          }),
+        });
+
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+          showToast('Obrigado! Sua mensagem foi enviada com sucesso.', 'success');
+          feedbackForm.classList.add('hidden');
+          if (successCard) successCard.classList.remove('hidden');
+          loadRecentFeedbacks();
+        } else {
+          showToast(data.detail || 'Ocorreu um erro ao enviar seu feedback. Tente novamente.', 'error');
+        }
+      } catch (err) {
+        console.error('Erro ao enviar feedback:', err);
+        showToast('Erro de conexão ao enviar feedback.', 'error');
+      } finally {
+        if (btnSubmit) btnSubmit.disabled = false;
+        if (spinnerFeedback) spinnerFeedback.classList.add('hidden');
+        if (btnSubmitText) btnSubmitText.textContent = 'Enviar Mensagem';
+      }
+    });
+
+    // 5. Botão "Enviar outra mensagem"
+    if (btnAnother) {
+      btnAnother.addEventListener('click', () => {
+        if (inputMessage) inputMessage.value = '';
+        if (charCounter) charCounter.textContent = '0 / 2000';
+        currentRating = 5;
+        renderStars(5, false);
+        currentCategory = 'sugestao';
+        feedbackCatChips.forEach(c => {
+          c.classList.toggle('active', c.dataset.cat === 'sugestao');
+          c.setAttribute('aria-checked', c.dataset.cat === 'sugestao' ? 'true' : 'false');
+        });
+        if (successCard) successCard.classList.add('hidden');
+        feedbackForm.classList.remove('hidden');
+        if (inputMessage) inputMessage.focus();
+      });
+    }
+
+    // 6. Carregar Mural da Comunidade
+    async function loadRecentFeedbacks() {
+      if (!cardsGrid) return;
+      try {
+        const res = await fetch('/api/feedback/recent');
+        if (!res.ok) throw new Error('Falha ao carregar mural');
+        const data = await res.json();
+
+        if (boardTotalCount && data.total !== undefined) {
+          boardTotalCount.textContent = `${data.total} mensagem${data.total === 1 ? '' : 's'}`;
+        }
+
+        const items = data.feedbacks || [];
+        if (items.length === 0) {
+          cardsGrid.innerHTML = `
+            <div class="feedback-loading-placeholder">
+              Nenhuma mensagem pública no momento. Deixe a primeira sugestão acima!
+            </div>
+          `;
+          return;
+        }
+
+        const CAT_LABELS = {
+          sugestao: { label: '💡 Sugestão', cls: 'cat-badge-sugestao' },
+          bug: { label: '🐛 Bug', cls: 'cat-badge-bug' },
+          elogio: { label: '⭐ Elogio', cls: 'cat-badge-elogio' },
+          outro: { label: '💬 Comentário', cls: 'cat-badge-outro' },
+        };
+
+        const cardsHtml = items.map(item => {
+          const catInfo = CAT_LABELS[item.category] || CAT_LABELS.sugestao;
+          const starsStr = '★'.repeat(Math.max(1, Math.min(5, item.rating || 5))) +
+                           '☆'.repeat(5 - Math.max(1, Math.min(5, item.rating || 5)));
+          const initials = (item.name || 'U').substring(0, 2).toUpperCase();
+          const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : '';
+
+          return `
+            <div class="feedback-item-card">
+              <div class="feedback-item-header">
+                <div class="feedback-item-user">
+                  <div class="feedback-user-avatar">${escapeHtml(initials)}</div>
+                  <span class="feedback-user-name">${escapeHtml(item.name || 'Usuário')}</span>
+                </div>
+                <span class="feedback-item-cat-badge ${catInfo.cls}">${catInfo.label}</span>
+              </div>
+              <div class="feedback-item-stars" title="${item.rating || 5} de 5 estrelas">${starsStr}</div>
+              <p class="feedback-item-message">${escapeHtml(item.message || '')}</p>
+              <div class="feedback-item-footer">
+                <span>${item.tool_context ? 'Ferramenta: ' + escapeHtml(TOOL_SHORT_NAMES[item.tool_context] || item.tool_context) : 'Klynner PRO'}</span>
+                <span>${dateStr}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        cardsGrid.innerHTML = cardsHtml;
+      } catch (err) {
+        console.warn('Erro ao carregar feedbacks recentes:', err);
+        cardsGrid.innerHTML = `
+          <div class="feedback-loading-placeholder">
+            Carregamento do mural temporariamente indisponível.
+          </div>
+        `;
+      }
+    }
+
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', loadRecentFeedbacks);
+    }
+
+    // Scroll suave pelo Header Pill
+    if (headerBtnFeedback) {
+      headerBtnFeedback.addEventListener('click', (e) => {
+        e.preventDefault();
+        const section = document.getElementById('feedback-section');
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => {
+            if (inputMessage) inputMessage.focus();
+          }, 600);
+        }
+      });
+    }
+
+    // Carrega na inicialização
+    loadRecentFeedbacks();
   }
 
 })();
