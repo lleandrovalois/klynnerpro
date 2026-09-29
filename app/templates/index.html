@@ -216,8 +216,8 @@
       <!-- MENU DE FUNCIONALIDADES (Barra Superior de Navegação das Ferramentas) -->
       <nav class="tools-nav-bar" id="tools-nav-bar" aria-label="Menu de Ferramentas PDF">
         <div class="tool-categories-ribbon" id="tool-categories-ribbon">
-          <button type="button" class="tool-category-pill active" data-cat="all">Todas as Ferramentas (12)</button>
-          <button type="button" class="tool-category-pill" data-cat="pages">Edição & Páginas (5)</button>
+          <button type="button" class="tool-category-pill active" data-cat="all">Todas as Ferramentas (13)</button>
+          <button type="button" class="tool-category-pill" data-cat="pages">Edição & Páginas (6)</button>
           <button type="button" class="tool-category-pill" data-cat="security">Segurança & Marcação (4)</button>
           <button type="button" class="tool-category-pill" data-cat="convert">Conversão & Imagens (3)</button>
         </div>
@@ -390,6 +390,21 @@
               <span class="tool-btn-sub">Texto ou Logotipo</span>
             </div>
           </button>
+
+          <!-- 13. Personalizar Rodapé & Numeração -->
+          <button type="button" class="tool-nav-btn" data-tool="footer" data-category="pages" id="tool-nav-footer" title="Adicione rodapé, cabeçalho e numeração de páginas personalizada com tags">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="7" y1="18" x2="17" y2="18"/>
+                <line x1="12" y1="14" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Personalizar Rodapé</span>
+              <span class="tool-btn-sub">Texto & Numeração</span>
+            </div>
+          </button>
         </div>
       </nav>
 
@@ -463,6 +478,12 @@
                 <input type="text" id="output-filename" class="text-input" value="documento_unificado" placeholder="ex: dossie_completo_2026">
                 <span class="input-suffix">.pdf</span>
               </div>
+            </div>
+
+            <div class="option-group" id="group-merge-footer-text" style="margin-top: 0.75rem;">
+              <label for="merge-footer-text" class="option-label">Texto do Rodapé do Menu Visual</label>
+              <input type="text" id="merge-footer-text" class="text-input" value="Klynner PDF • Gerado com motor C++/QPDF de alta performance" placeholder="Deixe em branco para remover o rodapé do menu">
+              <span class="input-hint">Personalize ou apague para remover o texto do rodapé na página do menu inicial.</span>
             </div>
 
             <div class="toggles-grid">
@@ -1716,6 +1737,174 @@
                 <circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/>
               </svg>
               <span>Aplicar Marca d'água no PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2M: PERSONALIZAR RODAPÉ E NUMERAÇÃO DE PÁGINAS          -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-footer">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento Alvo:</span>
+              <span class="active-doc-name" id="footer-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="footer-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="footer-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-footer-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(14, 165, 233, 0.15); border-color: rgba(14, 165, 233, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="7" y1="18" x2="17" y2="18"/>
+                  <line x1="12" y1="14" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Personalização de Rodapé & Numeração</h4>
+                <p class="security-box-desc">Insira rodapé, cabeçalho institucional, numeração de páginas ou dados dinâmicos em alta resolução vetorial.</p>
+              </div>
+            </div>
+
+            <!-- Posicionamento: Rodapé vs Cabeçalho & Alinhamento -->
+            <div class="passwords-grid" style="margin-top: 1rem;">
+              <div class="pwd-field-group">
+                <label for="footer-position-select" class="option-label">Posição no Documento</label>
+                <select id="footer-position-select" class="text-input">
+                  <option value="footer" selected>Rodapé (Parte Inferior da Página)</option>
+                  <option value="header">Cabeçalho (Parte Superior da Página)</option>
+                </select>
+              </div>
+
+              <div class="pwd-field-group">
+                <label for="footer-alignment-select" class="option-label">Alinhamento do Texto</label>
+                <select id="footer-alignment-select" class="text-input">
+                  <option value="center" selected>Centralizado (Padrão)</option>
+                  <option value="right">Alinhado à Direita</option>
+                  <option value="left">Alinhado à Esquerda</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Campo de Texto com Tags Dinâmicas -->
+            <div class="pwd-field-group" style="margin-top: 1.25rem;">
+              <label for="footer-text-input" class="option-label">Conteúdo do Rodapé / Cabeçalho</label>
+              <input type="text" id="footer-text-input" class="text-input" value="Página {page} de {total}" placeholder="Digite o texto ou use as tags dinâmicas...">
+              
+              <div style="margin-top: 0.6rem;">
+                <span style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                  Tags dinâmicas & Modelos rápidos (clique para inserir):
+                </span>
+                <div class="selection-quick-chips">
+                  <button type="button" class="chip-btn footer-tag-btn" data-tag="Página {page} de {total}">Página {page} de {total}</button>
+                  <button type="button" class="chip-btn footer-tag-btn" data-tag="{page} / {total}">{page} / {total}</button>
+                  <button type="button" class="chip-btn footer-tag-btn" data-tag="Pág. {page}">Pág. {page}</button>
+                  <button type="button" class="chip-btn footer-tag-btn" data-tag="Documento: {file} • Pág {page}/{total}">Com Nome do Arquivo</button>
+                  <button type="button" class="chip-btn footer-tag-btn" data-tag="Emitido em {date} • Pág. {page}">Com Data Atual</button>
+                  <button type="button" class="chip-btn footer-tag-btn" data-tag="Klynner PDF • Gerado com motor C++/QPDF de alta performance">Klynner PDF Pro</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Miniatura de Pré-visualização ao Vivo -->
+            <div style="margin-top: 1.25rem;">
+              <span class="sub-section-title" style="font-size: 0.85rem;">Pré-visualização em Tempo Real na Folha:</span>
+              <div class="footer-preview-sheet" id="footer-preview-sheet">
+                <div class="footer-preview-live-text" id="footer-preview-header-slot" style="display: none; text-align: center; color: #64748B; font-size: 10px;"></div>
+                <div class="footer-preview-skeleton-content">
+                  <div class="footer-preview-skeleton-line" style="width: 85%;"></div>
+                  <div class="footer-preview-skeleton-line" style="width: 95%;"></div>
+                  <div class="footer-preview-skeleton-line" style="width: 70%;"></div>
+                  <div class="footer-preview-skeleton-line" style="width: 90%;"></div>
+                  <div class="footer-preview-skeleton-line" style="width: 60%;"></div>
+                </div>
+                <div class="footer-preview-live-text" id="footer-preview-footer-slot" style="text-align: center; color: #64748B; font-size: 10px; font-weight: 500;">
+                  Página 1 de 12
+                </div>
+              </div>
+            </div>
+
+            <!-- Tipografia, Cores e Margens -->
+            <div class="passwords-grid" style="margin-top: 1.25rem;">
+              <div class="pwd-field-group">
+                <label for="footer-font-size" class="option-label">Tamanho da Fonte: <span id="footer-font-size-val">9 pt</span></label>
+                <input type="range" id="footer-font-size" class="range-slider" min="6" max="18" step="0.5" value="9">
+              </div>
+
+              <div class="pwd-field-group">
+                <label for="footer-margin-offset" class="option-label">Distância da Borda: <span id="footer-margin-val">25 pt</span></label>
+                <input type="range" id="footer-margin-offset" class="range-slider" min="10" max="60" step="1" value="25">
+              </div>
+            </div>
+
+            <div class="passwords-grid" style="margin-top: 1rem;">
+              <div class="pwd-field-group">
+                <label for="footer-font-color" class="option-label">Cor do Texto: <span id="footer-color-val">#64748B</span></label>
+                <div class="color-picker-row">
+                  <input type="color" id="footer-font-color" value="#64748B" class="color-picker-input">
+                  <button type="button" class="color-dot" data-color="#64748B" style="background:#64748B" title="Slate (Discreto)"></button>
+                  <button type="button" class="color-dot" data-color="#000000" style="background:#000000" title="Preto"></button>
+                  <button type="button" class="color-dot" data-color="#2563EB" style="background:#2563EB" title="Azul Corporativo"></button>
+                  <button type="button" class="color-dot" data-color="#0F766E" style="background:#0F766E" title="Verde Escuro"></button>
+                  <button type="button" class="color-dot" data-color="#DC2626" style="background:#DC2626" title="Vermelho"></button>
+                </div>
+              </div>
+
+              <div class="pwd-field-group">
+                <label for="footer-start-num" class="option-label">Iniciar Contagem em:</label>
+                <input type="number" id="footer-start-num" class="text-input" min="1" max="9999" value="1">
+              </div>
+            </div>
+
+            <div class="toggles-grid" style="margin-top: 1rem;">
+              <label class="toggle-control" for="toggle-footer-skip-first">
+                <input type="checkbox" id="toggle-footer-skip-first">
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Não exibir na primeira página</span>
+                  <span class="toggle-desc">Ideal para preservar a capa ou sumário sem numeração de página.</span>
+                </div>
+              </label>
+            </div>
+
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="footer-output-filename" class="option-label">Nome do Arquivo com Rodapé</label>
+              <div class="input-with-suffix">
+                <input type="text" id="footer-output-filename" class="text-input" value="documento_com_rodape">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-footer-linearize">
+                <input type="checkbox" id="toggle-footer-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização QPDF)</span>
+                  <span class="toggle-desc">Otimiza para abertura veloz na web após estampar o texto vetorial.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Configuração:</span>
+              <span class="summary-value" id="footer-summary-label">Rodapé Centralizado</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-footer">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="7" y1="18" x2="17" y2="18"/>
+                <line x1="12" y1="14" x2="12" y2="15"/>
+              </svg>
+              <span>Aplicar Rodapé no PDF</span>
             </button>
           </div>
         </div>

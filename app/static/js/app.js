@@ -138,6 +138,16 @@
       enginePill: 'Carimbador QPDF Ativo',
       stageId: 'stage-watermark',
     },
+    footer: {
+      heroTitle: 'Personalize o Rodapé, Cabeçalho e Numeração do PDF',
+      heroSub: 'Adicione rodapé, cabeçalho institucional, texto personalizado ou numeração de páginas (ex: Página 1 de 10) com estamparia vetorial em alta resolução.',
+      dropHeading: 'Arraste o arquivo PDF que receberá o rodapé ou numeração',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Numeração de páginas ({page} de {total})', 'Rodapé ou Cabeçalho com alinhamento', 'Cores e fontes vetoriais customizadas'],
+      multiple: false,
+      enginePill: 'Estampador Vetorial Ativo',
+      stageId: 'stage-footer',
+    },
   };
 
   // Estado Central da Aplicação
@@ -231,6 +241,7 @@
   const toggleVisualMenu = document.getElementById('toggle-visual-menu');
   const toggleBookmarks = document.getElementById('toggle-bookmarks');
   const toggleLinearize = document.getElementById('toggle-linearize');
+  const mergeFooterTextInput = document.getElementById('merge-footer-text');
 
   // Elementos Dividir PDF
   const stageSplit = document.getElementById('stage-split');
@@ -417,6 +428,31 @@
   const toggleWmLinearize = document.getElementById('toggle-wm-linearize');
   const btnStartWatermark = document.getElementById('btn-start-watermark');
 
+  // Elementos Personalizar Rodapé (.pdf)
+  const stageFooter = document.getElementById('stage-footer');
+  const footerDocName = document.getElementById('footer-doc-name');
+  const footerDocPages = document.getElementById('footer-doc-pages');
+  const footerDocSize = document.getElementById('footer-doc-size');
+  const btnFooterChangeDoc = document.getElementById('btn-footer-change-doc');
+  const footerPositionSelect = document.getElementById('footer-position-select');
+  const footerAlignmentSelect = document.getElementById('footer-alignment-select');
+  const footerTextInput = document.getElementById('footer-text-input');
+  const footerFontSize = document.getElementById('footer-font-size');
+  const footerFontSizeVal = document.getElementById('footer-font-size-val');
+  const footerMarginOffset = document.getElementById('footer-margin-offset');
+  const footerMarginVal = document.getElementById('footer-margin-val');
+  const footerFontColor = document.getElementById('footer-font-color');
+  const footerColorVal = document.getElementById('footer-color-val');
+  const footerStartNum = document.getElementById('footer-start-num');
+  const toggleFooterSkipFirst = document.getElementById('toggle-footer-skip-first');
+  const footerOutputFilename = document.getElementById('footer-output-filename');
+  const toggleFooterLinearize = document.getElementById('toggle-footer-linearize');
+  const footerSummaryLabel = document.getElementById('footer-summary-label');
+  const btnStartFooter = document.getElementById('btn-start-footer');
+  const footerPreviewSheet = document.getElementById('footer-preview-sheet');
+  const footerPreviewHeaderSlot = document.getElementById('footer-preview-header-slot');
+  const footerPreviewFooterSlot = document.getElementById('footer-preview-footer-slot');
+
   // =========================================================================
   // INICIALIZAÇÃO
   // =========================================================================
@@ -440,6 +476,7 @@
     setupWordToPdfEvents();
     setupImageToPdfEvents();
     setupWatermarkEvents();
+    setupFooterEvents();
     setupModalAndPix();
     setupVisitCounter();
 
@@ -637,6 +674,8 @@
       initWordToPdfWorkspace();
     } else if (toolKey === 'watermark') {
       initWatermarkWorkspace();
+    } else if (toolKey === 'footer') {
+      initFooterWorkspace();
     }
   }
 
@@ -1030,6 +1069,7 @@
         create_visual_menu: toggleVisualMenu.checked,
         add_bookmarks: toggleBookmarks.checked,
         linearize: toggleLinearize.checked,
+        menu_footer_text: mergeFooterTextInput ? mergeFooterTextInput.value : undefined,
       };
 
       updateProcessingStep(4, 'Linearizando (Fast Web View) e salvando documento final...', 90);
@@ -3150,6 +3190,215 @@
       console.error(e);
       showToast(e.message || 'Erro ao aplicar marca d\'água no PDF.', 'error');
       stopProcessingUI(stageWatermark);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA 13: PERSONALIZAR RODAPÉ E NUMERAÇÃO DE PÁGINAS (.PDF)
+  // =========================================================================
+  function setupFooterEvents() {
+    if (btnFooterChangeDoc) btnFooterChangeDoc.addEventListener('click', resetCurrentDocument);
+
+    // Botões de tags e modelos rápidos
+    document.querySelectorAll('.footer-tag-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (footerTextInput && btn.dataset.tag) {
+          footerTextInput.value = btn.dataset.tag;
+          updateFooterPreview();
+        }
+      });
+    });
+
+    // Atualização em tempo real de inputs e sliders
+    if (footerTextInput) {
+      footerTextInput.addEventListener('input', updateFooterPreview);
+    }
+
+    if (footerPositionSelect) {
+      footerPositionSelect.addEventListener('change', updateFooterPreview);
+    }
+
+    if (footerAlignmentSelect) {
+      footerAlignmentSelect.addEventListener('change', updateFooterPreview);
+    }
+
+    if (footerFontSize && footerFontSizeVal) {
+      footerFontSize.addEventListener('input', () => {
+        footerFontSizeVal.textContent = `${footerFontSize.value} pt`;
+        updateFooterPreview();
+      });
+    }
+
+    if (footerMarginOffset && footerMarginVal) {
+      footerMarginOffset.addEventListener('input', () => {
+        footerMarginVal.textContent = `${footerMarginOffset.value} pt`;
+      });
+    }
+
+    if (footerFontColor && footerColorVal) {
+      footerFontColor.addEventListener('input', () => {
+        footerColorVal.textContent = footerFontColor.value.toUpperCase();
+        updateFooterPreview();
+      });
+    }
+
+    const footerDots = document.querySelectorAll('#stage-footer .color-dot');
+    footerDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        if (footerFontColor && dot.dataset.color) {
+          footerFontColor.value = dot.dataset.color;
+          if (footerColorVal) footerColorVal.textContent = dot.dataset.color.toUpperCase();
+          updateFooterPreview();
+        }
+      });
+    });
+
+    if (footerStartNum) {
+      footerStartNum.addEventListener('input', updateFooterPreview);
+    }
+
+    if (btnStartFooter) {
+      btnStartFooter.addEventListener('click', onExecuteFooter);
+    }
+  }
+
+  function initFooterWorkspace() {
+    if (!state.activeDoc) return;
+    if (footerDocName) footerDocName.textContent = state.activeDoc.name;
+    if (footerDocPages) footerDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (footerDocSize) footerDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (footerOutputFilename) footerOutputFilename.value = `${base}_com_rodape`;
+
+    updateFooterPreview();
+  }
+
+  function updateFooterPreview() {
+    if (!footerPreviewSheet) return;
+
+    const text = footerTextInput ? footerTextInput.value : 'Página {page} de {total}';
+    const pos = footerPositionSelect ? footerPositionSelect.value : 'footer';
+    const align = footerAlignmentSelect ? footerAlignmentSelect.value : 'center';
+    const size = footerFontSize ? parseFloat(footerFontSize.value) || 9 : 9;
+    const color = footerFontColor ? footerFontColor.value : '#64748B';
+
+    const totalP = (state.activeDoc && state.activeDoc.pageCount) ? state.activeDoc.pageCount : 12;
+    const startNum = footerStartNum ? parseInt(footerStartNum.value, 10) || 1 : 1;
+    const sampleText = text
+      .replace(/\{page\}/gi, startNum)
+      .replace(/\{total\}/gi, totalP)
+      .replace(/\{date\}/gi, new Date().toLocaleDateString('pt-BR'))
+      .replace(/\{file\}/gi, (state.activeDoc ? state.activeDoc.name : 'documento.pdf').substring(0, 16));
+
+    const scaledSize = Math.max(9, Math.min(14, size));
+
+    if (pos === 'header') {
+      if (footerPreviewHeaderSlot) {
+        footerPreviewHeaderSlot.style.display = 'block';
+        footerPreviewHeaderSlot.style.textAlign = align;
+        footerPreviewHeaderSlot.style.fontSize = `${scaledSize}px`;
+        footerPreviewHeaderSlot.style.color = color;
+        footerPreviewHeaderSlot.textContent = sampleText;
+      }
+      if (footerPreviewFooterSlot) {
+        footerPreviewFooterSlot.style.display = 'none';
+      }
+    } else {
+      if (footerPreviewFooterSlot) {
+        footerPreviewFooterSlot.style.display = 'block';
+        footerPreviewFooterSlot.style.textAlign = align;
+        footerPreviewFooterSlot.style.fontSize = `${scaledSize}px`;
+        footerPreviewFooterSlot.style.color = color;
+        footerPreviewFooterSlot.textContent = sampleText;
+      }
+      if (footerPreviewHeaderSlot) {
+        footerPreviewHeaderSlot.style.display = 'none';
+      }
+    }
+
+    if (footerSummaryLabel) {
+      const posLabel = (pos === 'header') ? 'Cabeçalho' : 'Rodapé';
+      const alignLabel = { left: 'Esquerda', center: 'Centro', right: 'Direita' }[align] || align;
+      footerSummaryLabel.textContent = `${posLabel} (${alignLabel}) • ${size}pt`;
+    }
+  }
+
+  async function onExecuteFooter() {
+    if (!state.activeDoc) return;
+    await ensureDocUploaded(state.activeDoc);
+
+    const text = footerTextInput ? footerTextInput.value.trim() : '{page}';
+    if (!text) {
+      showToast('Por favor, informe o texto ou tags para o rodapé/cabeçalho.', 'error');
+      return;
+    }
+
+    startProcessingUI('Personalizando Rodapé...', 'Estampando texto vetorial de alta definição e aplicando Fast Web View...');
+
+    try {
+      updateProcessingStep(1, 'Lendo geometria e dimensões das páginas do PDF...', 25);
+      await delay(200);
+
+      updateProcessingStep(2, 'Substituindo tags dinâmicas e desenhando vetores...', 60);
+
+      let cleanName = (footerOutputFilename ? footerOutputFilename.value.trim() : '') || 'documento_com_rodape';
+      if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        footer_text: text,
+        position: footerPositionSelect ? footerPositionSelect.value : 'footer',
+        alignment: footerAlignmentSelect ? footerAlignmentSelect.value : 'center',
+        font_size: footerFontSize ? parseFloat(footerFontSize.value) || 9.0 : 9.0,
+        font_color: footerFontColor ? footerFontColor.value : '#64748B',
+        skip_first_page: toggleFooterSkipFirst ? toggleFooterSkipFirst.checked : false,
+        page_start_number: footerStartNum ? parseInt(footerStartNum.value, 10) || 1 : 1,
+        margin_offset: footerMarginOffset ? parseFloat(footerMarginOffset.value) || 25.0 : 25.0,
+        output_filename: cleanName,
+        linearize: toggleFooterLinearize ? toggleFooterLinearize.checked : true,
+      };
+
+      updateProcessingStep(3, 'Otimizando e linearizando estrutura do arquivo...', 85);
+
+      const res = await fetch('/api/footer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao estampar rodapé no PDF.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Rodapé aplicado com perfeição!');
+      await delay(300);
+
+      const posLabel = (data.metrics.position === 'header') ? 'Cabeçalho' : 'Rodapé';
+      const alignLabel = { left: 'Esquerda', center: 'Centro', right: 'Direita' }[data.metrics.alignment] || data.metrics.alignment;
+
+      showResultUI({
+        title: 'Rodapé Personalizado com Sucesso!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        isDocx: false,
+        label1: 'Páginas Estampadas',
+        val1: `${data.metrics.pages_processed} de ${data.metrics.total_pages} págs`,
+        label2: 'Disposição',
+        val2: `${posLabel} (${alignLabel})`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro ao estampar rodapé no documento.', 'error');
+      stopProcessingUI(stageFooter);
     }
   }
 

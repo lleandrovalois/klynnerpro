@@ -28,6 +28,7 @@ from app.pdf_to_word import execute_pdf_to_word
 from app.word_to_pdf import execute_word_to_pdf
 from app.image_to_pdf import execute_image_to_pdf
 from app.watermark import execute_pdf_watermark
+from app.footer_customizer import execute_pdf_footer
 from app.storage import (
     BASE_TEMP_DIR,
     cleanup_expired_sessions,
@@ -120,6 +121,10 @@ class MergeRequest(BaseModel):
     linearize: bool = Field(
         default=True,
         description="Fast Web View para carregamento imediato em PDFs gigantes"
+    )
+    menu_footer_text: Optional[str] = Field(
+        default=None,
+        description="Texto personalizado para o rodapé da página de menu/sumário"
     )
 
 
@@ -243,6 +248,21 @@ class WatermarkRequest(BaseModel):
     layer: str = Field(default="overlay", description="'overlay' ou 'underlay'")
     pages: str = Field(default="all", description="'all', 'first', ou intervalos '1-3, 5'")
     output_filename: Optional[str] = Field(default="documento_marca_dagua.pdf")
+    linearize: bool = Field(default=True)
+
+
+class FooterRequest(BaseModel):
+    session_id: str
+    file_id: str
+    footer_text: str = Field(default="{page}", description="Texto do rodapé com tags {page}, {total}, {date}, {file}")
+    position: str = Field(default="footer", description="'footer' (inferior) ou 'header' (superior)")
+    alignment: str = Field(default="center", description="'left', 'center', 'right'")
+    font_size: float = Field(default=9.0)
+    font_color: str = Field(default="#64748B")
+    skip_first_page: bool = Field(default=False)
+    page_start_number: int = Field(default=1)
+    margin_offset: float = Field(default=25.0)
+    output_filename: Optional[str] = Field(default="documento_com_rodape.pdf")
     linearize: bool = Field(default=True)
 
 
@@ -376,6 +396,7 @@ async def merge_files(request: MergeRequest):
             create_visual_menu=request.create_visual_menu,
             add_bookmarks=request.add_bookmarks,
             linearize=request.linearize,
+            menu_footer_text=request.menu_footer_text,
         )
 
         return JSONResponse({
@@ -975,6 +996,53 @@ async def add_pdf_watermark(request: WatermarkRequest):
         )
 
 
+@app.post("/api/footer")
+async def add_pdf_footer(request: FooterRequest):
+    """
+    Insere rodapé, cabeçalho e/ou numeração de páginas personalizada em um documento PDF.
+    """
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada."
+        )
+
+    try:
+        result = await asyncio.to_thread(
+            execute_pdf_footer,
+            session_dir=session_dir,
+            file_id=request.file_id,
+            footer_text=request.footer_text,
+            position=request.position,
+            alignment=request.alignment,
+            font_size=request.font_size,
+            font_color=request.font_color,
+            skip_first_page=request.skip_first_page,
+            page_start_number=request.page_start_number,
+            margin_offset=request.margin_offset,
+            output_basename=request.output_filename,
+            linearize=request.linearize,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "metrics": result,
+        })
+    except Exception as e:
+        logger.error(f"Erro ao personalizar rodapé do PDF: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao personalizar rodapé: {str(e)}"
+        )
+
+
+
 @app.get("/api/download/{session_id}")
 async def download_merged_pdf(session_id: str, filename: Optional[str] = "documento_unificado.pdf"):
     clean_name = Path(filename).name
@@ -1086,6 +1154,7 @@ async def health_check():
             "Converter Word para PDF (Word to PDF)",
             "Converter Imagem para PDF (Image to PDF)",
             "Inserir Marca d'água (Watermark PDF)",
+            "Personalizar Rodapé e Numeração (Footer Customizer)",
         ],
         "streaming_upload": "Ativo (Zero-RAM Chunking)",
         "menu_system": "Ativo (Página de Menu Visual + Marcadores com UseOutlines)",

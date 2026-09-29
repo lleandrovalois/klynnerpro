@@ -21,7 +21,8 @@ logger = logging.getLogger("pdf_merger")
 
 def generate_visual_menu_pdf(
     items: List[Dict[str, Any]],
-    output_title: str = "Menu de Documentos"
+    output_title: str = "Menu de Documentos",
+    menu_footer_text: Optional[str] = None,
 ) -> Tuple[io.BytesIO, List[Tuple[int, Tuple[float, float, float, float]]]]:
     """
     Cria uma página (ou múltiplas páginas) estilizada de Menu / Sumário Visual usando ReportLab.
@@ -125,9 +126,11 @@ def generate_visual_menu_pdf(
             y -= item_height
 
         # Rodapé da Página de Menu
-        c.setFillColor(colors.HexColor("#94A3B8"))
-        c.setFont("Helvetica", 8.5)
-        c.drawString(45, 30, "Klynner PDF • Gerado com motor C++/QPDF de alta performance")
+        footer_to_draw = menu_footer_text if menu_footer_text is not None else "Klynner PDF • Gerado com motor C++/QPDF de alta performance"
+        if footer_to_draw and footer_to_draw.strip():
+            c.setFillColor(colors.HexColor("#94A3B8"))
+            c.setFont("Helvetica", 8.5)
+            c.drawString(45, 30, footer_to_draw.strip())
 
         c.showPage()
 
@@ -142,6 +145,7 @@ def merge_pdfs_pikepdf(
     create_visual_menu: bool = True,
     add_bookmarks: bool = True,
     linearize: bool = True,
+    menu_footer_text: Optional[str] = None,
 ) -> Dict:
     """
     Unificação ultra-rápida com motor QPDF via pikepdf.
@@ -193,7 +197,7 @@ def merge_pdfs_pikepdf(
     # Se ativado, gera a página de menu visual e insere no início
     click_rects = []
     if create_visual_menu:
-        menu_buf, click_rects = generate_visual_menu_pdf(menu_items_data)
+        menu_buf, click_rects = generate_visual_menu_pdf(menu_items_data, menu_footer_text=menu_footer_text)
         with pikepdf.open(menu_buf) as menu_pdf:
             merged_pdf.pages.extend(menu_pdf.pages)
 
@@ -331,6 +335,7 @@ def execute_pdf_merge(
     create_visual_menu: bool = True,
     add_bookmarks: bool = True,
     linearize: bool = True,
+    menu_footer_text: Optional[str] = None,
 ) -> Dict:
     """
     Ponto de entrada principal para fusão com suporte a Menu de Documentos.
@@ -347,6 +352,7 @@ def execute_pdf_merge(
             create_visual_menu=create_visual_menu,
             add_bookmarks=add_bookmarks,
             linearize=linearize,
+            menu_footer_text=menu_footer_text,
         )
     except Exception as primary_error:
         logger.warning(

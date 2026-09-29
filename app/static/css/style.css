@@ -2762,5 +2762,46 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
+/* Customizador de Rodapé e Cabeçalho */
+.footer-preview-sheet {
+  background: #FFFFFF;
+  color: #0F172A;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 1rem 1.25rem;
+  height: 170px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-top: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.footer-preview-skeleton-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.footer-preview-skeleton-line {
+  height: 6px;
+  background: #0F172A;
+  border-radius: 3px;
+}
+
+.footer-preview-live-text {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+
 
 
