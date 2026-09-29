@@ -118,6 +118,26 @@
       enginePill: 'Conversor Word2PDF Ativo',
       stageId: 'stage-word-to-pdf',
     },
+    'image-to-pdf': {
+      heroTitle: 'Converta Imagens para Documentos PDF',
+      heroSub: 'Converta fotos e ilustrações (JPG, PNG, WebP, TIFF) em um arquivo PDF estruturado. Ajuste a ordem das páginas, tamanho da folha (A4, Carta ou Ajustar à Imagem), orientação e margens.',
+      dropHeading: 'Arraste suas imagens aqui (múltiplas)',
+      dropSub: 'ou clique para selecionar fotos e ilustrações do computador',
+      dropBadges: ['Suporte a JPG, PNG, WebP e TIFF', 'Ajuste de margens e orientação', 'Reordenação interativa das fotos'],
+      multiple: true,
+      enginePill: 'Conversor Img2PDF Ativo',
+      stageId: 'stage-image-to-pdf',
+    },
+    watermark: {
+      heroTitle: 'Insira Marca d\'água em Arquivos PDF',
+      heroSub: 'Proteja seus documentos adicionando carimbos de confidencialidade, cópias controladas, textos personalizados ou logotipos com transparência, rotação e repetição em grade.',
+      dropHeading: 'Arraste o arquivo PDF que receberá a marca d\'água',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Texto ou logotipo com transparência', 'Mosaico anti-cópia em toda a página', 'Camada frente (overlay) ou fundo'],
+      multiple: false,
+      enginePill: 'Carimbador QPDF Ativo',
+      stageId: 'stage-watermark',
+    },
   };
 
   // Estado Central da Aplicação
@@ -134,8 +154,14 @@
     // Juntar PDF
     mergeFiles: [], // { id, name, menuTitle, size, pageCount, fileObj, isUploaded, serverSavedName }
 
+    // Imagem para PDF
+    imageFiles: [], // { id, name, size, fileObj, isUploaded, serverSavedName, previewUrl }
+
     // Ferramentas de 1 Documento
     activeDoc: null, // { name, size, pageCount, serverSavedName, fileObj, pdfDoc }
+
+    // Marca d'água (imagem opcional)
+    watermarkImageDoc: null, // { name, size, fileObj, serverSavedName, previewUrl }
 
     // Organizar
     organizeItems: [], // [ { uid, origPage, rotation: 0, canvas: canvasEl } ]
@@ -345,6 +371,52 @@
   const toggleW2pLinearize = document.getElementById('toggle-w2p-linearize');
   const btnStartW2p = document.getElementById('btn-start-w2p');
 
+  // Elementos Imagem para PDF (.pdf)
+  const stageImageToPdf = document.getElementById('stage-image-to-pdf');
+  const i2pFilesCounter = document.getElementById('i2p-files-counter');
+  const i2pFileList = document.getElementById('i2p-file-list');
+  const btnI2pAddMore = document.getElementById('btn-i2p-add-more');
+  const btnI2pClearAll = document.getElementById('btn-i2p-clear-all');
+  const i2pOutputFilename = document.getElementById('i2p-output-filename');
+  const toggleI2pLinearize = document.getElementById('toggle-i2p-linearize');
+  const i2pTotalSizeLabel = document.getElementById('i2p-total-size-label');
+  const btnStartI2p = document.getElementById('btn-start-i2p');
+
+  // Elementos Marca d'água (.pdf)
+  const stageWatermark = document.getElementById('stage-watermark');
+  const wmDocName = document.getElementById('wm-doc-name');
+  const wmDocPages = document.getElementById('wm-doc-pages');
+  const wmDocSize = document.getElementById('wm-doc-size');
+  const btnWmChangeDoc = document.getElementById('btn-wm-change-doc');
+  const wmTypeText = document.getElementById('wm-type-text');
+  const wmTypeImage = document.getElementById('wm-type-image');
+  const wmTextControls = document.getElementById('wm-text-controls');
+  const wmImageControls = document.getElementById('wm-image-controls');
+  const wmTextInput = document.getElementById('wm-text-input');
+  const wmFontSize = document.getElementById('wm-font-size');
+  const wmFontSizeVal = document.getElementById('wm-font-size-val');
+  const wmFontColor = document.getElementById('wm-font-color');
+  const wmColorPreviewVal = document.getElementById('wm-color-preview-val');
+  const wmImgFileInput = document.getElementById('wm-img-file-input');
+  const wmImgUploadPrompt = document.getElementById('wm-img-upload-prompt');
+  const wmImgPreviewBox = document.getElementById('wm-img-preview-box');
+  const wmImgPreview = document.getElementById('wm-img-preview');
+  const wmImgName = document.getElementById('wm-img-name');
+  const btnWmRemoveImg = document.getElementById('btn-wm-remove-img');
+  const wmImageScale = document.getElementById('wm-image-scale');
+  const wmScaleVal = document.getElementById('wm-scale-val');
+  const wmOpacity = document.getElementById('wm-opacity');
+  const wmOpacityVal = document.getElementById('wm-opacity-val');
+  const wmRotation = document.getElementById('wm-rotation');
+  const wmPosition = document.getElementById('wm-position');
+  const wmLayer = document.getElementById('wm-layer');
+  const wmPagesSelect = document.getElementById('wm-pages-select');
+  const wmCustomPagesBox = document.getElementById('wm-custom-pages-box');
+  const wmCustomPagesInput = document.getElementById('wm-custom-pages-input');
+  const wmOutputFilename = document.getElementById('wm-output-filename');
+  const toggleWmLinearize = document.getElementById('toggle-wm-linearize');
+  const btnStartWatermark = document.getElementById('btn-start-watermark');
+
   // =========================================================================
   // INICIALIZAÇÃO
   // =========================================================================
@@ -366,10 +438,12 @@
     setupRedactEvents();
     setupPdfToWordEvents();
     setupWordToPdfEvents();
+    setupImageToPdfEvents();
+    setupWatermarkEvents();
     setupModalAndPix();
     setupVisitCounter();
 
-    // Suporte a hash da URL (ex: #split, #protect, #pdf-to-word)
+    // Suporte a hash da URL (ex: #split, #protect, #image-to-pdf, #watermark)
     const hash = window.location.hash.replace('#', '');
     if (TOOL_CONFIGS[hash]) {
       switchTool(hash);
@@ -489,6 +563,8 @@
     fileInput.multiple = cfg.multiple;
     fileInput.accept = (toolKey === 'word-to-pdf') 
       ? '.docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword'
+      : (toolKey === 'image-to-pdf')
+      ? 'image/png,image/jpeg,image/jpg,image/webp,image/bmp,image/tiff,.png,.jpg,.jpeg,.webp,.bmp,.tiff,.tif'
       : '.pdf,application/pdf';
 
     dropzoneBadges.innerHTML = cfg.dropBadges
@@ -513,6 +589,14 @@
         dropzone.classList.add('hidden');
         stageMerge.classList.remove('hidden');
         renderMergeFileList();
+      } else {
+        dropzone.classList.remove('hidden');
+      }
+    } else if (toolKey === 'image-to-pdf') {
+      if (state.imageFiles.length > 0) {
+        dropzone.classList.add('hidden');
+        stageImageToPdf.classList.remove('hidden');
+        renderImageFileList();
       } else {
         dropzone.classList.remove('hidden');
       }
@@ -551,6 +635,8 @@
       initPdfToWordWorkspace();
     } else if (toolKey === 'word-to-pdf') {
       initWordToPdfWorkspace();
+    } else if (toolKey === 'watermark') {
+      initWatermarkWorkspace();
     }
   }
 
@@ -593,6 +679,7 @@
 
   async function handleIncomingFiles(fileListObj) {
     const isWordUpload = state.activeTool === 'word-to-pdf';
+    const isImageUpload = state.activeTool === 'image-to-pdf';
     const validFiles = [];
 
     for (let i = 0; i < fileListObj.length; i++) {
@@ -603,6 +690,14 @@
           validFiles.push(file);
         } else {
           showToast(`O arquivo "${file.name}" foi ignorado. Selecione um arquivo Word (.docx ou .doc).`, 'error');
+        }
+      } else if (isImageUpload) {
+        const imgExts = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tiff', '.tif'];
+        const isImg = imgExts.some(ext => lower.endsWith(ext)) || file.type.startsWith('image/');
+        if (isImg) {
+          validFiles.push(file);
+        } else {
+          showToast(`O arquivo "${file.name}" foi ignorado por não ser uma imagem compatível.`, 'error');
         }
       } else {
         if (lower.endsWith('.pdf') || file.type === 'application/pdf') {
@@ -635,6 +730,27 @@
       stageMerge.classList.remove('hidden');
       renderMergeFileList();
       showToast(`${validFiles.length} arquivo(s) adicionado(s) à unificação.`, 'info');
+
+    } else if (state.activeTool === 'image-to-pdf') {
+      // Adiciona à lista de imagens para PDF
+      validFiles.forEach(file => {
+        const fileId = 'img_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        const previewUrl = URL.createObjectURL(file);
+        state.imageFiles.push({
+          id: fileId,
+          serverSavedName: null,
+          name: file.name,
+          size: file.size,
+          fileObj: file,
+          isUploaded: false,
+          previewUrl: previewUrl,
+        });
+      });
+
+      dropzone.classList.add('hidden');
+      stageImageToPdf.classList.remove('hidden');
+      renderImageFileList();
+      showToast(`${validFiles.length} imagem(ns) adicionada(s) à conversão.`, 'info');
 
     } else {
       // Ferramenta de documento único
@@ -724,6 +840,8 @@
     state.rotateMap = {};
     state.extractSelected.clear();
     state.redactCustomTerms = [];
+    state.imageFiles = [];
+    state.watermarkImageDoc = null;
     thumbnailCache.clear();
 
     document.querySelectorAll('.tool-stage').forEach(el => el.classList.add('hidden'));
@@ -2585,6 +2703,457 @@
   }
 
   // =========================================================================
+  // FERRAMENTA 11: IMAGEM PARA PDF (.PDF)
+  // =========================================================================
+  let draggedImageIndex = null;
+
+  function setupImageToPdfEvents() {
+    if (btnI2pAddMore) btnI2pAddMore.addEventListener('click', () => fileInput.click());
+    if (btnI2pClearAll) {
+      btnI2pClearAll.addEventListener('click', () => {
+        if (confirm('Deseja realmente remover todas as imagens selecionadas?')) {
+          state.imageFiles = [];
+          renderImageFileList();
+        }
+      });
+    }
+
+    if (btnStartI2p) btnStartI2p.addEventListener('click', onExecuteImageToPdf);
+  }
+
+  function renderImageFileList() {
+    if (!i2pFileList) return;
+    i2pFileList.innerHTML = '';
+
+    if (state.imageFiles.length === 0) {
+      if (stageImageToPdf) stageImageToPdf.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+      return;
+    }
+
+    if (i2pFilesCounter) {
+      i2pFilesCounter.textContent = `${state.imageFiles.length} imagen${state.imageFiles.length > 1 ? 's' : ''}`;
+    }
+
+    let totalBytes = 0;
+
+    state.imageFiles.forEach((item, index) => {
+      totalBytes += item.size;
+
+      const li = document.createElement('li');
+      li.className = 'file-item';
+      li.draggable = true;
+      li.dataset.index = index;
+
+      li.innerHTML = `
+        <div class="file-item-left">
+          <div class="drag-handle" title="Arraste para reordenar a página">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+              <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+              <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+            </svg>
+          </div>
+          <div class="file-order-badge">Pág ${index + 1}</div>
+          <img src="${item.previewUrl}" alt="Miniatura" class="i2p-thumb-preview">
+          <div class="file-details">
+            <div class="file-meta-row">
+              <strong class="file-original-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</strong>
+              <span class="meta-separator">&bull;</span>
+              <span class="file-size">${formatBytes(item.size)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-item-right">
+          <button type="button" class="btn-icon btn-move-up" title="Mover para cima" ${index === 0 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button type="button" class="btn-icon btn-move-down" title="Mover para baixo" ${index === state.imageFiles.length - 1 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <button type="button" class="btn-icon btn-icon-danger btn-remove" title="Remover esta imagem">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      `;
+
+      setupImageDragDrop(li, index);
+
+      li.querySelector('.btn-move-up').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (index > 0) swapImageFiles(index, index - 1);
+      });
+
+      li.querySelector('.btn-move-down').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (index < state.imageFiles.length - 1) swapImageFiles(index, index + 1);
+      });
+
+      li.querySelector('.btn-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.imageFiles.splice(index, 1);
+        renderImageFileList();
+      });
+
+      i2pFileList.appendChild(li);
+    });
+
+    if (i2pTotalSizeLabel) {
+      i2pTotalSizeLabel.textContent = formatBytes(totalBytes);
+    }
+
+    if (state.imageFiles.length > 0 && i2pOutputFilename && (!i2pOutputFilename.value || i2pOutputFilename.value === 'imagens_convertidas')) {
+      const base = cleanFileNameToTitle(state.imageFiles[0].name).replace(/\s+/g, '_');
+      i2pOutputFilename.value = `${base}_album`;
+    }
+  }
+
+  function swapImageFiles(i, j) {
+    const tmp = state.imageFiles[i];
+    state.imageFiles[i] = state.imageFiles[j];
+    state.imageFiles[j] = tmp;
+    renderImageFileList();
+  }
+
+  function setupImageDragDrop(element, index) {
+    element.addEventListener('dragstart', (e) => {
+      draggedImageIndex = index;
+      element.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', index);
+    });
+
+    element.addEventListener('dragend', () => {
+      element.classList.remove('dragging');
+      draggedImageIndex = null;
+    });
+
+    element.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+
+    element.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const targetIndex = index;
+      if (draggedImageIndex !== null && draggedImageIndex !== targetIndex) {
+        const moved = state.imageFiles.splice(draggedImageIndex, 1)[0];
+        state.imageFiles.splice(targetIndex, 0, moved);
+        renderImageFileList();
+      }
+    });
+  }
+
+  async function onExecuteImageToPdf() {
+    if (state.imageFiles.length === 0) {
+      showToast('Por favor, adicione ao menos uma imagem para converter.', 'error');
+      return;
+    }
+
+    await ensureFilesUploaded(state.imageFiles);
+
+    startProcessingUI('Convertendo Imagens para PDF...', 'Ajustando geometrias, margens e compilando páginas...');
+
+    try {
+      updateProcessingStep(1, 'Lendo e otimizando resoluções das imagens...', 25);
+      await delay(200);
+
+      updateProcessingStep(2, 'Renderizando documento PDF com alta fidelidade...', 65);
+
+      const sizeRadio = document.querySelector('input[name="i2p-page-size"]:checked');
+      const orientRadio = document.querySelector('input[name="i2p-orientation"]:checked');
+      const marginRadio = document.querySelector('input[name="i2p-margin"]:checked');
+
+      let cleanName = (i2pOutputFilename ? i2pOutputFilename.value.trim() : '') || 'imagens_convertidas';
+      if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+      const payload = {
+        session_id: state.sessionId,
+        image_files: state.imageFiles.map(f => f.serverSavedName),
+        page_size: sizeRadio ? sizeRadio.value : 'a4',
+        orientation: orientRadio ? orientRadio.value : 'auto',
+        margin: marginRadio ? marginRadio.value : 'none',
+        output_filename: cleanName,
+        linearize: toggleI2pLinearize ? toggleI2pLinearize.checked : true,
+      };
+
+      updateProcessingStep(3, 'Aplicando Fast Web View (linearização) e finalizando...', 85);
+
+      const res = await fetch('/api/convert/image-to-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao converter imagens para PDF.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Conversão de imagens concluída com sucesso!');
+      await delay(300);
+
+      showResultUI({
+        title: 'Imagens Convertidas para PDF!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        isDocx: false,
+        label1: 'Imagens Inseridas',
+        val1: `${data.metrics.total_images} fotos`,
+        label2: 'Total de Páginas',
+        val2: `${data.metrics.total_pages} págs`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro durante a conversão das imagens.', 'error');
+      stopProcessingUI(stageImageToPdf);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA 12: INSERIR MARCA D'ÁGUA EM PDF (.PDF)
+  // =========================================================================
+  function setupWatermarkEvents() {
+    if (btnWmChangeDoc) btnWmChangeDoc.addEventListener('click', resetCurrentDocument);
+
+    // Alternador de tipo (Texto vs Imagem)
+    if (wmTypeText && wmTypeImage) {
+      wmTypeText.addEventListener('change', () => {
+        if (wmTextControls) wmTextControls.classList.remove('hidden');
+        if (wmImageControls) wmImageControls.classList.add('hidden');
+      });
+      wmTypeImage.addEventListener('change', () => {
+        if (wmTextControls) wmTextControls.classList.add('hidden');
+        if (wmImageControls) wmImageControls.classList.remove('hidden');
+      });
+    }
+
+    // Botões de texto pré-configurado
+    document.querySelectorAll('.wm-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (wmTextInput && btn.dataset.text) {
+          wmTextInput.value = btn.dataset.text;
+        }
+      });
+    });
+
+    // Sliders com feedback em tempo real
+    if (wmFontSize && wmFontSizeVal) {
+      wmFontSize.addEventListener('input', () => {
+        wmFontSizeVal.textContent = `${wmFontSize.value} pt`;
+      });
+    }
+
+    if (wmOpacity && wmOpacityVal) {
+      wmOpacity.addEventListener('input', () => {
+        wmOpacityVal.textContent = `${wmOpacity.value}%`;
+      });
+    }
+
+    if (wmImageScale && wmScaleVal) {
+      wmImageScale.addEventListener('input', () => {
+        wmScaleVal.textContent = `${wmImageScale.value}%`;
+      });
+    }
+
+    // Seletor de cor e bolinhas pré-definidas
+    if (wmFontColor && wmColorPreviewVal) {
+      wmFontColor.addEventListener('input', () => {
+        wmColorPreviewVal.textContent = wmFontColor.value.toUpperCase();
+      });
+    }
+
+    document.querySelectorAll('.color-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        if (wmFontColor && dot.dataset.color) {
+          wmFontColor.value = dot.dataset.color;
+          if (wmColorPreviewVal) wmColorPreviewVal.textContent = dot.dataset.color.toUpperCase();
+        }
+      });
+    });
+
+    // Seletor de páginas
+    if (wmPagesSelect && wmCustomPagesBox) {
+      wmPagesSelect.addEventListener('change', () => {
+        if (wmPagesSelect.value === 'custom') {
+          wmCustomPagesBox.classList.remove('hidden');
+        } else {
+          wmCustomPagesBox.classList.add('hidden');
+        }
+      });
+    }
+
+    // Upload de Imagem de Marca d'água
+    if (wmImgUploadPrompt && wmImgFileInput) {
+      wmImgUploadPrompt.addEventListener('click', () => wmImgFileInput.click());
+      wmImgFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleWatermarkImageFile(e.target.files[0]);
+          wmImgFileInput.value = '';
+        }
+      });
+    }
+
+    if (btnWmRemoveImg) {
+      btnWmRemoveImg.addEventListener('click', () => {
+        state.watermarkImageDoc = null;
+        if (wmImgPreviewBox) wmImgPreviewBox.classList.add('hidden');
+        if (wmImgUploadPrompt) wmImgUploadPrompt.classList.remove('hidden');
+      });
+    }
+
+    if (btnStartWatermark) btnStartWatermark.addEventListener('click', onExecuteWatermark);
+  }
+
+  async function handleWatermarkImageFile(file) {
+    const previewUrl = URL.createObjectURL(file);
+    state.watermarkImageDoc = {
+      name: file.name,
+      size: file.size,
+      fileObj: file,
+      serverSavedName: null,
+      previewUrl: previewUrl,
+    };
+
+    if (wmImgPreview) wmImgPreview.src = previewUrl;
+    if (wmImgName) wmImgName.textContent = file.name;
+    if (wmImgUploadPrompt) wmImgUploadPrompt.classList.add('hidden');
+    if (wmImgPreviewBox) wmImgPreviewBox.classList.remove('hidden');
+
+    // Upload em segundo plano da imagem
+    try {
+      const formData = new FormData();
+      formData.append('session_id', state.sessionId);
+      formData.append('files', file, file.name);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+          state.watermarkImageDoc.serverSavedName = data.files[0].saved_filename;
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao subir logotipo de marca d\'água em segundo plano:', e);
+    }
+  }
+
+  function initWatermarkWorkspace() {
+    if (!state.activeDoc) return;
+    if (wmDocName) wmDocName.textContent = state.activeDoc.name;
+    if (wmDocPages) wmDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (wmDocSize) wmDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (wmOutputFilename) wmOutputFilename.value = `${base}_marca_dagua`;
+  }
+
+  async function onExecuteWatermark() {
+    if (!state.activeDoc) return;
+    await ensureDocUploaded(state.activeDoc);
+
+    const isImageMode = wmTypeImage && wmTypeImage.checked;
+    if (isImageMode) {
+      if (!state.watermarkImageDoc) {
+        showToast('Por favor, carregue a imagem do logotipo para a marca d\'água.', 'error');
+        return;
+      }
+      if (!state.watermarkImageDoc.serverSavedName) {
+        await ensureDocUploaded(state.watermarkImageDoc);
+      }
+    } else {
+      if (!wmTextInput || !wmTextInput.value.trim()) {
+        showToast('Por favor, digite o texto da marca d\'água.', 'error');
+        return;
+      }
+    }
+
+    startProcessingUI('Inserindo Marca d\'água...', 'Renderizando carimbos com transparência, rotação e QPDF C++...');
+
+    try {
+      updateProcessingStep(1, 'Lendo geometria das páginas do documento...', 25);
+      await delay(200);
+
+      updateProcessingStep(2, 'Calculando e desenhando camadas de marca d\'água...', 60);
+
+      let cleanName = (wmOutputFilename ? wmOutputFilename.value.trim() : '') || 'documento_marca_dagua';
+      if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+      let pagesVal = wmPagesSelect ? wmPagesSelect.value : 'all';
+      if (pagesVal === 'custom' && wmCustomPagesInput) {
+        pagesVal = wmCustomPagesInput.value.trim() || 'all';
+      }
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        watermark_type: isImageMode ? 'image' : 'text',
+        text: wmTextInput ? wmTextInput.value.trim() : 'CONFIDENCIAL',
+        font_size: wmFontSize ? (parseInt(wmFontSize.value, 10) || 48) : 48,
+        font_color: wmFontColor ? wmFontColor.value : '#DC2626',
+        opacity: wmOpacity ? (parseInt(wmOpacity.value, 10) || 25) / 100 : 0.25,
+        rotation: wmRotation ? (parseInt(wmRotation.value, 10) || -45) : -45,
+        position: wmPosition ? wmPosition.value : 'center',
+        watermark_image_id: isImageMode && state.watermarkImageDoc ? state.watermarkImageDoc.serverSavedName : null,
+        image_scale: wmImageScale ? (parseInt(wmImageScale.value, 10) || 50) / 100 : 0.5,
+        layer: wmLayer ? wmLayer.value : 'overlay',
+        pages: pagesVal,
+        output_filename: cleanName,
+        linearize: toggleWmLinearize ? toggleWmLinearize.checked : true,
+      };
+
+      updateProcessingStep(3, 'Fundindo camadas com o conteúdo original e linearizando...', 85);
+
+      const res = await fetch('/api/watermark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao aplicar marca d\'água.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Marca d\'água aplicada com sucesso!');
+      await delay(300);
+
+      showResultUI({
+        title: 'Marca d\'água Aplicada com Sucesso!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        isDocx: false,
+        label1: 'Páginas Carimbadas',
+        val1: `${data.metrics.pages_watermarked} de ${data.metrics.total_pages} págs`,
+        label2: 'Configuração',
+        val2: `${data.metrics.watermark_type === 'image' ? 'Logotipo' : 'Texto'} (${data.metrics.position.toUpperCase()})`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro ao aplicar marca d\'água no PDF.', 'error');
+      stopProcessingUI(stageWatermark);
+    }
+  }
+
+  // =========================================================================
   // MODAL DE PRÉ-VISUALIZAÇÃO & BOTÕES DE PIX
   // =========================================================================
   function setupModalAndPix() {
@@ -2618,6 +3187,8 @@
       resultStage.classList.add('hidden');
       if (state.activeTool === 'merge') {
         stageMerge.classList.remove('hidden');
+      } else if (state.activeTool === 'image-to-pdf') {
+        if (stageImageToPdf) stageImageToPdf.classList.remove('hidden');
       } else {
         const stageId = TOOL_CONFIGS[state.activeTool].stageId;
         const stageEl = document.getElementById(stageId);

@@ -216,10 +216,10 @@
       <!-- MENU DE FUNCIONALIDADES (Barra Superior de Navegação das Ferramentas) -->
       <nav class="tools-nav-bar" id="tools-nav-bar" aria-label="Menu de Ferramentas PDF">
         <div class="tool-categories-ribbon" id="tool-categories-ribbon">
-          <button type="button" class="tool-category-pill active" data-cat="all">Todas as Ferramentas (10)</button>
+          <button type="button" class="tool-category-pill active" data-cat="all">Todas as Ferramentas (12)</button>
           <button type="button" class="tool-category-pill" data-cat="pages">Edição & Páginas (5)</button>
-          <button type="button" class="tool-category-pill" data-cat="security">Segurança & Sigilo (3)</button>
-          <button type="button" class="tool-category-pill" data-cat="convert">Conversão Word (2)</button>
+          <button type="button" class="tool-category-pill" data-cat="security">Segurança & Marcação (4)</button>
+          <button type="button" class="tool-category-pill" data-cat="convert">Conversão & Imagens (3)</button>
         </div>
 
         <div class="tools-nav-container">
@@ -359,6 +359,35 @@
             <div class="tool-btn-text">
               <span class="tool-btn-title">Word para PDF</span>
               <span class="tool-btn-sub">Converter em PDF</span>
+            </div>
+          </button>
+
+          <!-- 11. Imagem para PDF -->
+          <button type="button" class="tool-nav-btn" data-tool="image-to-pdf" data-category="convert" id="tool-nav-i2p" title="Converta imagens JPG, PNG, WebP para um documento PDF estruturado">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Imagem para PDF</span>
+              <span class="tool-btn-sub">JPG, PNG & WebP</span>
+            </div>
+          </button>
+
+          <!-- 12. Marca d'água -->
+          <button type="button" class="tool-nav-btn" data-tool="watermark" data-category="security" id="tool-nav-watermark" title="Insira marcas d'água de texto ou logotipo com transparência e rotação">
+            <div class="tool-btn-icon-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                <circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/>
+              </svg>
+            </div>
+            <div class="tool-btn-text">
+              <span class="tool-btn-title">Marca d'água</span>
+              <span class="tool-btn-sub">Texto ou Logotipo</span>
             </div>
           </button>
         </div>
@@ -1329,6 +1358,364 @@
             <button type="button" class="btn btn-primary btn-lg" id="btn-start-w2p">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
               <span>Converter para PDF Agora</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2K: IMAGEM PARA PDF                                     -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-image-to-pdf">
+          <div class="files-header">
+            <div class="files-title-box">
+              <h3 class="files-section-title">
+                Imagens Selecionadas & Sequência das Páginas
+                <span class="files-counter" id="i2p-files-counter">0 imagens</span>
+              </h3>
+              <p class="files-instruction">
+                Reordene suas imagens conforme a sequência desejada no PDF final. Cada imagem corresponderá a uma página.
+              </p>
+            </div>
+            <div class="files-actions-top">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-i2p-add-more">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Adicionar Mais Imagens
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm btn-danger-hover" id="btn-i2p-clear-all">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Limpar Tudo
+              </button>
+            </div>
+          </div>
+
+          <!-- Grade Visual de Imagens -->
+          <ul class="file-list" id="i2p-file-list" aria-label="Lista de imagens para conversão"></ul>
+
+          <!-- Opções de Layout e Conversão -->
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(14, 165, 233, 0.15); border-color: rgba(14, 165, 233, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Configurações de Layout da Página</h4>
+                <p class="security-box-desc">Defina o tamanho das folhas, orientação e margens para um PDF profissional e balanceado.</p>
+              </div>
+            </div>
+
+            <div class="i2p-options-grid">
+              <!-- Tamanho da Página -->
+              <div class="option-subgroup">
+                <span class="sub-section-title">Tamanho do Papel:</span>
+                <div class="p2w-pages-radios">
+                  <label class="enc-radio-card">
+                    <input type="radio" name="i2p-page-size" value="a4" checked id="i2p-size-a4">
+                    <div class="enc-card-body">
+                      <strong>A4 Padrão</strong>
+                      <small>210 x 297 mm (Ideal para impressão)</small>
+                    </div>
+                  </label>
+                  <label class="enc-radio-card">
+                    <input type="radio" name="i2p-page-size" value="fit" id="i2p-size-fit">
+                    <div class="enc-card-body">
+                      <strong>Ajustar à Imagem</strong>
+                      <small>Dimensão original da imagem</small>
+                    </div>
+                  </label>
+                  <label class="enc-radio-card">
+                    <input type="radio" name="i2p-page-size" value="letter" id="i2p-size-letter">
+                    <div class="enc-card-body">
+                      <strong>Carta (US Letter)</strong>
+                      <small>8.5 x 11 polegadas</small>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Orientação -->
+              <div class="option-subgroup">
+                <span class="sub-section-title">Orientação:</span>
+                <div class="p2w-pages-radios">
+                  <label class="enc-radio-card">
+                    <input type="radio" name="i2p-orientation" value="auto" checked id="i2p-orient-auto">
+                    <div class="enc-card-body">
+                      <strong>Automática</strong>
+                      <small>Segue o formato de cada imagem</small>
+                    </div>
+                  </label>
+                  <label class="enc-radio-card">
+                    <input type="radio" name="i2p-orientation" value="portrait" id="i2p-orient-portrait">
+                    <div class="enc-card-body">
+                      <strong>Retrato (Vertical)</strong>
+                      <small>Força formato vertical</small>
+                    </div>
+                  </label>
+                  <label class="enc-radio-card">
+                    <input type="radio" name="i2p-orientation" value="landscape" id="i2p-orient-landscape">
+                    <div class="enc-card-body">
+                      <strong>Paisagem (Horizontal)</strong>
+                      <small>Força formato horizontal</small>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Margem -->
+              <div class="option-subgroup">
+                <span class="sub-section-title">Margens:</span>
+                <div class="p2w-pages-radios">
+                  <label class="enc-radio-card">
+                    <input type="radio" name="i2p-margin" value="none" checked id="i2p-margin-none">
+                    <div class="enc-card-body">
+                      <strong>Sem Margem</strong>
+                      <small>Preenchimento total da folha</small>
+                    </div>
+                  </label>
+                  <label class="enc-radio-card">
+                    <input type="radio" name="i2p-margin" value="small" id="i2p-margin-small">
+                    <div class="enc-card-body">
+                      <strong>Pequena (~7mm)</strong>
+                      <small>Borda elegante e limpa</small>
+                    </div>
+                  </label>
+                  <label class="enc-radio-card">
+                    <input type="radio" name="i2p-margin" value="big" id="i2p-margin-big">
+                    <div class="enc-card-body">
+                      <strong>Grande (~16mm)</strong>
+                      <small>Espaço para encadernação</small>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="i2p-output-filename" class="option-label">Nome do Arquivo PDF Gerado</label>
+              <div class="input-with-suffix">
+                <input type="text" id="i2p-output-filename" class="text-input" value="imagens_convertidas">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-i2p-linearize">
+                <input type="checkbox" id="toggle-i2p-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Carregamento instantâneo em qualquer dispositivo.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Volume total estimado:</span>
+              <span class="summary-value" id="i2p-total-size-label">0 MB</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-i2p">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+              <span>Converter Imagens para PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2L: INSERIR MARCA D'ÁGUA EM PDF                         -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-watermark">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento Alvo:</span>
+              <span class="active-doc-name" id="wm-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="wm-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="wm-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-wm-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(220, 38, 38, 0.15); border-color: rgba(220, 38, 38, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  <circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Configurações de Marca d'água</h4>
+                <p class="security-box-desc">Aplique carimbos de proteção, confidencialidade, cópias controladas ou logotipos personalizados.</p>
+              </div>
+            </div>
+
+            <!-- Seletor de Tipo (Texto vs Imagem) -->
+            <div class="encryption-level-selector">
+              <span class="sub-section-title">Tipo de Marca d'água:</span>
+              <div class="encryption-radios">
+                <label class="enc-radio-card">
+                  <input type="radio" name="wm-type" value="text" checked id="wm-type-text">
+                  <div class="enc-card-body">
+                    <strong>Texto Personalizado</strong>
+                    <small>Carimbos como 'CONFIDENCIAL', 'CÓPIA', 'RASCUNHO'</small>
+                  </div>
+                </label>
+                <label class="enc-radio-card">
+                  <input type="radio" name="wm-type" value="image" id="wm-type-image">
+                  <div class="enc-card-body">
+                    <strong>Logotipo / Imagem</strong>
+                    <small>Arquivo PNG com transparência ou JPG</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Bloco 1: Controles de Texto -->
+            <div class="wm-controls-box" id="wm-text-controls">
+              <div class="pwd-field-group">
+                <label for="wm-text-input" class="option-label">Texto da Marca d'água</label>
+                <input type="text" id="wm-text-input" class="text-input" value="CONFIDENCIAL" placeholder="Digite o texto da marca d'água...">
+                <div class="selection-quick-chips" style="margin-top: 0.5rem;">
+                  <button type="button" class="chip-btn wm-preset-btn" data-text="CONFIDENCIAL">CONFIDENCIAL</button>
+                  <button type="button" class="chip-btn wm-preset-btn" data-text="RASCUNHO">RASCUNHO</button>
+                  <button type="button" class="chip-btn wm-preset-btn" data-text="CÓPIA NÃO AUTORIZADA">CÓPIA NÃO AUTORIZADA</button>
+                  <button type="button" class="chip-btn wm-preset-btn" data-text="APROVADO">APROVADO</button>
+                  <button type="button" class="chip-btn wm-preset-btn" data-text="USO INTERNO">USO INTERNO</button>
+                </div>
+              </div>
+
+              <div class="passwords-grid" style="margin-top: 1rem;">
+                <div class="pwd-field-group">
+                  <label for="wm-font-size" class="option-label">Tamanho da Fonte: <span id="wm-font-size-val">48 pt</span></label>
+                  <input type="range" id="wm-font-size" class="range-slider" min="16" max="96" step="2" value="48">
+                </div>
+
+                <div class="pwd-field-group">
+                  <label for="wm-font-color" class="option-label">Cor da Marca: <span id="wm-color-preview-val">#DC2626</span></label>
+                  <div class="color-picker-row">
+                    <input type="color" id="wm-font-color" value="#DC2626" class="color-picker-input">
+                    <button type="button" class="color-dot" data-color="#DC2626" style="background:#DC2626" title="Vermelho"></button>
+                    <button type="button" class="color-dot" data-color="#6B7280" style="background:#6B7280" title="Cinza"></button>
+                    <button type="button" class="color-dot" data-color="#2563EB" style="background:#2563EB" title="Azul"></button>
+                    <button type="button" class="color-dot" data-color="#000000" style="background:#000000" title="Preto"></button>
+                    <button type="button" class="color-dot" data-color="#16A34A" style="background:#16A34A" title="Verde"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloco 2: Controles de Imagem (oculto por padrão) -->
+            <div class="wm-controls-box hidden" id="wm-image-controls">
+              <div class="pwd-field-group">
+                <label class="option-label">Selecione a Imagem do Logotipo (PNG ou JPG)</label>
+                <div class="wm-img-upload-box" id="wm-img-upload-box">
+                  <input type="file" id="wm-img-file-input" accept="image/png,image/jpeg,image/jpg,image/webp" class="file-input-hidden">
+                  <div class="wm-img-upload-prompt" id="wm-img-upload-prompt">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>Clique para carregar logotipo</span>
+                  </div>
+                  <div class="wm-img-preview-box hidden" id="wm-img-preview-box">
+                    <img id="wm-img-preview" alt="Prévia Logotipo">
+                    <span id="wm-img-name">logo.png</span>
+                    <button type="button" class="btn btn-ghost btn-sm" id="btn-wm-remove-img">Remover</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pwd-field-group" style="margin-top: 1rem;">
+                <label for="wm-image-scale" class="option-label">Escala do Logotipo: <span id="wm-scale-val">50%</span></label>
+                <input type="range" id="wm-image-scale" class="range-slider" min="10" max="100" step="5" value="50">
+              </div>
+            </div>
+
+            <!-- Bloco 3: Opacidade, Rotação e Posição (Compartilhados) -->
+            <div class="passwords-grid" style="margin-top: 1.25rem;">
+              <div class="pwd-field-group">
+                <label for="wm-opacity" class="option-label">Transparência (Opacidade): <span id="wm-opacity-val">25%</span></label>
+                <input type="range" id="wm-opacity" class="range-slider" min="5" max="90" step="5" value="25">
+              </div>
+
+              <div class="pwd-field-group">
+                <label for="wm-rotation" class="option-label">Rotação / Ângulo:</label>
+                <select id="wm-rotation" class="text-input">
+                  <option value="-45" selected>-45° (Diagonal Clássica)</option>
+                  <option value="0">0° (Horizontal)</option>
+                  <option value="45">+45° (Diagonal Invertida)</option>
+                  <option value="90">90° (Vertical)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="passwords-grid" style="margin-top: 1rem;">
+              <div class="pwd-field-group">
+                <label for="wm-position" class="option-label">Posição na Folha:</label>
+                <select id="wm-position" class="text-input">
+                  <option value="center" selected>Centro da Página</option>
+                  <option value="tile">Mosaico Repetido (Grade Anti-Cópia)</option>
+                  <option value="top">Topo da Página</option>
+                  <option value="bottom">Rodapé da Página</option>
+                </select>
+              </div>
+
+              <div class="pwd-field-group">
+                <label for="wm-layer" class="option-label">Camada de Exibição:</label>
+                <select id="wm-layer" class="text-input">
+                  <option value="overlay" selected>Sobreposto ao Texto (Frente)</option>
+                  <option value="underlay">Atrás do Conteúdo (Fundo / Marca d'água suave)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Seleção de Páginas -->
+            <div class="pwd-field-group" style="margin-top: 1rem;">
+              <label for="wm-pages-select" class="option-label">Aplicar nas Páginas:</label>
+              <div class="input-with-helper">
+                <select id="wm-pages-select" class="text-input" style="margin-bottom: 0.5rem;">
+                  <option value="all" selected>Todas as Páginas</option>
+                  <option value="first">Apenas a 1ª Página (Capa)</option>
+                  <option value="custom">Intervalo Personalizado...</option>
+                </select>
+                <div class="custom-range-inputs hidden" id="wm-custom-pages-box">
+                  <input type="text" id="wm-custom-pages-input" class="text-input" placeholder="Ex: 1-5, 8, 10-12">
+                  <span class="input-hint">Separe páginas e intervalos por vírgula (ex: <strong>1-3, 5</strong>).</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="wm-output-filename" class="option-label">Nome do Arquivo com Marca d'água</label>
+              <div class="input-with-suffix">
+                <input type="text" id="wm-output-filename" class="text-input" value="documento_marca_dagua">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-wm-linearize">
+                <input type="checkbox" id="toggle-wm-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Otimiza para abertura veloz após a aplicação da marca d'água.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Proteção Visual:</span>
+              <span class="summary-value" id="wm-summary-label">Marca d'água Ativa</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-watermark">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                <circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/>
+              </svg>
+              <span>Aplicar Marca d'água no PDF</span>
             </button>
           </div>
         </div>

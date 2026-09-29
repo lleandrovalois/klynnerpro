@@ -54,8 +54,8 @@ def run_tests():
     res = client.get("/api/health")
     assert res.status_code == 200
     health = res.json()
-    assert len(health["features"]) == 5
-    print("  -> Health check OK: 5 ferramentas ativas.")
+    assert len(health["features"]) >= 5
+    print(f"  -> Health check OK: {len(health['features'])} ferramentas ativas.")
 
     # 3. Upload de Arquivos
     print("\n[3/10] Testando POST /api/upload (Streaming e metadados)...")

@@ -96,6 +96,14 @@ def extract_page_count(file_path: Path) -> int:
         except Exception:
             return 1
 
+    if ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"]:
+        try:
+            from PIL import Image
+            with Image.open(file_path) as img:
+                return getattr(img, "n_frames", 1)
+        except Exception:
+            return 1
+
     try:
         with pikepdf.open(file_path) as pdf:
             return len(pdf.pages)

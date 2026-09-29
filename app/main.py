@@ -26,6 +26,8 @@ from app.protector import execute_pdf_protect, execute_pdf_unlock
 from app.redactor import execute_pdf_redact
 from app.pdf_to_word import execute_pdf_to_word
 from app.word_to_pdf import execute_word_to_pdf
+from app.image_to_pdf import execute_image_to_pdf
+from app.watermark import execute_pdf_watermark
 from app.storage import (
     BASE_TEMP_DIR,
     cleanup_expired_sessions,
@@ -216,6 +218,34 @@ class WordToPdfRequest(BaseModel):
     linearize: bool = Field(default=True)
 
 
+class ImageToPdfRequest(BaseModel):
+    session_id: str
+    image_files: List[str] = Field(..., description="Lista ordenada de nomes/IDs dos arquivos de imagem")
+    page_size: str = Field(default="a4", description="'a4', 'letter', ou 'fit'")
+    orientation: str = Field(default="auto", description="'auto', 'portrait', ou 'landscape'")
+    margin: str = Field(default="none", description="'none', 'small', ou 'big'")
+    output_filename: Optional[str] = Field(default="imagens_convertidas.pdf")
+    linearize: bool = Field(default=True)
+
+
+class WatermarkRequest(BaseModel):
+    session_id: str
+    file_id: str
+    watermark_type: str = Field(default="text", description="'text' ou 'image'")
+    text: Optional[str] = Field(default="CONFIDENCIAL")
+    font_size: int = Field(default=48)
+    font_color: str = Field(default="#DC2626")
+    opacity: float = Field(default=0.25)
+    rotation: int = Field(default=-45)
+    position: str = Field(default="center", description="'center', 'top', 'bottom', ou 'tile'")
+    watermark_image_id: Optional[str] = None
+    image_scale: float = Field(default=0.5)
+    layer: str = Field(default="overlay", description="'overlay' ou 'underlay'")
+    pages: str = Field(default="all", description="'all', 'first', ou intervalos '1-3, 5'")
+    output_filename: Optional[str] = Field(default="documento_marca_dagua.pdf")
+    linearize: bool = Field(default=True)
+
+
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
@@ -258,12 +288,15 @@ async def upload_files(
     for file in files:
         if not file.filename:
             continue
-        valid_exts = {".pdf", ".docx", ".doc"}
+        valid_exts = {
+            ".pdf", ".docx", ".doc",
+            ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".tif"
+        }
         file_ext = Path(file.filename).suffix.lower()
         if file_ext not in valid_exts:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"O arquivo '{file.filename}' não possui um formato suportado (.pdf, .docx, .doc)."
+                detail=f"O arquivo '{file.filename}' não possui um formato suportado (.pdf, .docx, .doc, imagens)."
             )
         
         try:
@@ -814,6 +847,134 @@ async def convert_word_to_pdf(request: WordToPdfRequest):
         )
 
 
+@app.post("/api/convert/image-to-pdf")
+async def convert_image_to_pdf(request: ImageToPdfRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie as imagens novamente."
+        )
+
+    resolved_paths = []
+    for img_name in request.image_files:
+        safe_name = Path(img_name).name
+        img_path = session_dir / safe_name
+        if not img_path.exists() and (session_dir / "output" / safe_name).exists():
+            img_path = session_dir / "output" / safe_name
+        if img_path.exists() and img_path.is_file():
+            resolved_paths.append(img_path)
+
+    if not resolved_paths:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nenhum arquivo de imagem válido encontrado para conversão."
+        )
+
+    clean_output_name = Path(request.output_filename or "imagens_convertidas.pdf").name
+    if not clean_output_name.lower().endswith(".pdf"):
+        clean_output_name += ".pdf"
+
+    output_path = session_dir / "output" / clean_output_name
+
+    try:
+        result = await asyncio.to_thread(
+            execute_image_to_pdf,
+            image_paths=resolved_paths,
+            output_pdf_path=output_path,
+            page_size=request.page_size,
+            orientation=request.orientation,
+            margin=request.margin,
+            linearize=request.linearize,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "metrics": result,
+        })
+    except Exception as e:
+        logger.error(f"Erro ao converter Imagem para PDF: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao converter Imagem para PDF: {str(e)}"
+        )
+
+
+@app.post("/api/watermark")
+async def add_pdf_watermark(request: WatermarkRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o arquivo novamente."
+        )
+
+    safe_name = Path(request.file_id).name
+    file_path = session_dir / safe_name
+    if not file_path.exists() and (session_dir / "output" / safe_name).exists():
+        file_path = session_dir / "output" / safe_name
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo '{safe_name}' não encontrado na sessão."
+        )
+
+    wm_img_path = None
+    if request.watermark_type == "image" and request.watermark_image_id:
+        safe_img = Path(request.watermark_image_id).name
+        candidate = session_dir / safe_img
+        if not candidate.exists() and (session_dir / "output" / safe_img).exists():
+            candidate = session_dir / "output" / safe_img
+        if candidate.exists() and candidate.is_file():
+            wm_img_path = candidate
+
+    clean_output_name = Path(request.output_filename or "documento_marca_dagua.pdf").name
+    if not clean_output_name.lower().endswith(".pdf"):
+        clean_output_name += ".pdf"
+
+    output_path = session_dir / "output" / clean_output_name
+
+    try:
+        result = await asyncio.to_thread(
+            execute_pdf_watermark,
+            input_pdf_path=file_path,
+            output_pdf_path=output_path,
+            watermark_type=request.watermark_type,
+            text=request.text,
+            font_size=request.font_size,
+            font_color=request.font_color,
+            opacity=request.opacity,
+            rotation=request.rotation,
+            position=request.position,
+            watermark_image_path=wm_img_path,
+            image_scale=request.image_scale,
+            layer=request.layer,
+            pages=request.pages,
+            linearize=request.linearize,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "metrics": result,
+        })
+    except Exception as e:
+        logger.error(f"Erro ao inserir marca d'água no PDF: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao inserir marca d'água: {str(e)}"
+        )
+
+
 @app.get("/api/download/{session_id}")
 async def download_merged_pdf(session_id: str, filename: Optional[str] = "documento_unificado.pdf"):
     clean_name = Path(filename).name
@@ -923,6 +1084,8 @@ async def health_check():
             "Redigir / Anonimizar (Redact)",
             "Converter PDF para Word (PDF to Word)",
             "Converter Word para PDF (Word to PDF)",
+            "Converter Imagem para PDF (Image to PDF)",
+            "Inserir Marca d'água (Watermark PDF)",
         ],
         "streaming_upload": "Ativo (Zero-RAM Chunking)",
         "menu_system": "Ativo (Página de Menu Visual + Marcadores com UseOutlines)",
