@@ -215,13 +215,32 @@ def test_suite_new_features():
     assert fb_json["success"] is True
     assert "id" in fb_json
 
-    fb_recent = client.get("/api/feedback/recent")
-    assert fb_recent.status_code == 200
-    fb_recent_json = fb_recent.json()
-    assert fb_recent_json["success"] is True
-    assert fb_recent_json["total"] >= 1
-    assert any("Maria" in f["name"] for f in fb_recent_json["feedbacks"])
-    print("  -> Envio de Feedback e Mural da Comunidade validados com sucesso!")
+    fb_id = fb_json["id"]
+
+    # 7. Testando Moderação e Exclusão de Comentários (Admin API)
+    print("\n[7/7] Testando Moderação e Exclusão de Comentários...")
+    # Tentativa com senha errada (deve falhar com 401)
+    bad_auth = client.post("/api/feedback/verify-admin", json={"admin_key": "senha_errada"})
+    assert bad_auth.status_code == 401
+
+    # Autenticação válida
+    good_auth = client.post("/api/feedback/verify-admin", json={"admin_key": "klynneradmin"})
+    assert good_auth.status_code == 200
+
+    # Tentativa de exclusão sem chave (deve falhar com 401)
+    unauth_del = client.delete(f"/api/feedback/{fb_id}")
+    assert unauth_del.status_code == 401
+
+    # Exclusão com chave correta
+    auth_del = client.delete(f"/api/feedback/{fb_id}", headers={"x-admin-key": "klynneradmin"})
+    assert auth_del.status_code == 200
+    assert auth_del.json()["success"] is True
+
+    # Verifica se realmente sumiu da listagem
+    after_del = client.get("/api/feedback/recent")
+    assert after_del.status_code == 200
+    assert not any(f["id"] == fb_id for f in after_del.json()["feedbacks"])
+    print("  -> Autenticação de Moderador e Exclusão de Comentário validadas com sucesso!")
 
     print("\n==================================================")
     print("  SUCESSO ABSOLUTO! TODOS OS TESTES PASSARAM!     ")

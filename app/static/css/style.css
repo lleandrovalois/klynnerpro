@@ -1682,6 +1682,12 @@ body {
   border-radius: var(--radius-full);
 }
 
+.board-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .btn-refresh-feedbacks {
   all: unset;
   box-sizing: border-box;
@@ -1702,6 +1708,79 @@ body {
   background: rgba(255, 255, 255, 0.1);
   color: #FFFFFF;
   border-color: rgba(56, 189, 248, 0.35);
+}
+
+.btn-admin-moderate {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.btn-admin-moderate:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #F8FAFC;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-admin-moderate.admin-active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #FBBF24;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+}
+
+.btn-admin-moderate.admin-active:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #FCA5A5;
+}
+
+/* Botão de Excluir Comentário (no modo moderador) */
+.feedback-delete-btn {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #F87171;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feedback-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: #EF4444;
+  color: #FFFFFF;
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+/* Modal Tamanho Pequeno (Admin Auth) */
+.modal-container-sm {
+  max-width: 440px !important;
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
 }
 
 .feedback-cards-grid {

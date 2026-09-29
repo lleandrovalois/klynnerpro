@@ -18,9 +18,11 @@ from pydantic import BaseModel, Field
 
 from app.analytics import get_current_stats, init_analytics_db, record_page_visit
 from app.feedback import (
+    delete_feedback,
     get_feedback_count,
     get_recent_feedbacks,
     init_feedback_db,
+    is_valid_admin_key,
     save_feedback,
 )
 from app.merger import execute_pdf_merge
@@ -1287,5 +1289,38 @@ async def get_recent_feedbacks_endpoint():
     feedbacks = await asyncio.to_thread(get_recent_feedbacks, 6)
     total_count = await asyncio.to_thread(get_feedback_count)
     return JSONResponse({"success": True, "feedbacks": feedbacks, "total": total_count})
+
+
+class AdminAuthRequest(BaseModel):
+    admin_key: str = Field(..., min_length=1)
+
+
+@app.post("/api/feedback/verify-admin")
+async def verify_admin_key_endpoint(body: AdminAuthRequest):
+    if not is_valid_admin_key(body.admin_key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Chave de administrador incorreta."
+        )
+    return JSONResponse({"success": True, "message": "Autenticado como moderador."})
+
+
+@app.delete("/api/feedback/{feedback_id}")
+async def delete_feedback_endpoint(feedback_id: int, request: Request):
+    key = request.headers.get("x-admin-key") or request.query_params.get("admin_key")
+    if not is_valid_admin_key(key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Acesso não autorizado. Chave de moderação inválida."
+        )
+
+    deleted = await asyncio.to_thread(delete_feedback, feedback_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comentário não encontrado ou já excluído."
+        )
+    return JSONResponse({"success": True, "message": f"Comentário #{feedback_id} excluído com sucesso."})
+
 
 

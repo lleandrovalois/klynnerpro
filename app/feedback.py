@@ -5,8 +5,10 @@ Armazena mensagens dos usuários em SQLite local com anonimização LGPD.
 
 from datetime import datetime, timezone
 import hashlib
+import hmac
 import html
 import logging
+import os
 from pathlib import Path
 import sqlite3
 import threading
@@ -17,7 +19,17 @@ logger = logging.getLogger("feedback")
 DB_DIR = Path("data")
 DB_PATH = DB_DIR / "analytics.db"
 
+# Chave secreta de moderação (configurável via variável de ambiente ADMIN_KEY)
+ADMIN_SECRET_KEY = os.environ.get("ADMIN_KEY", "klynneradmin")
+
 _db_lock = threading.Lock()
+
+
+def is_valid_admin_key(key: Optional[str]) -> bool:
+    """Verifica de forma segura em tempo constante se a chave fornecida corresponde à do administrador."""
+    if not key or not isinstance(key, str):
+        return False
+    return hmac.compare_digest(key.strip().encode("utf-8"), ADMIN_SECRET_KEY.strip().encode("utf-8"))
 
 
 def get_db_connection() -> sqlite3.Connection:
@@ -146,3 +158,18 @@ def get_feedback_count() -> int:
             cursor.execute("SELECT COUNT(*) AS total FROM user_feedbacks")
             row = cursor.fetchone()
             return int(row["total"]) if row else 0
+
+
+def delete_feedback(feedback_id: int) -> bool:
+    """Remove permanentemente um comentário do banco pelo seu ID."""
+    with _db_lock:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM user_feedbacks WHERE id = ?", (int(feedback_id),))
+            deleted = cursor.rowcount > 0
+            conn.commit()
+
+    if deleted:
+        logger.info(f"Feedback #{feedback_id} foi excluído com sucesso pela moderação.")
+    return deleted
+

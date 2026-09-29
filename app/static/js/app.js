@@ -4705,7 +4705,107 @@
       });
     }
 
-    // 6. Carregar Mural da Comunidade
+    // 6. Moderação & Exclusão de Comentários (Admin)
+    const btnAdminModerate = document.getElementById('btn-admin-moderate');
+    const adminModerateLabel = document.getElementById('admin-moderate-label');
+    const adminAuthModal = document.getElementById('admin-auth-modal');
+    const adminAuthForm = document.getElementById('admin-auth-form');
+    const adminKeyInput = document.getElementById('admin-key-input');
+    const btnCloseAdminModal = document.getElementById('btn-close-admin-modal');
+    const btnCancelAdminModal = document.getElementById('btn-cancel-admin-modal');
+    const btnSubmitAdminAuth = document.getElementById('btn-submit-admin-auth');
+    const spinnerAdminAuth = document.getElementById('spinner-admin-auth');
+    const btnSubmitAdminText = document.getElementById('btn-submit-admin-text');
+
+    function getAdminKey() {
+      return sessionStorage.getItem('klynner_admin_key');
+    }
+
+    function isModeratorActive() {
+      return Boolean(getAdminKey());
+    }
+
+    function updateAdminUiState() {
+      const active = isModeratorActive();
+      if (btnAdminModerate) {
+        btnAdminModerate.classList.toggle('admin-active', active);
+        if (adminModerateLabel) {
+          adminModerateLabel.textContent = active ? 'Sair da Moderação' : 'Moderar';
+        }
+      }
+    }
+
+    function openAdminModal() {
+      if (!adminAuthModal) return;
+      adminAuthModal.classList.remove('hidden');
+      if (adminKeyInput) {
+        adminKeyInput.value = '';
+        setTimeout(() => adminKeyInput.focus(), 150);
+      }
+    }
+
+    function closeAdminModal() {
+      if (adminAuthModal) adminAuthModal.classList.add('hidden');
+    }
+
+    if (btnAdminModerate) {
+      btnAdminModerate.addEventListener('click', () => {
+        if (isModeratorActive()) {
+          if (confirm('Deseja sair do Modo de Moderação?')) {
+            sessionStorage.removeItem('klynner_admin_key');
+            showToast('Modo de moderação desativado.', 'info');
+            updateAdminUiState();
+            loadRecentFeedbacks();
+          }
+        } else {
+          openAdminModal();
+        }
+      });
+    }
+
+    if (btnCloseAdminModal) btnCloseAdminModal.addEventListener('click', closeAdminModal);
+    if (btnCancelAdminModal) btnCancelAdminModal.addEventListener('click', closeAdminModal);
+
+    if (adminAuthForm) {
+      adminAuthForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const keyVal = (adminKeyInput ? adminKeyInput.value : '').trim();
+        if (!keyVal) return;
+
+        if (btnSubmitAdminAuth) btnSubmitAdminAuth.disabled = true;
+        if (spinnerAdminAuth) spinnerAdminAuth.classList.remove('hidden');
+        if (btnSubmitAdminText) btnSubmitAdminText.textContent = 'Verificando...';
+
+        try {
+          const resp = await fetch('/api/feedback/verify-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ admin_key: keyVal }),
+          });
+
+          const data = await resp.json();
+          if (resp.ok && data.success) {
+            sessionStorage.setItem('klynner_admin_key', keyVal);
+            showToast('Modo de Moderação ativado com sucesso!', 'success');
+            closeAdminModal();
+            updateAdminUiState();
+            loadRecentFeedbacks();
+          } else {
+            showToast(data.detail || 'Chave de administrador incorreta.', 'error');
+            if (adminKeyInput) adminKeyInput.focus();
+          }
+        } catch (err) {
+          console.error('Erro na validação do administrador:', err);
+          showToast('Erro de conexão ao validar chave.', 'error');
+        } finally {
+          if (btnSubmitAdminAuth) btnSubmitAdminAuth.disabled = false;
+          if (spinnerAdminAuth) spinnerAdminAuth.classList.add('hidden');
+          if (btnSubmitAdminText) btnSubmitAdminText.textContent = 'Entrar como Moderador';
+        }
+      });
+    }
+
+    // 7. Carregar Mural da Comunidade
     async function loadRecentFeedbacks() {
       if (!cardsGrid) return;
       try {
@@ -4716,6 +4816,9 @@
         if (boardTotalCount && data.total !== undefined) {
           boardTotalCount.textContent = `${data.total} mensagem${data.total === 1 ? '' : 's'}`;
         }
+
+        const isAdmin = isModeratorActive();
+        updateAdminUiState();
 
         const items = data.feedbacks || [];
         if (items.length === 0) {
@@ -4741,14 +4844,26 @@
           const initials = (item.name || 'U').substring(0, 2).toUpperCase();
           const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : '';
 
+          const deleteBtnHtml = isAdmin
+            ? `<button type="button" class="feedback-delete-btn" data-id="${item.id}" title="Excluir este comentário do mural">
+                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <polyline points="3 6 5 6 21 6"></polyline>
+                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                 </svg>
+               </button>`
+            : '';
+
           return `
-            <div class="feedback-item-card">
+            <div class="feedback-item-card" data-feedback-id="${item.id}">
               <div class="feedback-item-header">
                 <div class="feedback-item-user">
                   <div class="feedback-user-avatar">${escapeHtml(initials)}</div>
                   <span class="feedback-user-name">${escapeHtml(item.name || 'Usuário')}</span>
                 </div>
-                <span class="feedback-item-cat-badge ${catInfo.cls}">${catInfo.label}</span>
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                  <span class="feedback-item-cat-badge ${catInfo.cls}">${catInfo.label}</span>
+                  ${deleteBtnHtml}
+                </div>
               </div>
               <div class="feedback-item-stars" title="${item.rating || 5} de 5 estrelas">${starsStr}</div>
               <p class="feedback-item-message">${escapeHtml(item.message || '')}</p>
@@ -4761,6 +4876,46 @@
         }).join('');
 
         cardsGrid.innerHTML = cardsHtml;
+
+        // Ativa handlers de exclusão
+        if (isAdmin) {
+          cardsGrid.querySelectorAll('.feedback-delete-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              const feedbackId = btn.dataset.id;
+              if (!feedbackId) return;
+
+              if (!confirm(`Deseja realmente apagar este comentário #${feedbackId} permanentemente da plataforma?`)) {
+                return;
+              }
+
+              try {
+                const resp = await fetch(`/api/feedback/${feedbackId}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'x-admin-key': getAdminKey(),
+                  },
+                });
+
+                const resData = await resp.json();
+                if (resp.ok && resData.success) {
+                  showToast('Comentário apagado com sucesso!', 'success');
+                  loadRecentFeedbacks();
+                } else if (resp.status === 401) {
+                  showToast('Sessão de moderação expirada ou chave inválida.', 'error');
+                  sessionStorage.removeItem('klynner_admin_key');
+                  updateAdminUiState();
+                  loadRecentFeedbacks();
+                } else {
+                  showToast(resData.detail || 'Não foi possível apagar o comentário.', 'error');
+                }
+              } catch (err) {
+                console.error('Erro ao excluir comentário:', err);
+                showToast('Erro de conexão ao tentar apagar comentário.', 'error');
+              }
+            });
+          });
+        }
       } catch (err) {
         console.warn('Erro ao carregar feedbacks recentes:', err);
         cardsGrid.innerHTML = `
