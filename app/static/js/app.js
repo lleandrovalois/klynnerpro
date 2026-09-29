@@ -239,6 +239,33 @@
   const modalBtnDownload = document.getElementById('modal-btn-download');
   const toastContainer = document.getElementById('toast-container');
 
+  // Elementos do Modal da Lupa de Páginas (Zoom Inspector)
+  const pageZoomModal = document.getElementById('page-zoom-modal');
+  const zoomPageBadge = document.getElementById('zoom-page-badge');
+  const zoomLevelLabel = document.getElementById('zoom-level-label');
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const btnZoomFit = document.getElementById('btn-zoom-fit');
+  const btnZoomRot = document.getElementById('btn-zoom-rot');
+  const btnCloseZoomModal = document.getElementById('btn-close-zoom-modal');
+  const btnZoomCloseFooter = document.getElementById('btn-zoom-close-footer');
+  const btnZoomPrevPage = document.getElementById('btn-zoom-prev-page');
+  const btnZoomNextPage = document.getElementById('btn-zoom-next-page');
+  const zoomCanvasContainer = document.getElementById('zoom-canvas-container');
+  const zoomLoadingIndicator = document.getElementById('zoom-loading-indicator');
+  const zoomPageCanvas = document.getElementById('zoom-page-canvas');
+
+  // Estado da Lupa de Páginas
+  const zoomState = {
+    isOpen: false,
+    currentPage: 1,
+    zoomScale: 1.0,
+    rotation: 0,
+    activeItemRef: null,
+    sourceContext: null, // 'organize', 'rotate', 'extract'
+    renderTask: null,
+  };
+
   // Elementos Juntar PDF
   const stageMerge = document.getElementById('stage-merge');
   const fileList = document.getElementById('file-list');
@@ -519,6 +546,7 @@
     setupRemoveFooterEvents();
     setupModalAndPix();
     setupVisitCounter();
+    setupZoomModalEvents();
 
     // Suporte a hash da URL (ex: #split, #protect, #image-to-pdf, #watermark)
     const hash = window.location.hash.replace('#', '');
@@ -1350,12 +1378,24 @@
         </div>
       </div>
 
-      <div class="page-card-preview-wrapper">
+      <div class="page-card-preview-wrapper" title="Clique para inspecionar com a lupa">
         <canvas class="page-thumbnail-canvas" id="canvas-org-${item.uid}"></canvas>
+        <div class="thumbnail-hover-lens">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <line x1="11" y1="8" x2="11" y2="14"/>
+            <line x1="8" y1="11" x2="14" y2="11"/>
+          </svg>
+          <span>Ampliar</span>
+        </div>
         ${item.rotation !== 0 ? `<span class="page-rotation-badge">+${item.rotation}°</span>` : ''}
       </div>
 
       <div class="page-card-actions">
+        <button type="button" class="card-action-btn btn-card-zoom" title="Inspecionar detalhes (Lupa)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
         <button type="button" class="card-action-btn btn-card-rot" title="Girar 90° horário">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
         </button>
@@ -1372,6 +1412,17 @@
     const canvas = card.querySelector(`#canvas-org-${item.uid}`);
     applyPageRotationStyle(canvas, item.rotation);
     renderThumbnailPage(item.origPage, canvas);
+
+    // Evento de abertura da Lupa (no preview ou no botão específico)
+    card.querySelector('.page-card-preview-wrapper').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openPageZoomModal(item.origPage, item.rotation, item, 'organize');
+    });
+
+    card.querySelector('.btn-card-zoom').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openPageZoomModal(item.origPage, item.rotation, item, 'organize');
+    });
 
     // Eventos dos botões do card
     card.querySelector('.btn-card-rot').addEventListener('click', (e) => {
@@ -1638,8 +1689,17 @@
           <span class="page-badge-order">Pág. ${p}</span>
         </div>
 
-        <div class="page-card-preview-wrapper">
+        <div class="page-card-preview-wrapper" title="Clique para inspecionar com a lupa">
           <canvas class="page-thumbnail-canvas" id="canvas-rot-${p}"></canvas>
+          <div class="thumbnail-hover-lens">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="11" y1="8" x2="11" y2="14"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+            <span>Ampliar</span>
+          </div>
           ${angle !== 0 ? `<span class="page-rotation-badge">+${angle}°</span>` : ''}
         </div>
 
@@ -1647,6 +1707,9 @@
           <button type="button" class="card-action-btn btn-rot-left" title="Girar 90° anti-horário">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38L-2.4 1.52"/></svg>
             <span style="font-size:0.75rem;margin-left:3px;">-90°</span>
+          </button>
+          <button type="button" class="card-action-btn btn-card-rot-zoom" title="Inspecionar detalhes (Lupa)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
           </button>
           <button type="button" class="card-action-btn btn-rot-right" title="Girar 90° horário">
             <span style="font-size:0.75rem;margin-right:3px;">+90°</span>
@@ -1658,6 +1721,17 @@
       const canvas = card.querySelector(`#canvas-rot-${p}`);
       applyPageRotationStyle(canvas, angle);
       renderThumbnailPage(p, canvas);
+
+      // Evento de abertura da Lupa
+      card.querySelector('.page-card-preview-wrapper').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPageZoomModal(p, state.rotateMap[p] || 0, null, 'rotate');
+      });
+
+      card.querySelector('.btn-card-rot-zoom').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPageZoomModal(p, state.rotateMap[p] || 0, null, 'rotate');
+      });
 
       card.querySelector('.btn-rot-left').addEventListener('click', () => {
         const cur = state.rotateMap[p] || 0;
@@ -1852,12 +1926,24 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
 
-        <div class="page-card-header" style="padding-left: 2rem;">
+        <div class="page-card-header" style="padding-left: 2rem; display: flex; align-items: center; justify-content: space-between;">
           <span class="page-badge-order">Pág. ${p}</span>
+          <button type="button" class="card-action-btn btn-card-ext-zoom" title="Inspecionar página (Lupa)" style="width:24px;height:24px;padding:0;z-index:2;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
         </div>
 
-        <div class="page-card-preview-wrapper">
+        <div class="page-card-preview-wrapper" title="Clique para inspecionar com a lupa">
           <canvas class="page-thumbnail-canvas" id="canvas-ext-${p}"></canvas>
+          <div class="thumbnail-hover-lens">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="11" y1="8" x2="11" y2="14"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+            <span>Ampliar</span>
+          </div>
         </div>
       `;
 
@@ -1868,6 +1954,17 @@
           state.extractSelected.add(p);
         }
         syncExtractUIFromSet();
+      });
+
+      // Lupa na página
+      card.querySelector('.page-card-preview-wrapper').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPageZoomModal(p, 0, null, 'extract');
+      });
+
+      card.querySelector('.btn-card-ext-zoom').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPageZoomModal(p, 0, null, 'extract');
       });
 
       const canvas = card.querySelector(`#canvas-ext-${p}`);
@@ -1991,6 +2088,289 @@
     if (!element) return;
     const angle = (rotationAngle || 0) % 360;
     element.style.transform = `rotate(${angle}deg)`;
+  }
+
+  // =========================================================================
+  // MODAL DE LUPA / ZOOM INSPECTOR DE PÁGINAS (ALTA RESOLUÇÃO VIA PDF.JS)
+  // =========================================================================
+  function setupZoomModalEvents() {
+    if (!pageZoomModal) return;
+
+    if (btnCloseZoomModal) btnCloseZoomModal.addEventListener('click', closePageZoomModal);
+    if (btnZoomCloseFooter) btnZoomCloseFooter.addEventListener('click', closePageZoomModal);
+
+    pageZoomModal.addEventListener('click', (e) => {
+      if (e.target === pageZoomModal) {
+        closePageZoomModal();
+      }
+    });
+
+    if (btnZoomIn) {
+      btnZoomIn.addEventListener('click', () => {
+        changeZoomScale(0.25);
+      });
+    }
+
+    if (btnZoomOut) {
+      btnZoomOut.addEventListener('click', () => {
+        changeZoomScale(-0.25);
+      });
+    }
+
+    if (btnZoomFit) {
+      btnZoomFit.addEventListener('click', () => {
+        zoomState.zoomScale = 1.0;
+        renderZoomPage();
+      });
+    }
+
+    if (btnZoomRot) {
+      btnZoomRot.addEventListener('click', () => {
+        rotateCurrentZoomPage();
+      });
+    }
+
+    if (btnZoomPrevPage) {
+      btnZoomPrevPage.addEventListener('click', () => {
+        navigateZoomPage(-1);
+      });
+    }
+
+    if (btnZoomNextPage) {
+      btnZoomNextPage.addEventListener('click', () => {
+        navigateZoomPage(1);
+      });
+    }
+
+    // Atalhos de teclado quando a lupa está aberta
+    document.addEventListener('keydown', (e) => {
+      if (!zoomState.isOpen) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closePageZoomModal();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        navigateZoomPage(-1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        navigateZoomPage(1);
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        changeZoomScale(0.25);
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        changeZoomScale(-0.25);
+      } else if (e.key === '0') {
+        e.preventDefault();
+        zoomState.zoomScale = 1.0;
+        renderZoomPage();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        rotateCurrentZoomPage();
+      }
+    });
+
+    // Zoom com Ctrl + Roda do Mouse dentro do contêiner
+    if (zoomCanvasContainer) {
+      zoomCanvasContainer.addEventListener('wheel', (e) => {
+        if (!zoomState.isOpen) return;
+        if (e.ctrlKey) {
+          e.preventDefault();
+          if (e.deltaY < 0) {
+            changeZoomScale(0.15);
+          } else {
+            changeZoomScale(-0.15);
+          }
+        }
+      }, { passive: false });
+    }
+  }
+
+  function changeZoomScale(delta) {
+    let newScale = zoomState.zoomScale + delta;
+    newScale = Math.max(0.5, Math.min(3.5, newScale));
+    newScale = Math.round(newScale * 100) / 100;
+    if (newScale !== zoomState.zoomScale) {
+      zoomState.zoomScale = newScale;
+      renderZoomPage();
+    }
+  }
+
+  function rotateCurrentZoomPage() {
+    zoomState.rotation = (zoomState.rotation + 90) % 360;
+
+    // Se estiver em Organizar, sincroniza o item e o card na grade
+    if (zoomState.sourceContext === 'organize' && zoomState.activeItemRef) {
+      zoomState.activeItemRef.rotation = zoomState.rotation;
+      const curIdx = state.organizeItems.indexOf(zoomState.activeItemRef);
+      if (curIdx >= 0) {
+        const card = organizeGrid.querySelector(`.page-card[data-index="${curIdx}"]`);
+        if (card) {
+          const thumbCanvas = card.querySelector('.page-thumbnail-canvas');
+          applyPageRotationStyle(thumbCanvas, zoomState.rotation);
+          let rotBadge = card.querySelector('.page-rotation-badge');
+          if (zoomState.rotation !== 0) {
+            if (rotBadge) {
+              rotBadge.textContent = `+${zoomState.rotation}°`;
+            } else {
+              const newBadge = document.createElement('span');
+              newBadge.className = 'page-rotation-badge';
+              newBadge.textContent = `+${zoomState.rotation}°`;
+              card.querySelector('.page-card-preview-wrapper').appendChild(newBadge);
+            }
+          } else if (rotBadge) {
+            rotBadge.remove();
+          }
+        }
+      }
+    } else if (zoomState.sourceContext === 'rotate') {
+      state.rotateMap[zoomState.currentPage] = zoomState.rotation;
+      updateRotateDisplay();
+    }
+
+    renderZoomPage();
+  }
+
+  async function openPageZoomModal(pageNum, initialRotation = 0, itemRef = null, context = 'organize') {
+    if (!state.activeDoc || !state.activeDoc.pdfDoc) {
+      showToast('Documento PDF não carregado para inspeção.', 'error');
+      return;
+    }
+
+    zoomState.isOpen = true;
+    zoomState.currentPage = pageNum;
+    zoomState.rotation = (initialRotation || 0) % 360;
+    zoomState.activeItemRef = itemRef;
+    zoomState.sourceContext = context;
+    zoomState.zoomScale = 1.0;
+
+    updateZoomNavAndBadge();
+    pageZoomModal.classList.remove('hidden');
+
+    if (zoomCanvasContainer) {
+      zoomCanvasContainer.scrollTop = 0;
+      zoomCanvasContainer.scrollLeft = 0;
+    }
+
+    await renderZoomPage();
+  }
+
+  function closePageZoomModal() {
+    zoomState.isOpen = false;
+    if (zoomState.renderTask) {
+      try {
+        zoomState.renderTask.cancel();
+      } catch (err) {}
+      zoomState.renderTask = null;
+    }
+    pageZoomModal.classList.add('hidden');
+  }
+
+  function updateZoomNavAndBadge() {
+    if (zoomState.sourceContext === 'organize' && zoomState.activeItemRef) {
+      const curIdx = state.organizeItems.indexOf(zoomState.activeItemRef);
+      const total = state.organizeItems.length;
+      zoomPageBadge.textContent = `Página ${zoomState.activeItemRef.origPage} (#${curIdx + 1} de ${total})`;
+      btnZoomPrevPage.disabled = curIdx <= 0;
+      btnZoomNextPage.disabled = curIdx >= total - 1;
+    } else {
+      const total = state.activeDoc.pageCount;
+      zoomPageBadge.textContent = `Página ${zoomState.currentPage} de ${total}`;
+      btnZoomPrevPage.disabled = zoomState.currentPage <= 1;
+      btnZoomNextPage.disabled = zoomState.currentPage >= total;
+    }
+
+    zoomLevelLabel.textContent = `${Math.round(zoomState.zoomScale * 100)}%`;
+  }
+
+  async function navigateZoomPage(delta) {
+    if (zoomState.sourceContext === 'organize' && zoomState.activeItemRef) {
+      const curIdx = state.organizeItems.indexOf(zoomState.activeItemRef);
+      const nextIdx = curIdx + delta;
+      if (nextIdx >= 0 && nextIdx < state.organizeItems.length) {
+        zoomState.activeItemRef = state.organizeItems[nextIdx];
+        zoomState.currentPage = zoomState.activeItemRef.origPage;
+        zoomState.rotation = zoomState.activeItemRef.rotation || 0;
+        updateZoomNavAndBadge();
+        if (zoomCanvasContainer) {
+          zoomCanvasContainer.scrollTop = 0;
+          zoomCanvasContainer.scrollLeft = 0;
+        }
+        await renderZoomPage();
+      }
+    } else {
+      const nextP = zoomState.currentPage + delta;
+      if (nextP >= 1 && nextP <= state.activeDoc.pageCount) {
+        zoomState.currentPage = nextP;
+        if (zoomState.sourceContext === 'rotate') {
+          zoomState.rotation = state.rotateMap[nextP] || 0;
+        } else {
+          zoomState.rotation = 0;
+        }
+        updateZoomNavAndBadge();
+        if (zoomCanvasContainer) {
+          zoomCanvasContainer.scrollTop = 0;
+          zoomCanvasContainer.scrollLeft = 0;
+        }
+        await renderZoomPage();
+      }
+    }
+  }
+
+  async function renderZoomPage() {
+    if (!state.activeDoc || !state.activeDoc.pdfDoc || !zoomPageCanvas) return;
+
+    if (zoomState.renderTask) {
+      try {
+        zoomState.renderTask.cancel();
+      } catch (e) {}
+      zoomState.renderTask = null;
+    }
+
+    zoomLoadingIndicator.classList.remove('hidden');
+    zoomLevelLabel.textContent = `${Math.round(zoomState.zoomScale * 100)}%`;
+
+    const pageNum = (zoomState.sourceContext === 'organize' && zoomState.activeItemRef)
+      ? zoomState.activeItemRef.origPage
+      : zoomState.currentPage;
+
+    try {
+      const page = await state.activeDoc.pdfDoc.getPage(pageNum);
+      
+      const baseViewport = page.getViewport({ scale: 1.0, rotation: zoomState.rotation });
+      const containerHeight = (zoomCanvasContainer && zoomCanvasContainer.clientHeight > 200)
+        ? (zoomCanvasContainer.clientHeight - 80)
+        : 720;
+      
+      const fitScale = Math.max(0.7, Math.min(2.0, containerHeight / baseViewport.height));
+      const renderScale = fitScale * zoomState.zoomScale;
+
+      const viewport = page.getViewport({ scale: renderScale, rotation: zoomState.rotation });
+
+      zoomPageCanvas.width = viewport.width;
+      zoomPageCanvas.height = viewport.height;
+
+      const ctx = zoomPageCanvas.getContext('2d');
+      ctx.clearRect(0, 0, zoomPageCanvas.width, zoomPageCanvas.height);
+
+      const renderTask = page.render({
+        canvasContext: ctx,
+        viewport: viewport
+      });
+
+      zoomState.renderTask = renderTask;
+      await renderTask.promise;
+      zoomState.renderTask = null;
+
+    } catch (err) {
+      if (err && err.name === 'RenderingCancelledException') {
+        return;
+      }
+      console.warn('Erro ao renderizar página na lupa:', err);
+    } finally {
+      zoomLoadingIndicator.classList.add('hidden');
+    }
   }
 
   // =========================================================================
