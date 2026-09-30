@@ -5,6 +5,7 @@ Servidor FastAPI e APIs REST para unificação e manipulação de arquivos PDF c
 import asyncio
 from contextlib import asynccontextmanager
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 import uuid
@@ -12,7 +13,7 @@ import urllib.parse
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -55,6 +56,14 @@ logger = logging.getLogger("pdf_merger_api")
 CURRENT_DIR = Path(__file__).resolve().parent
 STATIC_DIR = CURRENT_DIR / "static"
 TEMPLATES_DIR = CURRENT_DIR / "templates"
+
+# ==============================================================================
+# CONFIGURAÇÃO DE MONETIZAÇÃO COM GOOGLE ADSENSE
+# ==============================================================================
+ADSENSE_CLIENT_ID = os.getenv("ADSENSE_CLIENT_ID", "ca-pub-1653358832177043").strip()
+ADSENSE_SLOT_RESULT = os.getenv("ADSENSE_SLOT_RESULT", "1234567890").strip()
+ADSENSE_SLOT_FOOTER = os.getenv("ADSENSE_SLOT_FOOTER", "0987654321").strip()
+ADSENSE_ENABLED = os.getenv("ADSENSE_ENABLED", "true").lower() in ("true", "1", "yes")
 
 
 async def periodic_cleanup_task():
@@ -311,6 +320,13 @@ async def serve_index():
     content = re.sub(r'/static/css/style\.css(\?[^"\'\s>]*)?', f'/static/css/style.css?v={v_css}', content)
     content = re.sub(r'/static/js/app\.js(\?[^"\'\s>]*)?', f'/static/js/app.js?v={v_js}', content)
     
+    # Injeção de variáveis de monetização (Google AdSense)
+    is_placeholder = (ADSENSE_CLIENT_ID in ("ca-pub-XXXXXXXXXXXXXXXX", "", "none"))
+    content = content.replace("{{ADSENSE_CLIENT_ID}}", ADSENSE_CLIENT_ID)
+    content = content.replace("{{ADSENSE_SLOT_RESULT}}", ADSENSE_SLOT_RESULT)
+    content = content.replace("{{ADSENSE_SLOT_FOOTER}}", ADSENSE_SLOT_FOOTER)
+    content = content.replace("{{ADSENSE_MODE_CLASS}}", "adsense-placeholder-mode" if is_placeholder else "adsense-live-mode")
+    
     return HTMLResponse(
         content=content,
         headers={
@@ -319,6 +335,23 @@ async def serve_index():
             "Expires": "0",
         }
     )
+
+
+@app.get("/ads.txt", response_class=PlainTextResponse)
+async def serve_ads_txt():
+    """Endpoint obrigatório do Google AdSense para verificação de domínio e integridade de inventário."""
+    root_ads_txt = CURRENT_DIR.parent / "ads.txt"
+    if root_ads_txt.exists():
+        return PlainTextResponse(root_ads_txt.read_text(encoding="utf-8"), media_type="text/plain")
+
+    clean_pub = ADSENSE_CLIENT_ID.replace("ca-", "").strip()
+    if not clean_pub or clean_pub in ("pub-XXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXX"):
+        clean_pub = "pub-XXXXXXXXXXXXXXXX"
+    elif not clean_pub.startswith("pub-"):
+        clean_pub = f"pub-{clean_pub}"
+
+    ads_content = f"# Google AdSense ads.txt - Klynner PDF PRO\ngoogle.com, {clean_pub}, DIRECT, f08c47fec0942fa0\n"
+    return PlainTextResponse(ads_content, media_type="text/plain")
 
 
 @app.post("/api/upload")

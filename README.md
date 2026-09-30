@@ -102,39 +102,53 @@ Klynner PDF PRO disponibiliza uma plataforma unificada de alta performance divid
 
 ---
 
-## 🚀 Como Executar o Projeto
+---
 
-### Pré-requisitos
-- **Python 3.10+** (já instalado e configurado no ambiente local)
+## 🌐 Hospedagem (Hostinger / VPS / Render)
 
-### Passo a Passo
-
-1. **Abra o terminal na pasta do projeto:**
-   ```powershell
-   cd c:\workspace\klynnerpro
+### Hospedagem na Hostinger (VPS ou Docker)
+1. **Opção 1 - Docker / Docker Compose (Recomendado na Hostinger VPS):**
+   ```bash
+   git clone https://github.com/lleandrovalois/klynnerpro.git
+   cd klynnerpro
+   docker compose up -d --build
    ```
-
-2. **Inicie o servidor:**
-   Execute o script inicializador usando o ambiente virtual criado para o projeto:
-   ```powershell
-   .\.venv\Scripts\python.exe run.py
+2. **Opção 2 - Python Direto (Systemd / Uvicorn na VPS):**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
-
-3. **Acesse no seu navegador:**
-   Abra [http://127.0.0.1:8000](http://127.0.0.1:8000).
+3. Configure o Nginx ou Apache com proxy reverso apontando para a porta `8000`.
 
 ---
 
-## 🌐 Como Hospedar no Render (Render.com)
+## 💰 Monetização Discreta com Google AdSense
 
-O projeto já inclui o arquivo `render.yaml` e `Dockerfile` configurados para deploy gratuito e instantâneo no Render.
+O **Klynner PRO** já vem configurado de fábrica com a conta **`ca-pub-1653358832177043`**, pronta para gerar receita de forma elegante e não-intrusiva.
 
-### Método 1: Deploy Automático via Blueprint (Recomendado)
-1. Acesse o painel do [Render Dashboard](https://dashboard.render.com).
-2. Clique em **New +** e selecione **Blueprint**.
-3. Conecte o repositório `https://github.com/lleandrovalois/klynnerpro`.
-4. O Render detectará automaticamente o arquivo `render.yaml` e provisionará o serviço web.
-5. Clique em **Apply** e sua aplicação estará online em poucos minutos com URL pública HTTPS (ex: `https://klynner-pdf.onrender.com`).
+### Onde os anúncios aparecem?
+1. **Tela de Conclusão / Download (`#result-stage`):** Logo abaixo dos botões de ação ("Baixar Arquivo" / "Visualizar"), no momento exato em que o usuário finalizou a tarefa e aguarda o download.
+2. **Rodapé Discreto:** Na base da aplicação, integrado suavemente ao design dark glassmorphism.
+
+### Variáveis de Configuração:
+Se desejar alterar ou customizar blocos específicos, use as variáveis no `.env` ou nas configurações do seu servidor:
+
+| Variável | Descrição | Valor Configurado |
+| :--- | :--- | :--- |
+| `ADSENSE_CLIENT_ID` | Seu ID de Editor do Google AdSense | `ca-pub-1653358832177043` *(já ativo)* |
+| `ADSENSE_SLOT_RESULT` | ID do bloco de anúncio da tela de download | `1234567890` (ou ID do seu bloco no painel) |
+| `ADSENSE_SLOT_FOOTER` | ID do bloco de anúncio do rodapé | `0987654321` (ou ID do seu bloco no painel) |
+| `ADSENSE_ENABLED` | Ativar ou pausar os anúncios (`true` / `false`) | `true` |
+
+### Verificação Automática de Domínio (`/ads.txt`):
+O Google AdSense exige um arquivo `ads.txt` na raiz do domínio para validar a titularidade da conta.
+- O Klynner PRO disponibiliza automaticamente a rota **`GET /ads.txt`** (ex: `https://seusite.com/ads.txt`), retornando:
+  ```
+  google.com, pub-1653358832177043, DIRECT, f08c47fec0942fa0
+  ```
+- O arquivo físico [`ads.txt`](file:///c:/workspace/klynnerpro/ads.txt) na raiz do repositório já está atualizado com o seu código de editor.
 
 ---
 
@@ -143,9 +157,10 @@ O projeto já inclui o arquivo `render.yaml` e `Dockerfile` configurados para de
 ```
 klynnerpro/
 ├── .venv/                   # Ambiente virtual Python
+├── ads.txt                  # Arquivo obrigatório de verificação do Google AdSense
 ├── app/
 │   ├── __init__.py
-│   ├── main.py              # Endpoints FastAPI, rotas e ciclo de vida
+│   ├── main.py              # Endpoints FastAPI, rotas, /ads.txt e ciclo de vida
 │   ├── merger.py            # Motor de fusão QPDF/C++ e fallback PyPDF
 │   ├── splitter.py          # Divisão por intervalos e modo burst (ZIP)
 │   ├── organizer.py         # Reordenação, duplicação e remoção de páginas
@@ -158,17 +173,20 @@ klynnerpro/
 │   ├── pdf_to_word.py       # Conversor de PDF para Word (DOCX)
 │   ├── word_to_pdf.py       # Conversor de Word (DOCX) para PDF
 │   ├── analytics.py         # Inspeção de metadados e integridade de PDFs
+│   ├── feedback.py          # Sistema de feedback e moderação da comunidade
 │   ├── storage.py           # Streaming contínuo em disco e gestão de sessões
 │   ├── static/
 │   │   ├── css/
-│   │   │   └── style.css    # Design System moderno em Glassmorphism
+│   │   │   └── style.css    # Design System moderno em Glassmorphism + Ad Containers
 │   │   └── js/
-│   │       └── app.js       # Controladores dinâmicos, sliders, color-pickers e drag-and-drop
+│   │       └── app.js       # Controladores dinâmicos, sliders e disparo AdSense
 │   └── templates/
-│       └── index.html       # Interface web SPA semântica e responsiva
+│       └── index.html       # Interface web SPA semântica com blocos de anúncio
 ├── test_all_features.py     # Suite de testes de integração (10 testes)
 ├── test_new_features.py     # Suite de testes para Imagem to PDF e Marca d'água
+├── test_adsense.py          # Testes de validação da monetização Google AdSense
 ├── requirements.txt         # Dependências do projeto
 ├── run.py                   # Script de inicialização rápida
 └── README.md                # Documentação técnica completa
 ```
+

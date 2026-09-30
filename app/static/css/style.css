@@ -4222,6 +4222,144 @@ body {
   align-items: center;
 }
 
+/* ==========================================================================
+   Google AdSense - Espaços Publicitários Discretos
+   ========================================================================== */
+
+.ad-discreet-section {
+  width: 100%;
+  margin: 2rem 0 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.ad-discreet-container {
+  width: 100%;
+  max-width: 728px;
+  margin: 1.5rem auto;
+  padding: 0.65rem 0.85rem 0.85rem;
+  background: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition-normal);
+}
+
+.ad-discreet-container:hover {
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.ad-result-card {
+  margin: 1.25rem 0 0.5rem;
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ad-discreet-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.45rem;
+}
+
+.ad-discreet-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #64748B;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.15rem 0.65rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ad-slot-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+}
+
+.ad-slot-body ins.adsbygoogle {
+  width: 100%;
+  min-height: 90px;
+}
+
+/* Fallback / Preview discreto para modo de desenvolvimento ou pré-aprovação */
+.ad-preview-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.85rem 1.25rem;
+  text-align: center;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  width: 100%;
+}
+
+.ad-preview-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ad-preview-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.ad-preview-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.ad-preview-hint code {
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  color: #A5B4FC;
+}
+
+/* Em produção com AdSense ativo, o preview explicativo desaparece */
+body.adsense-live-mode .ad-preview-fallback {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .ad-discreet-container {
+    max-width: 100%;
+    margin: 1rem 0;
+    padding: 0.5rem;
+  }
+  .ad-preview-fallback {
+    padding: 0.6rem 0.4rem;
+  }
+}
+
 
 
 

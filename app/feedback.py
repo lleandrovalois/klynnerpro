@@ -173,3 +173,10 @@ def delete_feedback(feedback_id: int) -> bool:
         logger.info(f"Feedback #{feedback_id} foi excluído com sucesso pela moderação.")
     return deleted
 
+
+# Inicialização segura das tabelas mesmo se o lifespan do ASGI não tiver sido acionado
+try:
+    init_feedback_db()
+except Exception:
+    pass
+

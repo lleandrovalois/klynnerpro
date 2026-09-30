@@ -2755,6 +2755,18 @@
       btnPreview.style.display = 'inline-flex';
     }
 
+    // Renderização protegida do anúncio AdSense na tela de resultado
+    try {
+      if (window.adsbygoogle && typeof window.adsbygoogle.push === 'function') {
+        const resultAd = document.querySelector('#ad-slot-result-wrapper ins.adsbygoogle');
+        if (resultAd && !resultAd.getAttribute('data-adsbygoogle-status')) {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        }
+      }
+    } catch (adErr) {
+      console.debug('AdSense result slot notice:', adErr);
+    }
+
     showToast(opts.title, 'success');
   }
 
@@ -4947,5 +4959,23 @@
     // Carrega na inicialização
     loadRecentFeedbacks();
   }
+
+  // =========================================================================
+  // MONETIZAÇÃO DISCRETA (GOOGLE ADSENSE)
+  // =========================================================================
+  function initDiscreetAdSense() {
+    try {
+      if (window.adsbygoogle && typeof window.adsbygoogle.push === 'function') {
+        const footerAd = document.querySelector('#ad-footer-section ins.adsbygoogle');
+        if (footerAd && !footerAd.getAttribute('data-adsbygoogle-status')) {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        }
+      }
+    } catch (err) {
+      console.debug('AdSense footer slot notice:', err);
+    }
+  }
+
+  initDiscreetAdSense();
 
 })();

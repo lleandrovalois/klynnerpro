@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="/static/css/style.css?v=2.1.0">
   <!-- PDF.js para renderização de miniaturas no navegador com zero sobrecarga de RAM do servidor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Google AdSense Integrado de Forma Discreta (Klynner PRO Monetization) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ADSENSE_CLIENT_ID}}" crossorigin="anonymous"></script>
   <style>
     /* Resiliência visual: Impede que botões de ferramentas fiquem brancos com borda preta */
     .tools-nav-bar {
@@ -157,7 +159,7 @@
     }
   </style>
 </head>
-<body>
+<body class="{{ADSENSE_MODE_CLASS}}">
   <div class="background-glows">
     <div class="glow glow-1"></div>
     <div class="glow glow-2"></div>
@@ -2306,6 +2308,29 @@
             </button>
           </div>
 
+          <!-- Bloco de Anúncio Discreto - Tela de Conclusão / Download -->
+          <div class="ad-discreet-container ad-result-card" id="ad-slot-result-wrapper">
+            <div class="ad-discreet-header">
+              <span class="ad-discreet-label">Publicidade</span>
+            </div>
+            <div class="ad-slot-body">
+              <ins class="adsbygoogle"
+                   style="display:block; text-align:center;"
+                   data-ad-layout="in-article"
+                   data-ad-format="fluid"
+                   data-ad-client="{{ADSENSE_CLIENT_ID}}"
+                   data-ad-slot="{{ADSENSE_SLOT_RESULT}}"></ins>
+              <div class="ad-preview-fallback" id="ad-preview-result">
+                <div class="ad-preview-pill">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                  <span>Google AdSense</span>
+                </div>
+                <p class="ad-preview-text">Espaço reservado para publicidade discreta pós-processamento</p>
+                <span class="ad-preview-hint">Configurável em <code>ADSENSE_CLIENT_ID</code> e <code>ADSENSE_SLOT_RESULT</code></span>
+              </div>
+            </div>
+          </div>
+
           <div class="result-support-box">
             <p>☕ <em>Se o <strong>Klynner PDF</strong> foi útil para a sua rotina, <a href="#donation-section" class="link-highlight">considere apoiar a manutenção e evolução contínua do projeto via PIX.</a></em></p>
           </div>
@@ -2486,7 +2511,7 @@
 
           <h2 class="donation-title">Gostou da ferramenta? Apoie a manutenção e evolução contínua do projeto.</h2>
           <p class="donation-desc">
-            O <strong>Klynner PDF</strong> é uma ferramenta gratuita, livre de anúncios e construída com motor de alta performance. Qualquer contribuição via PIX ajuda nos custos de infraestrutura e apoia a evolução contínua da plataforma!
+            O <strong>Klynner PDF</strong> é uma ferramenta gratuita, construída com motor de alta performance e mantida com publicidade discreta e o apoio voluntário de quem usa. Qualquer contribuição via PIX ajuda nos custos de infraestrutura e apoia a evolução contínua da plataforma!
           </p>
 
           <div class="pix-container">
@@ -2529,6 +2554,31 @@
               <div class="pix-merchant-info">
                 <span>Beneficiário: <strong>Leandro Valois</strong> &bull; Chave: <strong>lleandrovalois@gmail.com</strong></span>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bloco de Anúncio Discreto - Rodapé Superior -->
+      <section class="ad-discreet-section" id="ad-footer-section" aria-label="Espaço Publicitário">
+        <div class="ad-discreet-container ad-footer-card">
+          <div class="ad-discreet-header">
+            <span class="ad-discreet-label">Publicidade</span>
+          </div>
+          <div class="ad-slot-body">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="{{ADSENSE_CLIENT_ID}}"
+                 data-ad-slot="{{ADSENSE_SLOT_FOOTER}}"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <div class="ad-preview-fallback" id="ad-preview-footer">
+              <div class="ad-preview-pill">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                <span>Google AdSense</span>
+              </div>
+              <p class="ad-preview-text">Espaço de publicidade horizontal discreto</p>
+              <span class="ad-preview-hint">Configurável em <code>ADSENSE_CLIENT_ID</code> e <code>ADSENSE_SLOT_FOOTER</code></span>
             </div>
           </div>
         </div>

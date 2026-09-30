@@ -9,3 +9,9 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.0
+      - key: ADSENSE_CLIENT_ID
+        sync: false
+      - key: ADSENSE_SLOT_RESULT
+        sync: false
+      - key: ADSENSE_SLOT_FOOTER
+        sync: false

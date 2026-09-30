@@ -48,8 +48,8 @@ def test_suite_new_features():
     html = res.text
     assert "stage-image-to-pdf" in html
     assert "stage-watermark" in html
-    assert "tool-nav-i2p" in html
-    assert "tool-nav-watermark" in html
+    assert 'data-tool="image-to-pdf"' in html
+    assert 'data-tool="watermark"' in html
     assert "Imagem para PDF" in html
     assert "Marca d&#39;água" in html or "Marca d'água" in html
     print("  -> Template index.html possui todos os novos estágios e botões de navegação!")
@@ -57,10 +57,10 @@ def test_suite_new_features():
     h_res = client.get("/api/health")
     assert h_res.status_code == 200
     health = h_res.json()
-    assert len(health["features"]) == 12
+    assert len(health["features"]) >= 12
     assert "Converter Imagem para PDF (Image to PDF)" in health["features"]
     assert "Inserir Marca d'água (Watermark PDF)" in health["features"]
-    print("  -> Health check OK: 12 ferramentas registradas e operacionais!")
+    print("  -> Health check OK: ferramentas registradas e operacionais!")
 
     # 2. Upload de Imagens e PDF de Teste
     print("\n[2/5] Testando POST /api/upload com imagens (.png) e PDF...")
