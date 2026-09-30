@@ -39,6 +39,7 @@ from app.image_to_pdf import execute_image_to_pdf
 from app.watermark import execute_pdf_watermark
 from app.footer_customizer import execute_pdf_footer
 from app.footer_remover import execute_pdf_remove_footer
+from app.comparator import execute_pdf_compare
 from app.storage import (
     BASE_TEMP_DIR,
     cleanup_expired_sessions,
@@ -298,6 +299,16 @@ class RemoveFooterRequest(BaseModel):
     pages: str = Field(default="all", description="'all', 'first', ou intervalos '1-5, 8'")
     output_filename: Optional[str] = Field(default="documento_sem_rodape.pdf")
     linearize: bool = Field(default=True)
+
+
+class ComparePdfRequest(BaseModel):
+    session_id: str
+    file_a_id: str
+    file_b_id: str
+    granularity: Optional[str] = Field(default="word", description="'word' (palavras) ou 'line' (linhas)")
+    ignore_whitespace: bool = Field(default=True, description="Ignora variações de espaçamento e quebras")
+    ignore_case: bool = Field(default=False, description="Ignora diferenças entre maiúsculas e minúsculas")
+    output_filename: Optional[str] = Field(default="relatorio_comparacao.html")
 
 
 
@@ -1147,6 +1158,68 @@ async def remove_pdf_footer(request: RemoveFooterRequest):
         )
 
 
+@app.post("/api/compare/pdf")
+async def compare_pdfs_endpoint(request: ComparePdfRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie os arquivos novamente."
+        )
+
+    try:
+        result = await asyncio.to_thread(
+            execute_pdf_compare,
+            session_dir=session_dir,
+            file_a_id=request.file_a_id,
+            file_b_id=request.file_b_id,
+            granularity=request.granularity or "word",
+            ignore_whitespace=request.ignore_whitespace,
+            ignore_case=request.ignore_case,
+            output_filename=request.output_filename,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "file_a": result["file_a"],
+            "file_b": result["file_b"],
+            "metrics": result["metrics"],
+            "pages": result["pages"],
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview-report/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+        })
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Erro ao comparar PDFs: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao comparar os documentos PDF: {str(e)}"
+        )
+
+
+@app.get("/api/preview-report/{session_id}", response_class=HTMLResponse)
+async def preview_comparison_report(session_id: str, filename: Optional[str] = "relatorio_comparacao.html"):
+    clean_name = Path(filename or "relatorio_comparacao.html").name
+    session_dir = get_session_dir(session_id)
+    report_path = session_dir / "output" / clean_name
+    if not report_path.exists():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Relatório de comparação não encontrado.")
+    content = report_path.read_text(encoding="utf-8")
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
 
 
 @app.get("/api/download/{session_id}")
@@ -1158,7 +1231,7 @@ async def download_merged_pdf(session_id: str, filename: Optional[str] = "docume
     if not output_path.exists():
         out_dir = session_dir / "output"
         if out_dir.exists():
-            files = list(out_dir.glob("*.pdf")) + list(out_dir.glob("*.zip")) + list(out_dir.glob("*.docx"))
+            files = list(out_dir.glob("*.pdf")) + list(out_dir.glob("*.zip")) + list(out_dir.glob("*.docx")) + list(out_dir.glob("*.html"))
             if files:
                 files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
                 output_path = files[0]
@@ -1172,10 +1245,13 @@ async def download_merged_pdf(session_id: str, filename: Optional[str] = "docume
 
     is_zip = clean_name.lower().endswith(".zip")
     is_docx = clean_name.lower().endswith(".docx")
+    is_html = clean_name.lower().endswith(".html")
     if is_docx:
         media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     elif is_zip:
         media_type = "application/zip"
+    elif is_html:
+        media_type = "text/html; charset=utf-8"
     else:
         media_type = "application/pdf"
 
@@ -1262,6 +1338,7 @@ async def health_check():
             "Inserir Marca d'água (Watermark PDF)",
             "Personalizar Rodapé e Numeração (Footer Customizer)",
             "Remover Rodapé e Cabeçalho (Footer Remover)",
+            "Comparar PDFs (Text Diff & Auditoria)",
         ],
         "streaming_upload": "Ativo (Zero-RAM Chunking)",
         "menu_system": "Ativo (Página de Menu Visual + Marcadores com UseOutlines)",

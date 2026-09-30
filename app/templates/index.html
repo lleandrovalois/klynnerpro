@@ -498,6 +498,46 @@
             </div>
           </div>
 
+          <!-- CATEGORIA 5: COMPARAÇÃO & AUDITORIA -->
+          <div class="cat-dropdown-wrapper" data-category="compare">
+            <button type="button" class="cat-dropdown-trigger" id="btn-cat-compare" aria-expanded="false" aria-haspopup="true" title="Comparador e auditoria de alterações em PDFs">
+              <div class="cat-trigger-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="15 3 21 9 21 21"/>
+                  <line x1="9" y1="13" x2="15" y2="13"/>
+                </svg>
+              </div>
+              <span class="cat-trigger-text">Comparar</span>
+              <svg class="cat-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+
+            <div class="cat-dropdown-menu dropdown-align-right" id="menu-cat-compare" role="menu">
+              <div class="dropdown-cat-header">
+                <span>Comparação & Auditoria</span>
+                <span class="dropdown-count-pill">1 ferramenta</span>
+              </div>
+              <div class="dropdown-items-list">
+                <!-- 1. Comparar PDFs -->
+                <button type="button" class="tool-nav-btn dropdown-tool-item" data-tool="compare" role="menuitem">
+                  <div class="dropdown-item-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="15 3 21 9 21 21"/>
+                      <line x1="9" y1="13" x2="15" y2="13"/>
+                      <line x1="12" y1="10" x2="12" y2="16"/>
+                    </svg>
+                  </div>
+                  <div class="dropdown-item-info">
+                    <span class="dropdown-item-title">Comparar PDFs</span>
+                    <span class="dropdown-item-desc">Análise de diferenças textuais e palavras alteradas</span>
+                  </div>
+                  <span class="dropdown-check-icon">✓</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </nav>
 
@@ -524,6 +564,8 @@
         <!-- Estado 1: Upload Dropzone (Compartilhado e Contextual) -->
         <div class="dropzone-area" id="dropzone">
           <input type="file" id="file-input" multiple accept=".pdf,application/pdf" class="file-input-hidden">
+          <input type="file" id="file-input-a" accept=".pdf,application/pdf" class="file-input-hidden">
+          <input type="file" id="file-input-b" accept=".pdf,application/pdf" class="file-input-hidden">
           
           <div class="dropzone-content">
             <div class="dropzone-icon-wrapper" id="dropzone-icon-wrapper">
@@ -2218,6 +2260,250 @@
         </div>
 
         <!-- ============================================================== -->
+        <!-- ESTADO 2.14: WORKSPACE COMPARAR PDFS (COMPARE)                 -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-compare">
+          
+          <!-- Seleção Dupla de Documentos com Botão Central de Inversão -->
+          <div class="compare-docs-grid">
+            <!-- Card Documento A -->
+            <div class="compare-doc-card" id="card-doc-a">
+              <div class="compare-card-header">
+                <div class="compare-tag tag-original">
+                  <span class="compare-tag-dot red"></span>
+                  <span>Documento A (Original / Base)</span>
+                </div>
+                <button type="button" class="btn-doc-action" id="btn-change-doc-a" title="Trocar arquivo A">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>Alterar</span>
+                </button>
+              </div>
+              <div class="compare-card-body">
+                <div class="compare-doc-icon icon-doc-a">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="compare-doc-meta">
+                  <strong class="compare-doc-name" id="compare-name-a">Aguardando Documento A...</strong>
+                  <span class="compare-doc-sub" id="compare-sub-a">-- páginas &bull; -- KB</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botão Central de Inversão (Swap) -->
+            <div class="compare-swap-wrapper">
+              <button type="button" class="btn-compare-swap" id="btn-compare-swap" title="Inverter Ordem (Trocar A ↔ B)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/>
+                </svg>
+              </button>
+              <span class="swap-hint-text">Inverter</span>
+            </div>
+
+            <!-- Card Documento B -->
+            <div class="compare-doc-card" id="card-doc-b">
+              <div class="compare-card-header">
+                <div class="compare-tag tag-modified">
+                  <span class="compare-tag-dot green"></span>
+                  <span>Documento B (Novo / Modificado)</span>
+                </div>
+                <button type="button" class="btn-doc-action" id="btn-change-doc-b" title="Trocar arquivo B">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>Alterar</span>
+                </button>
+              </div>
+              <div class="compare-card-body">
+                <div class="compare-doc-icon icon-doc-b">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                </div>
+                <div class="compare-doc-meta">
+                  <strong class="compare-doc-name" id="compare-name-b">Aguardando Documento B...</strong>
+                  <span class="compare-doc-sub" id="compare-sub-b">-- páginas &bull; -- KB</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Painel de Configuração de Comparação -->
+          <div class="options-panel" style="margin-top: 1.25rem;">
+            <div class="options-row-flex" style="display: flex; gap: 1.25rem; flex-wrap: wrap;">
+              <div class="option-group" style="flex: 1; min-width: 240px;">
+                <label for="compare-granularity" class="option-label">Granularidade da Comparação</label>
+                <select id="compare-granularity" class="text-input">
+                  <option value="word" selected>Por Palavras (Destaque preciso de adições e exclusões)</option>
+                  <option value="line">Por Linhas (Destaque de parágrafos/cláusulas)</option>
+                </select>
+              </div>
+
+              <div class="option-group" style="flex: 1; min-width: 240px;">
+                <label for="compare-output-filename" class="option-label">Nome do Relatório de Auditoria</label>
+                <div class="input-with-suffix">
+                  <input type="text" id="compare-output-filename" class="text-input" value="relatorio_comparacao_auditoria">
+                  <span class="input-suffix">.html</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="toggles-grid" style="margin-top: 1rem;">
+              <label class="toggle-control" for="toggle-compare-whitespace">
+                <input type="checkbox" id="toggle-compare-whitespace" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Normalizar Espaços em Branco</span>
+                  <span class="toggle-desc">Ignora diferenças de tabulação e espaços duplos repetidos.</span>
+                </div>
+              </label>
+
+              <label class="toggle-control" for="toggle-compare-case">
+                <input type="checkbox" id="toggle-compare-case">
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Diferenciar Maiúsculas / Minúsculas</span>
+                  <span class="toggle-desc">Compara com precisão exata entre letras maiúsculas e minúsculas.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Rodapé de Ação e Início da Análise -->
+          <div class="action-footer" style="margin-top: 1.25rem;">
+            <div class="summary-info">
+              <span class="summary-label">Status dos Arquivos:</span>
+              <span class="summary-value" id="compare-status-label">Selecione os dois PDFs para comparar</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-compare">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <span>Comparar Documentos Agora</span>
+            </button>
+          </div>
+
+          <!-- PAINEL INTERATIVO DE RESULTADOS DA COMPARAÇÃO (exibido após processamento) -->
+          <div class="compare-results-panel hidden" id="compare-results-panel" style="margin-top: 2rem;">
+            
+            <!-- Cards de Métricas Principais (KPIs) -->
+            <div class="compare-metrics-ribbon">
+              <div class="metric-card-kpi metric-similarity">
+                <div class="kpi-label">Similaridade Global</div>
+                <div class="kpi-value" id="kpi-similarity-val">--%</div>
+                <div class="kpi-bar-track">
+                  <div class="kpi-bar-fill" id="kpi-similarity-bar" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="metric-card-kpi metric-added">
+                <div class="kpi-label">Palavras Adicionadas</div>
+                <div class="kpi-value text-emerald" id="kpi-added-val">+0</div>
+                <div class="kpi-sub">Inserções no Documento B</div>
+              </div>
+
+              <div class="metric-card-kpi metric-removed">
+                <div class="kpi-label">Palavras Removidas</div>
+                <div class="kpi-value text-rose" id="kpi-removed-val">-0</div>
+                <div class="kpi-sub">Exclusões em relação ao Doc A</div>
+              </div>
+
+              <div class="metric-card-kpi metric-pages">
+                <div class="kpi-label">Páginas Alteradas</div>
+                <div class="kpi-value text-cyan" id="kpi-pages-val">0 / 0</div>
+                <div class="kpi-sub">Com diferenças no texto</div>
+              </div>
+            </div>
+
+            <!-- Barra de Ferramentas de Navegação e Filtros do Diff -->
+            <div class="diff-viewer-toolbar">
+              <div class="diff-toolbar-left">
+                <!-- Seletor / Navegador de Páginas -->
+                <div class="diff-pages-selector-wrap">
+                  <span class="diff-toolbar-label">Páginas:</span>
+                  <div class="diff-page-pills" id="diff-page-pills-container">
+                    <!-- Gerado dinamicamente: Botão Todas + Botões Página 1, 2... com pontinhos coloridos -->
+                  </div>
+                </div>
+
+                <!-- Filtro Apenas com Diferenças -->
+                <div class="diff-filter-toggle">
+                  <label class="custom-checkbox-wrapper" style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="diff-filter-changes-only">
+                    <span style="font-size: 0.82rem; color: #94A3B8;">Ocultar páginas sem alterações</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="diff-toolbar-right">
+                <!-- Campo de busca rápida no texto -->
+                <div class="diff-search-box">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" id="diff-text-search-input" placeholder="Filtrar termo no diff..." autocomplete="off">
+                </div>
+
+                <!-- Modo de Visualização (Lado a Lado vs Unificado) -->
+                <div class="diff-view-mode-toggle">
+                  <button type="button" class="btn-mode-toggle active" id="btn-mode-split" title="Visualização Lado a Lado">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/></svg>
+                    <span>Lado a Lado</span>
+                  </button>
+                  <button type="button" class="btn-mode-toggle" id="btn-mode-unified" title="Visualização Unificada">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    <span>Unificado</span>
+                  </button>
+                </div>
+
+                <!-- Botão de Download do Relatório -->
+                <a href="#" id="btn-download-compare-report" class="btn btn-secondary btn-sm" target="_blank" download>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>Baixar Relatório</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Visualizador Interativo de Diff (Lado a Lado com Scroll Sincronizado) -->
+            <div class="diff-viewer-viewport" id="diff-viewer-viewport">
+              <div class="diff-scroll-pane-wrapper mode-split" id="diff-panes-wrapper">
+                
+                <!-- Painel Esquerdo: Documento A (Original) -->
+                <div class="diff-pane diff-pane-left" id="diff-pane-left">
+                  <div class="diff-pane-header">
+                    <div class="pane-header-title">
+                      <span class="diff-circle-indicator red"></span>
+                      <strong id="diff-pane-title-a">Doc A (Original)</strong>
+                    </div>
+                    <span class="diff-pane-badge badge-deleted" id="diff-badge-deleted-count">0 exclusões</span>
+                  </div>
+                  <div class="diff-pane-content" id="diff-content-a">
+                    <!-- Linhas renderizadas dinamicamente -->
+                  </div>
+                </div>
+
+                <!-- Painel Direito: Documento B (Modificado) -->
+                <div class="diff-pane diff-pane-right" id="diff-pane-right">
+                  <div class="diff-pane-header">
+                    <div class="pane-header-title">
+                      <span class="diff-circle-indicator green"></span>
+                      <strong id="diff-pane-title-b">Doc B (Modificado)</strong>
+                    </div>
+                    <span class="diff-pane-badge badge-inserted" id="diff-badge-inserted-count">0 adições</span>
+                  </div>
+                  <div class="diff-pane-content" id="diff-content-b">
+                    <!-- Linhas renderizadas dinamicamente -->
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Visualização Unificada (Modo Inline) -->
+              <div class="diff-unified-pane hidden" id="diff-unified-pane">
+                <div class="diff-unified-content" id="diff-unified-content">
+                  <!-- Linhas unificadas com + e - -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ============================================================== -->
         <!-- ESTADO 3: PROGRESSO DE PROCESSAMENTO (COMPARTILHADO)           -->
         <!-- ============================================================== -->
         <div class="processing-stage hidden" id="processing-stage">
@@ -2695,7 +2981,7 @@
             </div>
             <div>
               <h3 class="all-tools-title" id="all-tools-modal-title">Todas as Ferramentas</h3>
-              <p class="all-tools-subtitle">Encontre e acesse instantaneamente qualquer uma das 14 ferramentas da plataforma</p>
+              <p class="all-tools-subtitle">Encontre e acesse instantaneamente qualquer uma das 15 ferramentas da plataforma</p>
             </div>
           </div>
           <button type="button" class="btn btn-ghost btn-sm" id="btn-close-all-tools-modal" aria-label="Fechar catálogo">
@@ -2909,6 +3195,33 @@
                 <div class="card-info">
                   <span class="card-title">Imagem para PDF</span>
                   <span class="card-desc">Converter fotos e imagens (JPG, PNG, WebP) em PDF</span>
+                </div>
+              </button>
+
+            </div>
+          </div>
+
+          <!-- SEÇÃO 5: COMPARAÇÃO & AUDITORIA -->
+          <div class="tools-cat-group" data-cat-group="compare">
+            <div class="tools-cat-header">
+              <span class="tools-cat-pill">Comparação & Auditoria</span>
+              <span class="tools-cat-count">1 ferramenta</span>
+            </div>
+            <div class="tools-cat-grid">
+              
+              <!-- 15. Comparar PDFs -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="compare" data-keywords="comparar diff diferencas revisao alteracoes auditoria texto palavras modificacoes contratos versao">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="15 3 21 9 21 21"/>
+                    <line x1="9" y1="13" x2="15" y2="13"/>
+                    <line x1="12" y1="10" x2="12" y2="16"/>
+                  </svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Comparar PDFs</span>
+                  <span class="card-desc">Comparação textual refinada com destaque de alterações linha a linha e por palavras</span>
                 </div>
               </button>
 

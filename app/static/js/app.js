@@ -158,6 +158,16 @@
       enginePill: 'Expurgador QPDF Ativo',
       stageId: 'stage-remove-footer',
     },
+    compare: {
+      heroTitle: 'Compare Dois Documentos PDF e Analise Alterações',
+      heroSub: 'Identifique instantaneamente diferenças textuais, palavras adicionadas, removidas ou alteradas entre duas versões de contratos, relatórios ou processos.',
+      dropHeading: 'Arraste os 2 arquivos PDF para comparar',
+      dropSub: 'ou clique para selecionar o Documento Original e o Modificado',
+      dropBadges: ['Diff textual linha a linha e por palavras', 'Detecção precisa de adições e exclusões', 'Relatório de auditoria e similaridade'],
+      multiple: true,
+      enginePill: 'Comparador Textual Ativo',
+      stageId: 'stage-compare',
+    },
   };
 
   // Estado Central da Aplicação
@@ -176,6 +186,17 @@
 
     // Imagem para PDF
     imageFiles: [], // { id, name, size, fileObj, isUploaded, serverSavedName, previewUrl }
+
+    // Comparar PDFs
+    compareFiles: {
+      fileA: null, // { id, name, size, sizeFormatted, pageCount, fileObj, isUploaded, serverSavedName }
+      fileB: null, // { id, name, size, sizeFormatted, pageCount, fileObj, isUploaded, serverSavedName }
+    },
+    compareResult: null,
+    compareSelectedPage: 'all',
+    compareChangesOnly: false,
+    compareSearchTerm: '',
+    compareViewMode: 'split',
 
     // Ferramentas de 1 Documento
     activeDoc: null, // { name, size, pageCount, serverSavedName, fileObj, pdfDoc }
@@ -224,6 +245,8 @@
     'remove-footer': 'edit',
     watermark: 'edit',
 
+    compare: 'compare',
+
     protect: 'security',
     unlock: 'security',
     redact: 'security',
@@ -239,6 +262,7 @@
     organize: 'Organizar Páginas',
     rotate: 'Girar Páginas',
     extract: 'Extrair Páginas',
+    compare: 'Comparar PDFs',
     protect: 'Proteger PDF',
     unlock: 'Desproteger PDF',
     redact: 'Tarjar & Anonimizar',
@@ -567,6 +591,49 @@
   const rfSummaryLabel = document.getElementById('rf-summary-label');
   const btnStartRemoveFooter = document.getElementById('btn-start-remove-footer');
 
+  // Elementos Comparar PDFs (.pdf)
+  const stageCompare = document.getElementById('stage-compare');
+  const cardDocA = document.getElementById('card-doc-a');
+  const cardDocB = document.getElementById('card-doc-b');
+  const btnChangeDocA = document.getElementById('btn-change-doc-a');
+  const btnChangeDocB = document.getElementById('btn-change-doc-b');
+  const fileInputA = document.getElementById('file-input-a');
+  const fileInputB = document.getElementById('file-input-b');
+  const compareNameA = document.getElementById('compare-name-a');
+  const compareSubA = document.getElementById('compare-sub-a');
+  const compareNameB = document.getElementById('compare-name-b');
+  const compareSubB = document.getElementById('compare-sub-b');
+  const btnCompareSwap = document.getElementById('btn-compare-swap');
+  const compareGranularity = document.getElementById('compare-granularity');
+  const compareOutputFilename = document.getElementById('compare-output-filename');
+  const toggleCompareWhitespace = document.getElementById('toggle-compare-whitespace');
+  const toggleCompareCase = document.getElementById('toggle-compare-case');
+  const compareStatusLabel = document.getElementById('compare-status-label');
+  const btnStartCompare = document.getElementById('btn-start-compare');
+  const compareResultsPanel = document.getElementById('compare-results-panel');
+  const kpiSimilarityVal = document.getElementById('kpi-similarity-val');
+  const kpiSimilarityBar = document.getElementById('kpi-similarity-bar');
+  const kpiAddedVal = document.getElementById('kpi-added-val');
+  const kpiRemovedVal = document.getElementById('kpi-removed-val');
+  const kpiPagesVal = document.getElementById('kpi-pages-val');
+  const diffPagePillsContainer = document.getElementById('diff-page-pills-container');
+  const diffFilterChangesOnly = document.getElementById('diff-filter-changes-only');
+  const diffTextSearchInput = document.getElementById('diff-text-search-input');
+  const btnModeSplit = document.getElementById('btn-mode-split');
+  const btnModeUnified = document.getElementById('btn-mode-unified');
+  const btnDownloadCompareReport = document.getElementById('btn-download-compare-report');
+  const diffPanesWrapper = document.getElementById('diff-panes-wrapper');
+  const diffPaneLeft = document.getElementById('diff-pane-left');
+  const diffPaneRight = document.getElementById('diff-pane-right');
+  const diffContentA = document.getElementById('diff-content-a');
+  const diffContentB = document.getElementById('diff-content-b');
+  const diffUnifiedPane = document.getElementById('diff-unified-pane');
+  const diffUnifiedContent = document.getElementById('diff-unified-content');
+  const diffPaneTitleA = document.getElementById('diff-pane-title-a');
+  const diffPaneTitleB = document.getElementById('diff-pane-title-b');
+  const diffBadgeDeletedCount = document.getElementById('diff-badge-deleted-count');
+  const diffBadgeInsertedCount = document.getElementById('diff-badge-inserted-count');
+
   // =========================================================================
   // INICIALIZAÇÃO
   // =========================================================================
@@ -596,6 +663,7 @@
     setupWatermarkEvents();
     setupFooterEvents();
     setupRemoveFooterEvents();
+    setupCompareEvents();
     setupModalAndPix();
     setupVisitCounter();
     setupZoomModalEvents();
@@ -989,6 +1057,14 @@
       } else {
         dropzone.classList.remove('hidden');
       }
+    } else if (toolKey === 'compare') {
+      if (state.compareFiles.fileA || state.compareFiles.fileB) {
+        dropzone.classList.add('hidden');
+        stageCompare.classList.remove('hidden');
+        updateCompareDocCards();
+      } else {
+        dropzone.classList.remove('hidden');
+      }
     } else {
       if (state.activeDoc) {
         dropzone.classList.add('hidden');
@@ -1145,6 +1221,10 @@
       renderImageFileList();
       showToast(`${validFiles.length} imagem(ns) adicionada(s) à conversão.`, 'info');
 
+    } else if (state.activeTool === 'compare') {
+      // Comparar PDFs
+      await handleCompareFiles(validFiles);
+
     } else {
       // Ferramenta de documento único
       const targetFile = validFiles[0];
@@ -1238,6 +1318,10 @@
     state.redactCustomTerms = [];
     state.imageFiles = [];
     state.watermarkImageDoc = null;
+    state.compareFiles = { fileA: null, fileB: null };
+    state.compareResult = null;
+    state.compareSelectedPage = 'all';
+    if (compareResultsPanel) compareResultsPanel.classList.add('hidden');
     thumbnailCache.clear();
 
     document.querySelectorAll('.tool-stage').forEach(el => el.classList.add('hidden'));
@@ -4325,6 +4409,635 @@
       showToast(e.message || 'Erro ao remover rodapé do PDF.', 'error');
       stopProcessingUI(stageRemoveFooter);
     }
+  }
+
+  // =========================================================================
+  // FERRAMENTA 15: COMPARAR PDFS (COMPARE & AUDIT)
+  // =========================================================================
+  function setupCompareEvents() {
+    if (!stageCompare) return;
+
+    // Clique no botão ou card A para selecionar arquivo
+    if (btnChangeDocA) {
+      btnChangeDocA.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (fileInputA) fileInputA.click();
+      });
+    }
+    if (cardDocA) {
+      cardDocA.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-change-doc-a')) return;
+        if (fileInputA) fileInputA.click();
+      });
+      setupCardDropZone(cardDocA, 'fileA');
+    }
+
+    // Clique no botão ou card B para selecionar arquivo
+    if (btnChangeDocB) {
+      btnChangeDocB.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (fileInputB) fileInputB.click();
+      });
+    }
+    if (cardDocB) {
+      cardDocB.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-change-doc-b')) return;
+        if (fileInputB) fileInputB.click();
+      });
+      setupCardDropZone(cardDocB, 'fileB');
+    }
+
+    // Inputs de arquivo individuais
+    if (fileInputA) {
+      fileInputA.addEventListener('change', async (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          const doc = await prepareCompareDoc(e.target.files[0]);
+          state.compareFiles.fileA = doc;
+          updateCompareDocCards();
+          fileInputA.value = '';
+          showToast(`Documento A carregado: "${doc.name}"`, 'success');
+        }
+      });
+    }
+
+    if (fileInputB) {
+      fileInputB.addEventListener('change', async (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          const doc = await prepareCompareDoc(e.target.files[0]);
+          state.compareFiles.fileB = doc;
+          updateCompareDocCards();
+          fileInputB.value = '';
+          showToast(`Documento B carregado: "${doc.name}"`, 'success');
+        }
+      });
+    }
+
+    // Botão central de Inversão (Swap A ↔ B)
+    if (btnCompareSwap) {
+      btnCompareSwap.addEventListener('click', () => swapCompareDocs());
+    }
+
+    // Botão de Início da Comparação
+    if (btnStartCompare) {
+      btnStartCompare.addEventListener('click', startCompareProcess);
+    }
+
+    // Alternadores de Modo de Visualização (Lado a Lado vs Unificado)
+    if (btnModeSplit) {
+      btnModeSplit.addEventListener('click', () => setCompareViewMode('split'));
+    }
+    if (btnModeUnified) {
+      btnModeUnified.addEventListener('click', () => setCompareViewMode('unified'));
+    }
+
+    // Filtro: Apenas com diferenças
+    if (diffFilterChangesOnly) {
+      diffFilterChangesOnly.addEventListener('change', (e) => {
+        state.compareChangesOnly = e.target.checked;
+        renderDiffContent();
+      });
+    }
+
+    // Busca rápida em tempo real no diff
+    if (diffTextSearchInput) {
+      diffTextSearchInput.addEventListener('input', (e) => {
+        state.compareSearchTerm = (e.target.value || '').trim().toLowerCase();
+        renderDiffContent();
+      });
+    }
+
+    // Configuração de Scroll Sincronizado
+    setupScrollSync();
+  }
+
+  function setupCardDropZone(cardEl, targetSlot) {
+    if (!cardEl) return;
+    ['dragenter', 'dragover'].forEach(name => {
+      cardEl.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        cardEl.classList.add('dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      cardEl.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        cardEl.classList.remove('dragover');
+      });
+    });
+    cardEl.addEventListener('drop', async (e) => {
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        const file = files[0];
+        if (file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf') {
+          const doc = await prepareCompareDoc(file);
+          state.compareFiles[targetSlot] = doc;
+          updateCompareDocCards();
+          showToast(`Documento ${targetSlot === 'fileA' ? 'A' : 'B'} atualizado: "${doc.name}"`, 'success');
+        } else {
+          showToast('Por favor, selecione um arquivo em formato PDF.', 'error');
+        }
+      }
+    });
+  }
+
+  async function prepareCompareDoc(fileObj) {
+    let pageCount = 1;
+    if (window.pdfjsLib) {
+      try {
+        const arrayBuffer = await fileObj.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdfDoc = await loadingTask.promise;
+        pageCount = pdfDoc ? pdfDoc.numPages : 1;
+      } catch (err) {
+        console.warn('PDF.js aviso ao obter páginas para comparação:', err);
+      }
+    }
+    return {
+      id: 'cmp_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now(),
+      name: fileObj.name,
+      size: fileObj.size,
+      pageCount: pageCount,
+      serverSavedName: null,
+      fileObj: fileObj,
+      isUploaded: false,
+    };
+  }
+
+  async function handleCompareFiles(validFiles) {
+    if (!validFiles || validFiles.length === 0) return;
+
+    if (!state.compareFiles.fileA && !state.compareFiles.fileB) {
+      if (validFiles.length >= 2) {
+        state.compareFiles.fileA = await prepareCompareDoc(validFiles[0]);
+        state.compareFiles.fileB = await prepareCompareDoc(validFiles[1]);
+        showToast('2 documentos carregados para comparação!', 'success');
+      } else {
+        state.compareFiles.fileA = await prepareCompareDoc(validFiles[0]);
+        showToast(`Documento A carregado ("${validFiles[0].name}"). Agora selecione ou arraste o Documento B.`, 'info');
+      }
+    } else if (state.compareFiles.fileA && !state.compareFiles.fileB) {
+      state.compareFiles.fileB = await prepareCompareDoc(validFiles[0]);
+      showToast(`Documento B carregado ("${validFiles[0].name}"). Pronto para comparar!`, 'success');
+    } else if (!state.compareFiles.fileA && state.compareFiles.fileB) {
+      state.compareFiles.fileA = await prepareCompareDoc(validFiles[0]);
+      showToast(`Documento A carregado ("${validFiles[0].name}"). Pronto para comparar!`, 'success');
+    } else {
+      if (validFiles.length >= 2) {
+        state.compareFiles.fileA = await prepareCompareDoc(validFiles[0]);
+        state.compareFiles.fileB = await prepareCompareDoc(validFiles[1]);
+        showToast('Dois novos documentos carregados para comparação!', 'success');
+      } else {
+        state.compareFiles.fileB = await prepareCompareDoc(validFiles[0]);
+        showToast(`Documento B substituído por "${validFiles[0].name}".`, 'info');
+      }
+    }
+
+    dropzone.classList.add('hidden');
+    stageCompare.classList.remove('hidden');
+    updateCompareDocCards();
+  }
+
+  function updateCompareDocCards() {
+    const fA = state.compareFiles.fileA;
+    const fB = state.compareFiles.fileB;
+
+    if (fA) {
+      if (compareNameA) compareNameA.textContent = fA.name;
+      if (compareSubA) compareSubA.textContent = `${fA.pageCount || 1} pág${(fA.pageCount || 1) > 1 ? 's' : ''} • ${formatBytes(fA.size)}`;
+      if (cardDocA) cardDocA.classList.add('has-file');
+    } else {
+      if (compareNameA) compareNameA.textContent = 'Aguardando Documento A...';
+      if (compareSubA) compareSubA.textContent = '-- páginas • -- KB';
+      if (cardDocA) cardDocA.classList.remove('has-file');
+    }
+
+    if (fB) {
+      if (compareNameB) compareNameB.textContent = fB.name;
+      if (compareSubB) compareSubB.textContent = `${fB.pageCount || 1} pág${(fB.pageCount || 1) > 1 ? 's' : ''} • ${formatBytes(fB.size)}`;
+      if (cardDocB) cardDocB.classList.add('has-file');
+    } else {
+      if (compareNameB) compareNameB.textContent = 'Aguardando Documento B...';
+      if (compareSubB) compareSubB.textContent = '-- páginas • -- KB';
+      if (cardDocB) cardDocB.classList.remove('has-file');
+    }
+
+    const isReady = !!(fA && fB);
+    if (compareStatusLabel) {
+      if (isReady) {
+        compareStatusLabel.textContent = 'Dois documentos carregados. Pronto para analisar!';
+        compareStatusLabel.style.color = '#34D399';
+      } else if (fA && !fB) {
+        compareStatusLabel.textContent = 'Aguardando o Documento B para iniciar';
+        compareStatusLabel.style.color = '#F59E0B';
+      } else if (!fA && fB) {
+        compareStatusLabel.textContent = 'Aguardando o Documento A para iniciar';
+        compareStatusLabel.style.color = '#F59E0B';
+      } else {
+        compareStatusLabel.textContent = 'Selecione os dois PDFs para comparar';
+        compareStatusLabel.style.color = 'var(--text-secondary)';
+      }
+    }
+
+    if (btnStartCompare) {
+      btnStartCompare.disabled = !isReady;
+      btnStartCompare.style.opacity = isReady ? '1' : '0.5';
+      btnStartCompare.style.cursor = isReady ? 'pointer' : 'not-allowed';
+    }
+  }
+
+  function swapCompareDocs() {
+    const tmp = state.compareFiles.fileA;
+    state.compareFiles.fileA = state.compareFiles.fileB;
+    state.compareFiles.fileB = tmp;
+
+    if (btnCompareSwap) {
+      btnCompareSwap.style.transform = 'rotate(180deg)';
+      setTimeout(() => { btnCompareSwap.style.transform = ''; }, 350);
+    }
+
+    updateCompareDocCards();
+    showToast('Posição invertida: Documento A ↔ Documento B', 'info');
+
+    if (state.compareResult) {
+      showToast('Clique em "Comparar Documentos Agora" para recalcular o diff invertido.', 'info');
+    }
+  }
+
+  async function startCompareProcess() {
+    if (!state.compareFiles.fileA || !state.compareFiles.fileB) {
+      showToast('Por favor, carregue os dois documentos PDF para poder comparar.', 'error');
+      return;
+    }
+
+    const fileA = state.compareFiles.fileA;
+    const fileB = state.compareFiles.fileB;
+
+    startProcessingUI('Comparando Textos dos PDFs...', 'Extraindo textos das páginas e computando tokens com SequenceMatcher...');
+
+    try {
+      updateProcessingStep(1, 'Garantindo upload dos dois documentos no servidor...', 20);
+      await ensureFilesUploaded([fileA, fileB]);
+      await delay(200);
+
+      updateProcessingStep(2, 'Executando comparação cirúrgica linha a linha e palavra por palavra...', 60);
+
+      let cleanName = (compareOutputFilename ? compareOutputFilename.value.trim() : '') || 'relatorio_comparacao_auditoria';
+      if (!cleanName.toLowerCase().endsWith('.html')) cleanName += '.html';
+
+      const payload = {
+        session_id: state.sessionId,
+        file_a_id: fileA.serverSavedName,
+        file_b_id: fileB.serverSavedName,
+        granularity: compareGranularity ? compareGranularity.value : 'word',
+        ignore_whitespace: toggleCompareWhitespace ? toggleCompareWhitespace.checked : true,
+        ignore_case: toggleCompareCase ? toggleCompareCase.checked : false,
+        output_filename: cleanName,
+      };
+
+      updateProcessingStep(3, 'Formatando visualizador de diff e compilando relatório de auditoria...', 85);
+
+      const res = await fetch('/api/compare/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao comparar PDFs no servidor.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Comparação concluída com sucesso!');
+      await delay(300);
+
+      // Finaliza o estágio de processamento e volta para o stageCompare exibindo os resultados
+      processingStage.classList.add('hidden');
+      stageCompare.classList.remove('hidden');
+
+      state.compareResult = data;
+      state.compareSelectedPage = 'all';
+      renderCompareResults(data);
+
+      showToast('Comparação concluída! Navegue pelas páginas e diferenças abaixo.', 'success');
+
+      // Scroll suave para o painel de resultados
+      if (compareResultsPanel) {
+        compareResultsPanel.classList.remove('hidden');
+        setTimeout(() => {
+          compareResultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+      }
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro durante a comparação dos PDFs.', 'error');
+      stopProcessingUI(stageCompare);
+    }
+  }
+
+  function renderCompareResults(data) {
+    if (!data || !compareResultsPanel) return;
+
+    const m = data.metrics || {};
+    const sim = typeof m.similarity_percentage === 'number' ? m.similarity_percentage.toFixed(1) : '100.0';
+
+    // 1. Atualiza KPIs
+    if (kpiSimilarityVal) kpiSimilarityVal.textContent = `${sim}%`;
+    if (kpiSimilarityBar) kpiSimilarityBar.style.width = `${Math.min(100, Math.max(0, m.similarity_percentage || 0))}%`;
+    if (kpiAddedVal) kpiAddedVal.textContent = `+${(m.words_added || 0).toLocaleString('pt-BR')}`;
+    if (kpiRemovedVal) kpiRemovedVal.textContent = `-${(m.words_removed || 0).toLocaleString('pt-BR')}`;
+    if (kpiPagesVal) kpiPagesVal.textContent = `${m.pages_with_differences || 0} de ${m.total_pages_compared || 0}`;
+
+    if (diffBadgeDeletedCount) diffBadgeDeletedCount.textContent = `${(m.words_removed || 0).toLocaleString('pt-BR')} exclusões`;
+    if (diffBadgeInsertedCount) diffBadgeInsertedCount.textContent = `${(m.words_added || 0).toLocaleString('pt-BR')} adições`;
+
+    if (diffPaneTitleA) diffPaneTitleA.textContent = data.file_a ? `${data.file_a} (Original)` : 'Doc A (Original)';
+    if (diffPaneTitleB) diffPaneTitleB.textContent = data.file_b ? `${data.file_b} (Modificado)` : 'Doc B (Modificado)';
+
+    // 2. Botão de Download do Relatório HTML
+    if (btnDownloadCompareReport) {
+      btnDownloadCompareReport.href = data.download_url;
+      btnDownloadCompareReport.setAttribute('download', data.output_filename || 'relatorio_comparacao.html');
+    }
+
+    // 3. Pílulas de Navegação por Página
+    if (diffPagePillsContainer) {
+      diffPagePillsContainer.innerHTML = '';
+
+      const pagesList = data.pages || [];
+
+      // Pílula "Todas as Páginas"
+      const btnAll = document.createElement('button');
+      btnAll.type = 'button';
+      btnAll.className = `btn-page-pill ${state.compareSelectedPage === 'all' ? 'active' : ''}`;
+      btnAll.innerHTML = `Todas (${pagesList.length})`;
+      btnAll.addEventListener('click', () => {
+        state.compareSelectedPage = 'all';
+        syncPagePillsSelection();
+        renderDiffContent();
+      });
+      diffPagePillsContainer.appendChild(btnAll);
+
+      // Pílulas individuais 1, 2, 3...
+      pagesList.forEach(p => {
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = `btn-page-pill ${state.compareSelectedPage === p.page_num ? 'active' : ''}`;
+        const dotCls = p.has_changes ? 'red' : 'green';
+        pill.innerHTML = `
+          <span class="page-pill-dot ${dotCls}"></span>
+          <span>Pág ${p.page_num}</span>
+        `;
+        pill.title = p.has_changes ? `Página ${p.page_num}: possui diferenças (+${p.stats?.added_words || 0} / -${p.stats?.removed_words || 0})` : `Página ${p.page_num}: 100% idêntica`;
+        pill.addEventListener('click', () => {
+          state.compareSelectedPage = p.page_num;
+          syncPagePillsSelection();
+          renderDiffContent();
+        });
+        diffPagePillsContainer.appendChild(pill);
+      });
+    }
+
+    // 4. Renderiza conteúdo do diff
+    renderDiffContent();
+  }
+
+  function syncPagePillsSelection() {
+    if (!diffPagePillsContainer) return;
+    const pills = diffPagePillsContainer.querySelectorAll('.btn-page-pill');
+    pills.forEach((p, idx) => {
+      if (idx === 0) {
+        p.classList.toggle('active', state.compareSelectedPage === 'all');
+      } else {
+        const pageNum = parseInt(p.textContent.replace(/\D/g, ''), 10);
+        p.classList.toggle('active', state.compareSelectedPage === pageNum);
+      }
+    });
+  }
+
+  function renderChunksHtml(chunks, highlightType) {
+    if (!chunks || chunks.length === 0) return '';
+    return chunks.map(c => {
+      const text = escapeHtml(c.text);
+      if (c.type === 'delete') {
+        return `<span class="diff-word-delete">${text}</span>`;
+      } else if (c.type === 'insert') {
+        return `<span class="diff-word-insert">${text}</span>`;
+      }
+      return text;
+    }).join('');
+  }
+
+  function renderDiffContent() {
+    if (!state.compareResult) return;
+
+    const data = state.compareResult;
+    const pages = data.pages || [];
+    const selectedPage = state.compareSelectedPage;
+    const changesOnly = state.compareChangesOnly;
+    const term = state.compareSearchTerm;
+
+    // Filtra páginas
+    let filteredPages = pages.filter(p => {
+      if (selectedPage !== 'all' && p.page_num !== selectedPage) return false;
+      if (changesOnly && !p.has_changes) return false;
+      return true;
+    });
+
+    if (state.compareViewMode === 'split') {
+      renderSplitDiff(filteredPages, term);
+    } else {
+      renderUnifiedDiff(filteredPages, term);
+    }
+  }
+
+  function renderSplitDiff(pages, term) {
+    if (!diffContentA || !diffContentB) return;
+
+    let htmlA = '';
+    let htmlB = '';
+
+    if (pages.length === 0) {
+      const emptyMsg = '<div style="padding: 2.5rem 1rem; text-align: center; color: #64748B; font-size: 13px;">Nenhuma alteração encontrada com os filtros selecionados.</div>';
+      diffContentA.innerHTML = emptyMsg;
+      diffContentB.innerHTML = emptyMsg;
+      return;
+    }
+
+    pages.forEach(p => {
+      const diffRows = p.diff_rows || [];
+      const hasChanges = p.has_changes;
+      const stats = p.stats || { added_words: 0, removed_words: 0 };
+
+      if (term) {
+        const matchesTerm = diffRows.some(r =>
+          (r.text_a && r.text_a.toLowerCase().includes(term)) ||
+          (r.text_b && r.text_b.toLowerCase().includes(term))
+        );
+        if (!matchesTerm) return;
+      }
+
+      const sepTagA = hasChanges
+        ? `<span style="color:#FDA4AF;">-${stats.removed_words} palavras</span>`
+        : '<span style="color:#6EE7B7;">Idêntica</span>';
+
+      const sepTagB = hasChanges
+        ? `<span style="color:#6EE7B7;">+${stats.added_words} palavras</span>`
+        : '<span style="color:#6EE7B7;">Idêntica</span>';
+
+      htmlA += `
+        <div class="diff-page-separator">
+          <span>Página ${p.page_num} ${p.exists_in_a === false ? '(Sem conteúdo)' : ''}</span>
+          <span>${sepTagA}</span>
+        </div>
+      `;
+
+      htmlB += `
+        <div class="diff-page-separator">
+          <span>Página ${p.page_num} ${p.exists_in_b === false ? '(Sem conteúdo)' : ''}</span>
+          <span>${sepTagB}</span>
+        </div>
+      `;
+
+      diffRows.forEach(row => {
+        if (term) {
+          const matchA = row.text_a && row.text_a.toLowerCase().includes(term);
+          const matchB = row.text_b && row.text_b.toLowerCase().includes(term);
+          if (!matchA && !matchB) return;
+        }
+
+        const rtype = row.type;
+        const numA = row.num_a ? row.num_a : '';
+        const numB = row.num_b ? row.num_b : '';
+
+        if (rtype === 'equal') {
+          htmlA += `<div class="diff-line-row"><span class="diff-line-num">${numA}</span><span class="diff-line-text">${escapeHtml(row.text_a)}</span></div>`;
+          htmlB += `<div class="diff-line-row"><span class="diff-line-num">${numB}</span><span class="diff-line-text">${escapeHtml(row.text_b)}</span></div>`;
+        } else if (rtype === 'replace') {
+          htmlA += `<div class="diff-line-row row-replace"><span class="diff-line-num">${numA}</span><span class="diff-line-text">${renderChunksHtml(row.chunks_a, 'delete')}</span></div>`;
+          htmlB += `<div class="diff-line-row row-replace"><span class="diff-line-num">${numB}</span><span class="diff-line-text">${renderChunksHtml(row.chunks_b, 'insert')}</span></div>`;
+        } else if (rtype === 'delete') {
+          htmlA += `<div class="diff-line-row row-delete"><span class="diff-line-num">${numA}</span><span class="diff-line-text">${renderChunksHtml(row.chunks_a, 'delete')}</span></div>`;
+          htmlB += `<div class="diff-line-row" style="opacity: 0.25; user-select: none;"><span class="diff-line-num"></span><span class="diff-line-text">&nbsp;</span></div>`;
+        } else if (rtype === 'insert') {
+          htmlA += `<div class="diff-line-row" style="opacity: 0.25; user-select: none;"><span class="diff-line-num"></span><span class="diff-line-text">&nbsp;</span></div>`;
+          htmlB += `<div class="diff-line-row row-insert"><span class="diff-line-num">${numB}</span><span class="diff-line-text">${renderChunksHtml(row.chunks_b, 'insert')}</span></div>`;
+        }
+      });
+    });
+
+    diffContentA.innerHTML = htmlA || '<div style="padding: 2.5rem 1rem; text-align: center; color: #64748B;">Nenhuma linha correspondente.</div>';
+    diffContentB.innerHTML = htmlB || '<div style="padding: 2.5rem 1rem; text-align: center; color: #64748B;">Nenhuma linha correspondente.</div>';
+  }
+
+  function renderUnifiedDiff(pages, term) {
+    if (!diffUnifiedContent) return;
+
+    let html = '';
+
+    if (pages.length === 0) {
+      diffUnifiedContent.innerHTML = '<div style="padding: 2.5rem 1rem; text-align: center; color: #64748B; font-size: 13px;">Nenhuma alteração encontrada com os filtros selecionados.</div>';
+      return;
+    }
+
+    pages.forEach(p => {
+      const diffRows = p.diff_rows || [];
+      const hasChanges = p.has_changes;
+      const stats = p.stats || { added_words: 0, removed_words: 0 };
+
+      if (term) {
+        const matchesTerm = diffRows.some(r =>
+          (r.text_a && r.text_a.toLowerCase().includes(term)) ||
+          (r.text_b && r.text_b.toLowerCase().includes(term))
+        );
+        if (!matchesTerm) return;
+      }
+
+      const diffBadge = hasChanges
+        ? `<span style="color:#FDA4AF;">-${stats.removed_words}</span> / <span style="color:#6EE7B7;">+${stats.added_words}</span>`
+        : '<span style="color:#6EE7B7;">100% Idêntica</span>';
+
+      html += `
+        <div class="diff-page-separator">
+          <span>Página ${p.page_num} &bull; Similaridade: ${p.similarity_score}%</span>
+          <span>${diffBadge}</span>
+        </div>
+      `;
+
+      diffRows.forEach(row => {
+        if (term) {
+          const matchA = row.text_a && row.text_a.toLowerCase().includes(term);
+          const matchB = row.text_b && row.text_b.toLowerCase().includes(term);
+          if (!matchA && !matchB) return;
+        }
+
+        const rtype = row.type;
+
+        if (rtype === 'equal') {
+          html += `<div class="diff-unified-row"><span class="diff-unified-type">&nbsp;</span><span class="diff-line-text">${escapeHtml(row.text_a)}</span></div>`;
+        } else if (rtype === 'delete') {
+          html += `<div class="diff-unified-row unified-delete"><span class="diff-unified-type">-</span><span class="diff-line-text">${renderChunksHtml(row.chunks_a, 'delete')}</span></div>`;
+        } else if (rtype === 'insert') {
+          html += `<div class="diff-unified-row unified-insert"><span class="diff-unified-type">+</span><span class="diff-line-text">${renderChunksHtml(row.chunks_b, 'insert')}</span></div>`;
+        } else if (rtype === 'replace') {
+          html += `<div class="diff-unified-row unified-delete"><span class="diff-unified-type">-</span><span class="diff-line-text">${renderChunksHtml(row.chunks_a, 'delete')}</span></div>`;
+          html += `<div class="diff-unified-row unified-insert"><span class="diff-unified-type">+</span><span class="diff-line-text">${renderChunksHtml(row.chunks_b, 'insert')}</span></div>`;
+        }
+      });
+    });
+
+    diffUnifiedContent.innerHTML = html || '<div style="padding: 2.5rem 1rem; text-align: center; color: #64748B;">Nenhuma linha correspondente.</div>';
+  }
+
+  function setCompareViewMode(mode) {
+    state.compareViewMode = mode;
+
+    if (btnModeSplit) btnModeSplit.classList.toggle('active', mode === 'split');
+    if (btnModeUnified) btnModeUnified.classList.toggle('active', mode === 'unified');
+
+    if (diffPanesWrapper) {
+      if (mode === 'split') {
+        diffPanesWrapper.classList.remove('hidden');
+      } else {
+        diffPanesWrapper.classList.add('hidden');
+      }
+    }
+
+    if (diffUnifiedPane) {
+      if (mode === 'unified') {
+        diffUnifiedPane.classList.remove('hidden');
+      } else {
+        diffUnifiedPane.classList.add('hidden');
+      }
+    }
+
+    renderDiffContent();
+  }
+
+  function setupScrollSync() {
+    if (!diffContentA || !diffContentB) return;
+
+    let isSyncingA = false;
+    let isSyncingB = false;
+
+    diffContentA.addEventListener('scroll', () => {
+      if (isSyncingA) return;
+      isSyncingB = true;
+      diffContentB.scrollTop = diffContentA.scrollTop;
+      diffContentB.scrollLeft = diffContentA.scrollLeft;
+      requestAnimationFrame(() => { isSyncingB = false; });
+    });
+
+    diffContentB.addEventListener('scroll', () => {
+      if (isSyncingB) return;
+      isSyncingA = true;
+      diffContentA.scrollTop = diffContentB.scrollTop;
+      diffContentA.scrollLeft = diffContentB.scrollLeft;
+      requestAnimationFrame(() => { isSyncingA = false; });
+    });
   }
 
   // =========================================================================

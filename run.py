@@ -15,12 +15,14 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-import uvicorn
-
-# Adiciona o diretório raiz ao PYTHONPATH
 ROOT_DIR = Path(__file__).resolve().parent
+VENV_SITE = ROOT_DIR / ".venv" / "Lib" / "site-packages"
+if VENV_SITE.exists() and str(VENV_SITE) not in sys.path:
+    sys.path.insert(0, str(VENV_SITE))
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
+
+import uvicorn
 
 
 def main():
