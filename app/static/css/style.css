@@ -4980,6 +4980,570 @@ body.adsense-live-mode .ad-preview-fallback {
   }
 }
 
+/* ==========================================================================
+   ORGANIZADOR DE PÁGINAS MULTI-ARQUIVO - JUNTAR PDF (FIGURA DE REFERÊNCIA)
+   ========================================================================== */
+
+/* Barra Superior do Juntar PDF */
+.merge-top-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 1rem;
+  margin-bottom: 0.85rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-sm);
+}
+
+.merge-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.merge-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Alternador Segmentado: Arquivos vs Páginas */
+.merge-view-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(11, 15, 25, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 3px;
+}
+
+.merge-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.merge-tab-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.merge-tab-btn.active {
+  background: #3B82F6;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.merge-tab-btn .crown-badge {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.toolbar-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn-tool-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-tool-action:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-tool-action-danger:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* Botão Terminar em Destaque */
+.btn-finish-merge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #2563EB;
+  color: #FFFFFF;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+  transition: all var(--transition-fast);
+}
+
+.btn-finish-merge:hover {
+  background: #1D4ED8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.55);
+}
+
+/* Sub-barra de Seleção e Controles de Visualização */
+.merge-subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.9rem;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.subbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.merge-select-all-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  user-select: none;
+}
+
+.merge-select-all-label input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: #3B82F6;
+  cursor: pointer;
+}
+
+.selection-status-badge {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.subbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-subbar-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-subbar-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+}
+
+.dropdown-wrapper {
+  position: relative;
+}
+
+.subbar-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  padding: 0.35rem 0;
+  min-width: 210px;
+  z-index: 50;
+}
+
+.subbar-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0.5rem 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.subbar-dropdown-item:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60A5FA;
+}
+
+.view-density-group {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.btn-density {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-density.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+}
+
+/* Área de Carregamento de Miniaturas */
+.merge-pages-loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  gap: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Grade de Páginas Interativa (Flex Wrap com Botões + Intermediários) */
+.merge-pages-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem 0.45rem;
+  padding: 1.25rem 0.5rem 2.5rem 0.5rem;
+  min-height: 240px;
+  user-select: none;
+}
+
+.merge-pages-grid.density-compact {
+  gap: 0.5rem 0.35rem;
+}
+
+.merge-pages-grid.density-compact .merge-page-card {
+  width: 105px;
+  padding: 0.45rem;
+}
+
+.merge-pages-grid.density-compact .page-doc-badge {
+  font-size: 0.65rem;
+  padding: 0.12rem 0.35rem;
+}
+
+/* Card Individual de Página */
+.merge-page-card {
+  position: relative;
+  width: 135px;
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.55rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.merge-page-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  border-color: #38BDF8;
+}
+
+.merge-page-card:active {
+  cursor: grabbing;
+}
+
+/* Checkbox no Canto Superior Esquerdo do Card */
+.merge-page-card .page-card-check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+  accent-color: #2563EB;
+  cursor: pointer;
+  z-index: 10;
+}
+
+/* Preview / Canvas da Página */
+.page-preview-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1.414; /* Padrão ISO A4 */
+  background: #F8FAFC;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #E2E8F0;
+  margin-top: 14px;
+  margin-bottom: 0.45rem;
+}
+
+.page-preview-box canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #FFFFFF;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Ícone de Lupa no Hover */
+.page-preview-box .page-lens-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  cursor: pointer;
+}
+
+.page-preview-box:hover .page-lens-overlay {
+  opacity: 1;
+}
+
+/* Badge do Nome do Arquivo com Cores Harmoniosas */
+.page-doc-badge {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.18rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.2rem;
+  border: 1px solid transparent;
+}
+
+/* Paleta de Cores Pastel por Arquivo (Igual ao Screenshot da Pergunta) */
+.page-doc-badge.color-0 {
+  background: #FCE7F3;
+  color: #BE185D;
+  border-color: #FBCFE8;
+}
+
+.page-doc-badge.color-1 {
+  background: #FEF3C7;
+  color: #B45309;
+  border-color: #FDE68A;
+}
+
+.page-doc-badge.color-2 {
+  background: #E0F2FE;
+  color: #0369A1;
+  border-color: #BAE6FD;
+}
+
+.page-doc-badge.color-3 {
+  background: #D1FAE5;
+  color: #047857;
+  border-color: #A7F3D0;
+}
+
+.page-doc-badge.color-4 {
+  background: #EDE9FE;
+  color: #6D28D9;
+  border-color: #DDD6FE;
+}
+
+.page-doc-badge.color-5 {
+  background: #FFEDD5;
+  color: #C2410C;
+  border-color: #FED7AA;
+}
+
+.page-doc-badge.color-6 {
+  background: #FEE2E2;
+  color: #B91C1C;
+  border-color: #FECACA;
+}
+
+.page-doc-badge.color-7 {
+  background: #CCFBF1;
+  color: #0F766E;
+  border-color: #99F6E4;
+}
+
+/* Número da Página */
+.page-num-label {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 0.15rem;
+  font-family: var(--font-mono);
+}
+
+/* Estado de Seleção */
+.merge-page-card.selected {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Estados de Drag and Drop */
+.merge-page-card.dragging {
+  opacity: 0.35;
+  border: 2px dashed #3B82F6;
+  transform: scale(0.95);
+}
+
+.merge-page-card.drag-over {
+  border-color: #06B6D4;
+  box-shadow: 0 0 18px rgba(6, 182, 212, 0.6);
+  transform: scale(1.04);
+}
+
+/* Botão Redondo (+) Entre Páginas */
+.btn-interpage-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #60A5FA;
+  color: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(96, 165, 250, 0.5);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.btn-interpage-add:hover {
+  background: #2563EB;
+  transform: scale(1.25);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.7);
+}
+
+.btn-interpage-add svg {
+  pointer-events: none;
+}
+
+/* Menu Popover do Botão (+) */
+.interpage-popover {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  background: #0F172A;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  padding: 0.4rem 0;
+  min-width: 220px;
+  z-index: 100;
+}
+
+.interpage-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0.55rem 0.9rem;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.interpage-popover-item:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60A5FA;
+}
+
+/* Responsividade Mobile */
+@media (max-width: 640px) {
+  .merge-page-card {
+    width: 110px;
+  }
+  .btn-interpage-add {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+
 
 
 

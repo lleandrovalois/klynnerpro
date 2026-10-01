@@ -146,121 +146,188 @@ def merge_pdfs_pikepdf(
     add_bookmarks: bool = True,
     linearize: bool = True,
     menu_footer_text: Optional[str] = None,
+    page_order: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict:
     """
     Unificação ultra-rápida com motor QPDF via pikepdf.
     Gera:
       1. Página Inicial de Menu / Sumário (se create_visual_menu=True) com hiperlinks funcionais.
       2. Menu Lateral de Navegação (Outlines/Marcadores) com /PageMode /UseOutlines ativo.
+      3. Suporte a reorganização granular página a página entre múltiplos arquivos (page_order).
     """
     start_time = time.perf_counter()
     total_original_bytes = sum(
         f["path"].stat().st_size for f in ordered_files_info if f["path"].exists()
     )
 
-    # 1. Primeiro passo: Mede quantas páginas tem cada arquivo original
-    # Usando abertura sob demanda rápida sem carregar conteúdo
-    file_page_counts = []
-    for item in ordered_files_info:
-        file_path = item["path"]
-        try:
-            with pikepdf.open(file_path) as src:
-                file_page_counts.append(len(src.pages))
-        except Exception:
-            file_page_counts.append(1)
+    open_docs: Dict[str, pikepdf.Pdf] = {}
 
-    # 2. Se for criar o menu visual, determina quantas páginas de menu serão necessárias
-    items_per_menu_page = 13
-    num_files = len(ordered_files_info)
-    menu_pages_count = max(1, (num_files + items_per_menu_page - 1) // items_per_menu_page) if create_visual_menu else 0
+    try:
+        # Abre sob demanda os arquivos para consulta
+        for item in ordered_files_info:
+            fp = Path(item["path"])
+            if fp.exists():
+                doc = pikepdf.open(fp)
+                open_docs[fp.name] = doc
+                open_docs[fp.stem] = doc
+                open_docs[str(fp)] = doc
 
-    # 3. Calcula a página inicial exata de cada arquivo no documento unificado
-    # Páginas são 1-indexadas para exibição visual
-    menu_items_data = []
-    current_page_counter = menu_pages_count + 1
+        use_custom_pages = page_order is not None and len(page_order) > 0
 
-    for idx, item in enumerate(ordered_files_info):
-        p_count = file_page_counts[idx]
-        title = item.get("menu_title") or item["path"].stem
-        menu_items_data.append({
-            "title": title,
-            "target_page_display": current_page_counter,
-            "target_page_idx": current_page_counter - 1,  # 0-indexed para pikepdf
-            "pages_count": p_count,
-            "path": item["path"],
-        })
-        current_page_counter += p_count
+        # Calcula a estrutura e destinos do Menu de Documentos
+        items_per_menu_page = 13
+        num_files = len(ordered_files_info)
+        menu_pages_count = max(1, (num_files + items_per_menu_page - 1) // items_per_menu_page) if create_visual_menu else 0
 
-    # 4. Cria o PDF final
-    merged_pdf = pikepdf.Pdf.new()
+        menu_items_data = []
 
-    # Se ativado, gera a página de menu visual e insere no início
-    click_rects = []
-    if create_visual_menu:
-        menu_buf, click_rects = generate_visual_menu_pdf(menu_items_data, menu_footer_text=menu_footer_text)
-        with pikepdf.open(menu_buf) as menu_pdf:
-            merged_pdf.pages.extend(menu_pdf.pages)
+        if not use_custom_pages:
+            # Modo padrão: sequência inteira de arquivos
+            file_page_counts = []
+            for item in ordered_files_info:
+                doc = open_docs.get(item["path"].name)
+                file_page_counts.append(len(doc.pages) if doc else 1)
 
-    # 5. Concatena os arquivos originais
-    for item in ordered_files_info:
-        file_path = item["path"]
-        if not file_path.exists():
-            continue
-        with pikepdf.open(file_path) as src_doc:
-            merged_pdf.pages.extend(src_doc.pages)
+            current_page_counter = menu_pages_count + 1
+            for idx, item in enumerate(ordered_files_info):
+                p_count = file_page_counts[idx]
+                title = item.get("menu_title") or item["path"].stem
+                menu_items_data.append({
+                    "title": title,
+                    "target_page_display": current_page_counter,
+                    "target_page_idx": current_page_counter - 1,
+                    "pages_count": p_count,
+                    "path": item["path"],
+                })
+                current_page_counter += p_count
+        else:
+            # Modo organizado por páginas: localiza a primeira aparição de cada arquivo
+            def match_file_action(p_act: Dict[str, Any], file_item: Dict[str, Any]) -> bool:
+                fid = str(p_act.get("file_id", "") or "").strip()
+                if not fid or p_act.get("is_blank"):
+                    return False
+                path_obj = file_item["path"]
+                return (
+                    fid == path_obj.name
+                    or fid == path_obj.stem
+                    or fid == str(path_obj)
+                    or Path(fid).name == path_obj.name
+                    or fid in path_obj.name
+                    or path_obj.stem in fid
+                )
 
-    total_pages = len(merged_pdf.pages)
+            for item in ordered_files_info:
+                matching_indices = [
+                    idx for idx, p_act in enumerate(page_order)
+                    if match_file_action(p_act, item)
+                ]
+                if matching_indices:
+                    first_idx = matching_indices[0]
+                    pages_cnt = len(matching_indices)
+                    target_display = menu_pages_count + first_idx + 1
+                    title = item.get("menu_title") or item["path"].stem
+                    menu_items_data.append({
+                        "title": title,
+                        "target_page_display": target_display,
+                        "target_page_idx": menu_pages_count + first_idx,
+                        "pages_count": pages_cnt,
+                        "path": item["path"],
+                    })
 
-    # 6. Adiciona os Hiperlinks clicáveis na Página de Menu
-    if create_visual_menu and click_rects:
-        for i, (menu_page_idx, rect) in enumerate(click_rects):
-            if i < len(menu_items_data):
-                target_page_idx = menu_items_data[i]["target_page_idx"]
-                if target_page_idx < total_pages:
-                    target_page_obj = merged_pdf.pages[target_page_idx]
-                    
-                    # Cria a anotação /Link compatível com o padrão ISO 32000 (PDF)
-                    link_annot = pikepdf.Dictionary(
-                        Type=pikepdf.Name.Annot,
-                        Subtype=pikepdf.Name.Link,
-                        Rect=pikepdf.Array(list(rect)),
-                        Dest=pikepdf.Array([target_page_obj.obj, pikepdf.Name.Fit]),
-                        Border=pikepdf.Array([0, 0, 0])
-                    )
-                    
-                    target_menu_page = merged_pdf.pages[menu_page_idx]
-                    if "/Annots" not in target_menu_page:
-                        target_menu_page.Annots = merged_pdf.make_indirect(pikepdf.Array())
-                    target_menu_page.Annots.append(merged_pdf.make_indirect(link_annot))
+        # Cria o PDF final
+        merged_pdf = pikepdf.Pdf.new()
 
-    # 7. Constrói o Menu Lateral de Navegação (Marcadores / Outlines)
-    if add_bookmarks:
-        try:
-            with merged_pdf.open_outline() as outline:
-                # Se tiver página de menu, cria item para o próprio Menu
-                if create_visual_menu:
-                    outline.root.append(pikepdf.OutlineItem("Menu Principal / Sumário", 0))
+        # Se ativado, gera a página de menu visual e insere no início
+        click_rects = []
+        if create_visual_menu and menu_items_data:
+            menu_buf, click_rects = generate_visual_menu_pdf(menu_items_data, menu_footer_text=menu_footer_text)
+            with pikepdf.open(menu_buf) as menu_pdf:
+                merged_pdf.pages.extend(menu_pdf.pages)
 
-                # Cria um item de menu para cada arquivo unificado
-                for m_item in menu_items_data:
-                    title = m_item["title"]
-                    target_idx = m_item["target_page_idx"]
-                    if target_idx < total_pages:
-                        outline.root.append(pikepdf.OutlineItem(title, target_idx))
-        except Exception as e:
-            logger.warning(f"Erro ao gerar marcadores de navegação: {e}")
+        if not use_custom_pages:
+            # Concatena os arquivos originais inteiros
+            for item in ordered_files_info:
+                doc = open_docs.get(item["path"].name)
+                if doc:
+                    merged_pdf.pages.extend(doc.pages)
+        else:
+            # Insere as páginas conforme a ordem personalizada pelo usuário
+            for p_act in page_order:
+                if p_act.get("is_blank"):
+                    blank_doc = pikepdf.Pdf.new()
+                    blank_doc.add_blank_page(page_size=(595.28, 841.89))
+                    merged_pdf.pages.append(blank_doc.pages[0])
+                else:
+                    fid = str(p_act.get("file_id", "") or "").strip()
+                    src_doc = open_docs.get(fid) or open_docs.get(Path(fid).name) or open_docs.get(Path(fid).stem)
+                    if not src_doc:
+                        for k, d in open_docs.items():
+                            if fid in k or k in fid:
+                                src_doc = d
+                                break
+                    if not src_doc:
+                        logger.warning(f"Documento fonte não encontrado para '{fid}', ignorando página.")
+                        continue
 
-    # 8. Ativa a abertura automática do Menu Lateral ao abrir o documento
-    # /PageMode /UseOutlines instrui visualizadores (Acrobat, Edge, Chrome) a abrir o menu na lateral esquerda
-    merged_pdf.Root.PageMode = pikepdf.Name.UseOutlines
+                    orig_p = int(p_act.get("page", 1)) - 1
+                    if 0 <= orig_p < len(src_doc.pages):
+                        merged_pdf.pages.append(src_doc.pages[orig_p])
+                        rot_delta = int(p_act.get("rotation", 0))
+                        if rot_delta != 0:
+                            last_added = merged_pdf.pages[-1]
+                            curr_rot = int(last_added.get("/Rotate", 0) or 0)
+                            last_added.Rotate = (curr_rot + rot_delta) % 360
 
-    # Salva o arquivo no disco com Fast Web View
-    merged_pdf.save(
-        output_path,
-        linearize=linearize,
-        compress_streams=True,
-    )
-    merged_pdf.close()
+        total_pages = len(merged_pdf.pages)
+
+        # Adiciona Hiperlinks clicáveis na Página de Menu
+        if create_visual_menu and click_rects:
+            for i, (menu_page_idx, rect) in enumerate(click_rects):
+                if i < len(menu_items_data):
+                    target_page_idx = menu_items_data[i]["target_page_idx"]
+                    if target_page_idx < total_pages:
+                        target_page_obj = merged_pdf.pages[target_page_idx]
+                        link_annot = pikepdf.Dictionary(
+                            Type=pikepdf.Name.Annot,
+                            Subtype=pikepdf.Name.Link,
+                            Rect=pikepdf.Array(list(rect)),
+                            Dest=pikepdf.Array([target_page_obj.obj, pikepdf.Name.Fit]),
+                            Border=pikepdf.Array([0, 0, 0])
+                        )
+                        target_menu_page = merged_pdf.pages[menu_page_idx]
+                        if "/Annots" not in target_menu_page:
+                            target_menu_page.Annots = merged_pdf.make_indirect(pikepdf.Array())
+                        target_menu_page.Annots.append(merged_pdf.make_indirect(link_annot))
+
+        # Menu Lateral de Navegação (Marcadores / Outlines)
+        if add_bookmarks:
+            try:
+                with merged_pdf.open_outline() as outline:
+                    if create_visual_menu:
+                        outline.root.append(pikepdf.OutlineItem("Menu Principal / Sumário", 0))
+                    for m_item in menu_items_data:
+                        title = m_item["title"]
+                        target_idx = m_item["target_page_idx"]
+                        if target_idx < total_pages:
+                            outline.root.append(pikepdf.OutlineItem(title, target_idx))
+            except Exception as e:
+                logger.warning(f"Erro ao gerar marcadores de navegação: {e}")
+
+        merged_pdf.Root.PageMode = pikepdf.Name.UseOutlines
+
+        merged_pdf.save(
+            output_path,
+            linearize=linearize,
+            compress_streams=True,
+        )
+        merged_pdf.close()
+
+    finally:
+        for doc in set(open_docs.values()):
+            try:
+                doc.close()
+            except Exception:
+                pass
 
     duration = time.perf_counter() - start_time
     merged_bytes = output_path.stat().st_size if output_path.exists() else 0
@@ -283,6 +350,7 @@ def merge_pdfs_pypdf_fallback(
     ordered_files_info: List[Dict[str, Any]],
     output_path: Path,
     add_bookmarks: bool = True,
+    page_order: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict:
     """
     Fallback usando pypdf para arquivos com corrupções que impeçam parsing estrito.
@@ -292,18 +360,55 @@ def merge_pdfs_pypdf_fallback(
         f["path"].stat().st_size for f in ordered_files_info if f["path"].exists()
     )
 
-    merger = pypdf.PdfMerger(strict=False)
+    use_custom_pages = page_order is not None and len(page_order) > 0
 
-    for item in ordered_files_info:
-        file_path = item["path"]
-        if not file_path.exists():
-            continue
-        title = item.get("menu_title") or file_path.stem
-        merger.append(str(file_path), outline_item=title if add_bookmarks else None)
+    if not use_custom_pages:
+        merger = pypdf.PdfMerger(strict=False)
+        for item in ordered_files_info:
+            file_path = item["path"]
+            if not file_path.exists():
+                continue
+            title = item.get("menu_title") or file_path.stem
+            merger.append(str(file_path), outline_item=title if add_bookmarks else None)
 
-    with open(output_path, "wb") as f_out:
-        merger.write(f_out)
-    merger.close()
+        with open(output_path, "wb") as f_out:
+            merger.write(f_out)
+        merger.close()
+    else:
+        writer = pypdf.PdfWriter()
+        readers = {}
+        for item in ordered_files_info:
+            fp = Path(item["path"])
+            if fp.exists():
+                r = pypdf.PdfReader(str(fp))
+                readers[fp.name] = r
+                readers[fp.stem] = r
+                readers[str(fp)] = r
+
+        for p_act in page_order:
+            if p_act.get("is_blank"):
+                writer.add_blank_page(width=595.28, height=841.89)
+            else:
+                fid = str(p_act.get("file_id", "") or "").strip()
+                r = readers.get(fid) or readers.get(Path(fid).name) or readers.get(Path(fid).stem)
+                if not r:
+                    for k, v in readers.items():
+                        if fid in k or k in fid:
+                            r = v
+                            break
+                if not r:
+                    continue
+                orig_p = int(p_act.get("page", 1)) - 1
+                if 0 <= orig_p < len(r.pages):
+                    page = r.pages[orig_p]
+                    rot = int(p_act.get("rotation", 0))
+                    if rot != 0:
+                        page.rotate(rot)
+                    writer.add_page(page)
+
+        with open(output_path, "wb") as f_out:
+            writer.write(f_out)
+        writer.close()
 
     total_pages = 0
     try:
@@ -336,9 +441,10 @@ def execute_pdf_merge(
     add_bookmarks: bool = True,
     linearize: bool = True,
     menu_footer_text: Optional[str] = None,
+    page_order: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict:
     """
-    Ponto de entrada principal para fusão com suporte a Menu de Documentos.
+    Ponto de entrada principal para fusão com suporte a Menu de Documentos e reordenação de páginas.
     """
     if not ordered_files_info:
         raise ValueError("Nenhum arquivo fornecido para unificação.")
@@ -353,6 +459,7 @@ def execute_pdf_merge(
             add_bookmarks=add_bookmarks,
             linearize=linearize,
             menu_footer_text=menu_footer_text,
+            page_order=page_order,
         )
     except Exception as primary_error:
         logger.warning(
@@ -363,6 +470,7 @@ def execute_pdf_merge(
                 ordered_files_info=ordered_files_info,
                 output_path=output_file_path,
                 add_bookmarks=add_bookmarks,
+                page_order=page_order,
             )
         except Exception as fallback_error:
             raise RuntimeError(

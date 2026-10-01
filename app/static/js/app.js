@@ -182,7 +182,10 @@
     isDocxResult: false,
 
     // Juntar PDF
-    mergeFiles: [], // { id, name, menuTitle, size, pageCount, fileObj, isUploaded, serverSavedName }
+    mergeFiles: [], // { id, name, menuTitle, size, pageCount, fileObj, isUploaded, serverSavedName, pdfDoc, colorIndex }
+    mergePages: [], // [ { uid, fileId, fileItem, fileName, fileIndex, origPage, rotation: 0, selected: false, isBlank: false } ]
+    mergeViewMode: 'pages', // 'pages' | 'files'
+    draggedMergePageIdx: null,
 
     // Imagem para PDF
     imageFiles: [], // { id, name, size, fileObj, isUploaded, serverSavedName, previewUrl }
@@ -340,6 +343,25 @@
 
   // Elementos Juntar PDF
   const stageMerge = document.getElementById('stage-merge');
+  const btnMergeViewPages = document.getElementById('btn-merge-view-pages');
+  const btnMergeViewFiles = document.getElementById('btn-merge-view-files');
+  const mergeViewPages = document.getElementById('merge-view-pages');
+  const mergeViewFiles = document.getElementById('merge-view-files');
+  const mergePagesSubbar = document.getElementById('merge-pages-subbar');
+  const mergePagesGrid = document.getElementById('merge-pages-grid');
+  const mergePagesLoading = document.getElementById('merge-pages-loading');
+  const mergePagesLoadingText = document.getElementById('merge-pages-loading-text');
+  const mergeSelectAllCheckbox = document.getElementById('merge-select-all-checkbox');
+  const mergeSelectionStatus = document.getElementById('merge-selection-status');
+  const btnMergeAddMore = document.getElementById('btn-merge-add-more');
+  const btnMergeRotCcw = document.getElementById('btn-merge-rot-ccw');
+  const btnMergeRotCw = document.getElementById('btn-merge-rot-cw');
+  const btnMergeDeleteSelected = document.getElementById('btn-merge-delete-selected');
+  const btnMergeFinishTop = document.getElementById('btn-merge-finish-top');
+  const btnMergeSortMenu = document.getElementById('btn-merge-sort-menu');
+  const mergeSortDropdown = document.getElementById('merge-sort-dropdown');
+  const btnDensityGrid = document.getElementById('btn-density-grid');
+  const btnDensityCompact = document.getElementById('btn-density-compact');
   const fileList = document.getElementById('file-list');
   const filesCounter = document.getElementById('files-counter');
   const totalSizeLabel = document.getElementById('total-size-label');
@@ -1046,6 +1068,7 @@
         dropzone.classList.add('hidden');
         stageMerge.classList.remove('hidden');
         renderMergeFileList();
+        renderMergePagesGrid();
       } else {
         dropzone.classList.remove('hidden');
       }
@@ -1180,25 +1203,7 @@
     if (validFiles.length === 0) return;
 
     if (state.activeTool === 'merge') {
-      // Adiciona à lista de mesclagem
-      validFiles.forEach(file => {
-        const fileId = 'f_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
-        state.mergeFiles.push({
-          id: fileId,
-          serverSavedName: null,
-          name: file.name,
-          menuTitle: cleanFileNameToTitle(file.name),
-          size: file.size,
-          pageCount: null,
-          fileObj: file,
-          isUploaded: false,
-        });
-      });
-
-      dropzone.classList.add('hidden');
-      stageMerge.classList.remove('hidden');
-      renderMergeFileList();
-      showToast(`${validFiles.length} arquivo(s) adicionado(s) à unificação.`, 'info');
+      await addFilesToMerge(validFiles);
 
     } else if (state.activeTool === 'image-to-pdf') {
       // Adiciona à lista de imagens para PDF
@@ -1312,6 +1317,9 @@
 
   function resetCurrentDocument() {
     state.activeDoc = null;
+    state.mergeFiles = [];
+    state.mergePages = [];
+    state.mergeViewMode = 'pages';
     state.organizeItems = [];
     state.rotateMap = {};
     state.extractSelected.clear();
@@ -1332,20 +1340,623 @@
   }
 
   // =========================================================================
-  // FERRAMENTA 1: JUNTAR PDF (MERGE)
+  // =========================================================================
+  // FERRAMENTA 1: JUNTAR & ORGANIZAR PÁGINAS DE PDF (MULTI-ARQUIVO)
   // =========================================================================
   function setupMergeEvents() {
-    btnAddMore.addEventListener('click', () => fileInput.click());
-    btnClearAll.addEventListener('click', () => {
-      if (confirm('Deseja realmente remover todos os arquivos selecionados?')) {
-        state.mergeFiles = [];
-        renderMergeFileList();
+    // Alternância entre Modo Páginas e Modo Arquivos
+    if (btnMergeViewPages) {
+      btnMergeViewPages.addEventListener('click', () => {
+        state.mergeViewMode = 'pages';
+        btnMergeViewPages.classList.add('active');
+        btnMergeViewPages.setAttribute('aria-selected', 'true');
+        btnMergeViewFiles.classList.remove('active');
+        btnMergeViewFiles.setAttribute('aria-selected', 'false');
+        mergeViewPages.classList.remove('hidden');
+        mergePagesSubbar.classList.remove('hidden');
+        mergeViewFiles.classList.add('hidden');
+      });
+    }
+
+    if (btnMergeViewFiles) {
+      btnMergeViewFiles.addEventListener('click', () => {
+        state.mergeViewMode = 'files';
+        btnMergeViewFiles.classList.add('active');
+        btnMergeViewFiles.setAttribute('aria-selected', 'true');
+        btnMergeViewPages.classList.remove('active');
+        btnMergeViewPages.setAttribute('aria-selected', 'false');
+        mergeViewFiles.classList.remove('hidden');
+        mergeViewPages.classList.add('hidden');
+        mergePagesSubbar.classList.add('hidden');
+      });
+    }
+
+    // Botões para adicionar mais arquivos
+    if (btnMergeAddMore) btnMergeAddMore.addEventListener('click', () => fileInput.click());
+    if (btnAddMore) btnAddMore.addEventListener('click', () => fileInput.click());
+
+    // Limpar tudo
+    if (btnClearAll) {
+      btnClearAll.addEventListener('click', () => {
+        if (confirm('Deseja realmente remover todos os arquivos selecionados?')) {
+          state.mergeFiles = [];
+          state.mergePages = [];
+          renderMergeFileList();
+          renderMergePagesGrid();
+        }
+      });
+    }
+
+    // Selecionar tudo
+    if (mergeSelectAllCheckbox) {
+      mergeSelectAllCheckbox.addEventListener('change', () => {
+        const isChecked = mergeSelectAllCheckbox.checked;
+        state.mergePages.forEach(p => p.selected = isChecked);
+        document.querySelectorAll('.merge-page-card').forEach(c => {
+          c.classList.toggle('selected', isChecked);
+          const chk = c.querySelector('.page-card-check');
+          if (chk) chk.checked = isChecked;
+        });
+        updateMergeSelectionStatus();
+      });
+    }
+
+    // Girar páginas selecionadas (ou todas se nenhuma selecionada)
+    if (btnMergeRotCcw) {
+      btnMergeRotCcw.addEventListener('click', () => {
+        const hasSelection = state.mergePages.some(p => p.selected);
+        const targetPages = hasSelection ? state.mergePages.filter(p => p.selected) : state.mergePages;
+        if (targetPages.length === 0) return;
+
+        targetPages.forEach(p => {
+          p.rotation = (p.rotation + 270) % 360;
+          const idx = state.mergePages.indexOf(p);
+          const card = document.querySelector(`.merge-page-card[data-index="${idx}"]`);
+          if (card) {
+            const canvas = card.querySelector('canvas');
+            applyPageRotationStyle(canvas, p.rotation);
+            let badge = card.querySelector('.page-rotation-badge');
+            if (p.rotation !== 0) {
+              if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'page-rotation-badge';
+                card.querySelector('.page-preview-box').appendChild(badge);
+              }
+              badge.textContent = `+${p.rotation}°`;
+            } else if (badge) {
+              badge.remove();
+            }
+          }
+        });
+        showToast(`${targetPages.length} página(s) girada(s) 90° à esquerda.`, 'info');
+      });
+    }
+
+    if (btnMergeRotCw) {
+      btnMergeRotCw.addEventListener('click', () => {
+        const hasSelection = state.mergePages.some(p => p.selected);
+        const targetPages = hasSelection ? state.mergePages.filter(p => p.selected) : state.mergePages;
+        if (targetPages.length === 0) return;
+
+        targetPages.forEach(p => {
+          p.rotation = (p.rotation + 90) % 360;
+          const idx = state.mergePages.indexOf(p);
+          const card = document.querySelector(`.merge-page-card[data-index="${idx}"]`);
+          if (card) {
+            const canvas = card.querySelector('canvas');
+            applyPageRotationStyle(canvas, p.rotation);
+            let badge = card.querySelector('.page-rotation-badge');
+            if (p.rotation !== 0) {
+              if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'page-rotation-badge';
+                card.querySelector('.page-preview-box').appendChild(badge);
+              }
+              badge.textContent = `+${p.rotation}°`;
+            } else if (badge) {
+              badge.remove();
+            }
+          }
+        });
+        showToast(`${targetPages.length} página(s) girada(s) 90° à direita.`, 'info');
+      });
+    }
+
+    // Excluir páginas selecionadas
+    if (btnMergeDeleteSelected) {
+      btnMergeDeleteSelected.addEventListener('click', () => {
+        const selectedCount = state.mergePages.filter(p => p.selected).length;
+        if (selectedCount === 0) {
+          showToast('Selecione as páginas que deseja remover marcando as caixas de seleção.', 'info');
+          return;
+        }
+        if (selectedCount >= state.mergePages.length) {
+          showToast('O documento não pode ficar sem nenhuma página.', 'error');
+          return;
+        }
+        state.mergePages = state.mergePages.filter(p => !p.selected);
+        renderMergePagesGrid();
+        showToast(`${selectedCount} página(s) excluída(s) da unificação.`, 'info');
+      });
+    }
+
+    // Menu de Ordenação Rápida
+    if (btnMergeSortMenu && mergeSortDropdown) {
+      btnMergeSortMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mergeSortDropdown.classList.toggle('hidden');
+      });
+
+      mergeSortDropdown.querySelectorAll('.subbar-dropdown-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          mergeSortDropdown.classList.add('hidden');
+          const sortMode = btn.dataset.sort;
+          if (sortMode === 'orig-files') {
+            state.mergePages.sort((a, b) => {
+              const fileAIdx = state.mergeFiles.findIndex(f => f.id === a.fileId);
+              const fileBIdx = state.mergeFiles.findIndex(f => f.id === b.fileId);
+              if (fileAIdx !== fileBIdx) return fileAIdx - fileBIdx;
+              return (typeof a.origPage === 'number' ? a.origPage : 0) - (typeof b.origPage === 'number' ? b.origPage : 0);
+            });
+            renderMergePagesGrid();
+            showToast('Páginas reordenadas conforme os arquivos originais.', 'info');
+          } else if (sortMode === 'reverse') {
+            state.mergePages.reverse();
+            renderMergePagesGrid();
+            showToast('Sequência das páginas invertida.', 'info');
+          } else if (sortMode === 'group-by-file') {
+            state.mergePages.sort((a, b) => a.fileIndex - b.fileIndex);
+            renderMergePagesGrid();
+            showToast('Páginas agrupadas por documento.', 'info');
+          }
+        });
+      });
+
+      document.addEventListener('click', () => {
+        if (mergeSortDropdown) mergeSortDropdown.classList.add('hidden');
+      });
+    }
+
+    // Densidade de Visualização
+    if (btnDensityGrid && btnDensityCompact) {
+      btnDensityGrid.addEventListener('click', () => {
+        btnDensityGrid.classList.add('active');
+        btnDensityCompact.classList.remove('active');
+        if (mergePagesGrid) mergePagesGrid.classList.remove('density-compact');
+      });
+      btnDensityCompact.addEventListener('click', () => {
+        btnDensityCompact.classList.add('active');
+        btnDensityGrid.classList.remove('active');
+        if (mergePagesGrid) mergePagesGrid.classList.add('density-compact');
+      });
+    }
+
+    // Botões de Execução (Topo e Rodapé)
+    if (btnMergeFinishTop) btnMergeFinishTop.addEventListener('click', onExecuteMerge);
+    if (btnStartMerge) btnStartMerge.addEventListener('click', onExecuteMerge);
+  }
+
+  /**
+   * Adiciona arquivos carregados ao estado do Merge e gera as miniaturas de páginas.
+   */
+  async function addFilesToMerge(newFiles, insertSlot = null) {
+    if (!newFiles || newFiles.length === 0) return;
+
+    dropzone.classList.add('hidden');
+    stageMerge.classList.remove('hidden');
+    if (mergePagesLoading) mergePagesLoading.classList.remove('hidden');
+
+    for (let i = 0; i < newFiles.length; i++) {
+      const file = newFiles[i];
+      const fileId = 'f_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now() + '_' + i;
+      const colorIdx = (state.mergeFiles.length) % 8;
+
+      let pdfDoc = null;
+      let pageCount = 1;
+
+      if (window.pdfjsLib && file.name.toLowerCase().endsWith('.pdf')) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          pdfDoc = await loadingTask.promise;
+          pageCount = pdfDoc ? pdfDoc.numPages : 1;
+        } catch (err) {
+          console.warn('Erro ao abrir PDF.js para miniaturas de mesclagem:', err);
+        }
+      }
+
+      const fileItem = {
+        id: fileId,
+        serverSavedName: null,
+        name: file.name,
+        menuTitle: cleanFileNameToTitle(file.name),
+        size: file.size,
+        pageCount: pageCount,
+        fileObj: file,
+        pdfDoc: pdfDoc,
+        colorIndex: colorIdx,
+        isUploaded: false,
+      };
+
+      state.mergeFiles.push(fileItem);
+
+      // Gera as páginas deste arquivo
+      const newPageItems = [];
+      for (let p = 1; p <= pageCount; p++) {
+        newPageItems.push({
+          uid: 'mp_' + fileId + '_' + p + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          fileId: fileId,
+          fileItem: fileItem,
+          fileName: file.name,
+          fileIndex: colorIdx,
+          origPage: p,
+          rotation: 0,
+          selected: false,
+          isBlank: false,
+        });
+      }
+
+      if (insertSlot !== null && insertSlot >= 0 && insertSlot <= state.mergePages.length) {
+        state.mergePages.splice(insertSlot, 0, ...newPageItems);
+        insertSlot += newPageItems.length;
+      } else {
+        state.mergePages.push(...newPageItems);
+      }
+    }
+
+    if (mergePagesLoading) mergePagesLoading.classList.add('hidden');
+
+    renderMergeFileList();
+    await renderMergePagesGrid();
+    updateMergeSelectionStatus();
+    showToast(`${newFiles.length} arquivo(s) carregado(s). Organize as páginas arrastando como desejar!`, 'success');
+  }
+
+  /**
+   * Renderiza a grade de páginas com botões (+) intermediários.
+   */
+  async function renderMergePagesGrid() {
+    if (!mergePagesGrid) return;
+    mergePagesGrid.innerHTML = '';
+
+    if (state.mergePages.length === 0) {
+      if (state.mergeFiles.length === 0) {
+        stageMerge.classList.add('hidden');
+        dropzone.classList.remove('hidden');
+      }
+      return;
+    }
+
+    for (let i = 0; i < state.mergePages.length; i++) {
+      const item = state.mergePages[i];
+
+      // Botão (+) entre páginas (inter-page add)
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'btn-interpage-add';
+      addBtn.dataset.slot = i;
+      addBtn.title = `Inserir página antes da #${i + 1}`;
+      addBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      `;
+      addBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openInterpagePopover(addBtn, i);
+      });
+      mergePagesGrid.appendChild(addBtn);
+
+      // Card Individual de Página
+      const card = createMergePageCard(item, i);
+      mergePagesGrid.appendChild(card);
+    }
+
+    // Botão (+) final após a última página
+    const finalAddBtn = document.createElement('button');
+    finalAddBtn.type = 'button';
+    finalAddBtn.className = 'btn-interpage-add';
+    finalAddBtn.dataset.slot = state.mergePages.length;
+    finalAddBtn.title = 'Adicionar página no final do documento';
+    finalAddBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    `;
+    finalAddBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openInterpagePopover(finalAddBtn, state.mergePages.length);
+    });
+    mergePagesGrid.appendChild(finalAddBtn);
+
+    updateMergeSelectionStatus();
+  }
+
+  /**
+   * Cria o card individual de cada página com miniatura, badge colorido do arquivo e checkbox.
+   */
+  function createMergePageCard(item, index) {
+    const card = document.createElement('div');
+    card.className = `merge-page-card ${item.selected ? 'selected' : ''}`;
+    card.draggable = true;
+    card.dataset.index = index;
+
+    card.innerHTML = `
+      <input type="checkbox" class="page-card-check" ${item.selected ? 'checked' : ''} title="Selecionar página #${index + 1}">
+
+      <div class="page-preview-box" title="Clique para inspecionar com a lupa">
+        <canvas id="canvas-merge-${item.uid}"></canvas>
+        <div class="page-lens-overlay">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <line x1="11" y1="8" x2="11" y2="14"/>
+            <line x1="8" y1="11" x2="14" y2="11"/>
+          </svg>
+          <span>Ampliar</span>
+        </div>
+        ${item.rotation !== 0 ? `<span class="page-rotation-badge">+${item.rotation}°</span>` : ''}
+      </div>
+
+      <span class="page-doc-badge color-${item.fileIndex}" title="${escapeHtml(item.fileName)}">
+        ${escapeHtml(item.fileName)}
+      </span>
+
+      <span class="page-num-label">
+        ${item.isBlank ? 'Em branco' : item.origPage}
+      </span>
+    `;
+
+    // Renderiza o canvas
+    const canvas = card.querySelector(`#canvas-merge-${item.uid}`);
+    applyPageRotationStyle(canvas, item.rotation);
+
+    if (item.isBlank) {
+      drawGenericPageThumbnail(canvas, index + 1, 'Página em Branco');
+    } else if (item.fileItem && item.fileItem.pdfDoc) {
+      renderThumbnailForDoc(item.fileItem.pdfDoc, item.fileItem.name, item.origPage, canvas);
+    } else {
+      drawGenericPageThumbnail(canvas, item.origPage);
+    }
+
+    // Checkbox de seleção
+    const checkEl = card.querySelector('.page-card-check');
+    checkEl.addEventListener('change', (e) => {
+      e.stopPropagation();
+      item.selected = checkEl.checked;
+      card.classList.toggle('selected', item.selected);
+      updateMergeSelectionStatus();
+    });
+
+    // Lupa ao clicar na miniatura
+    card.querySelector('.page-preview-box').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!item.isBlank && item.fileItem && item.fileItem.pdfDoc) {
+        openPageZoomModal(item.origPage, item.rotation, item, 'merge', item.fileItem.pdfDoc);
+      } else if (item.isBlank) {
+        showToast('Esta é uma página em branco inserida.', 'info');
       }
     });
 
-    btnStartMerge.addEventListener('click', onExecuteMerge);
+    // Configura Drag and Drop
+    setupMergePageDragDrop(card, index);
+
+    return card;
   }
 
+  /**
+   * Drag and drop permitindo arrastar páginas de um arquivo para qualquer posição de outro arquivo!
+   */
+  function setupMergePageDragDrop(card, index) {
+    card.addEventListener('dragstart', (e) => {
+      state.draggedMergePageIdx = index;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', index);
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      state.draggedMergePageIdx = null;
+      document.querySelectorAll('.merge-page-card').forEach(c => c.classList.remove('drag-over'));
+    });
+
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      card.classList.add('drag-over');
+    });
+
+    card.addEventListener('dragleave', () => {
+      card.classList.remove('drag-over');
+    });
+
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      card.classList.remove('drag-over');
+
+      const targetIdx = index;
+      if (state.draggedMergePageIdx !== null && state.draggedMergePageIdx !== targetIdx) {
+        const moved = state.mergePages.splice(state.draggedMergePageIdx, 1)[0];
+        state.mergePages.splice(targetIdx, 0, moved);
+        renderMergePagesGrid();
+        showToast(`Página movida para a posição #${targetIdx + 1}.`, 'info');
+      }
+    });
+  }
+
+  /**
+   * Menu popover do botão (+) para inserção de páginas ou arquivos naquela posição.
+   */
+  let activeInterpagePopover = null;
+
+  function closeInterpagePopover() {
+    if (activeInterpagePopover) {
+      activeInterpagePopover.remove();
+      activeInterpagePopover = null;
+    }
+  }
+
+  function openInterpagePopover(anchorBtn, slotIndex) {
+    closeInterpagePopover();
+
+    const popover = document.createElement('div');
+    popover.className = 'interpage-popover';
+    popover.innerHTML = `
+      <button type="button" class="interpage-popover-item btn-pop-blank">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+        <span>Inserir página em branco aqui</span>
+      </button>
+      <button type="button" class="interpage-popover-item btn-pop-pdf">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+        <span>Inserir arquivo PDF aqui</span>
+      </button>
+    `;
+
+    // Inserir página em branco
+    popover.querySelector('.btn-pop-blank').addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeInterpagePopover();
+      const blankItem = {
+        uid: 'blank_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        fileId: null,
+        fileItem: { name: 'Página em branco', colorIndex: 7 },
+        fileName: 'Página em branco',
+        fileIndex: 7,
+        origPage: 'Em branco',
+        rotation: 0,
+        selected: false,
+        isBlank: true,
+      };
+      state.mergePages.splice(slotIndex, 0, blankItem);
+      renderMergePagesGrid();
+      showToast('Página em branco inserida com sucesso!', 'info');
+    });
+
+    // Inserir novo PDF no slot
+    popover.querySelector('.btn-pop-pdf').addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeInterpagePopover();
+      const tempInput = document.createElement('input');
+      tempInput.type = 'file';
+      tempInput.accept = '.pdf';
+      tempInput.multiple = true;
+      tempInput.addEventListener('change', async (ev) => {
+        if (ev.target.files && ev.target.files.length > 0) {
+          await addFilesToMerge(Array.from(ev.target.files), slotIndex);
+        }
+      });
+      tempInput.click();
+    });
+
+    anchorBtn.style.position = 'relative';
+    anchorBtn.appendChild(popover);
+    activeInterpagePopover = popover;
+  }
+
+  document.addEventListener('click', (e) => {
+    if (activeInterpagePopover && !activeInterpagePopover.contains(e.target)) {
+      closeInterpagePopover();
+    }
+  });
+
+  function updateMergeSelectionStatus() {
+    const total = state.mergePages.length;
+    const selected = state.mergePages.filter(p => p.selected).length;
+
+    if (mergeSelectionStatus) {
+      mergeSelectionStatus.textContent = `${total} páginas • ${selected} selecionada${selected !== 1 ? 's' : ''}`;
+    }
+
+    if (mergeSelectAllCheckbox) {
+      mergeSelectAllCheckbox.checked = total > 0 && selected === total;
+      mergeSelectAllCheckbox.indeterminate = selected > 0 && selected < total;
+    }
+
+    const totalBytes = state.mergeFiles.reduce((acc, f) => acc + f.size, 0);
+    if (totalSizeLabel) {
+      totalSizeLabel.textContent = formatBytes(totalBytes);
+    }
+    if (filesCounter) {
+      filesCounter.textContent = `${state.mergeFiles.length} arquivo${state.mergeFiles.length !== 1 ? 's' : ''} (${total} páginas)`;
+    }
+  }
+
+  /**
+   * Renderiza a miniatura para um documento específico usando PDF.js com cache.
+   */
+  async function renderThumbnailForDoc(pdfDoc, docName, pageNum, canvas) {
+    if (!canvas) return;
+
+    const cacheKey = `${docName}_p${pageNum}`;
+    if (thumbnailCache.has(cacheKey)) {
+      const cached = thumbnailCache.get(cacheKey);
+      canvas.width = cached.width;
+      canvas.height = cached.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(cached.image, 0, 0);
+      return;
+    }
+
+    if (!pdfDoc) {
+      drawGenericPageThumbnail(canvas, pageNum);
+      return;
+    }
+
+    try {
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 0.35 });
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+
+      await page.render({
+        canvasContext: ctx,
+        viewport: viewport
+      }).promise;
+
+      createImageBitmap(canvas).then(bitmap => {
+        thumbnailCache.set(cacheKey, { image: bitmap, width: canvas.width, height: canvas.height });
+      }).catch(() => {});
+    } catch (err) {
+      console.warn(`Erro ao renderizar miniatura da página ${pageNum}:`, err);
+      drawGenericPageThumbnail(canvas, pageNum);
+    }
+  }
+
+  function drawGenericPageThumbnail(canvas, pageNum, text = null) {
+    canvas.width = 140;
+    canvas.height = 198;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
+
+    ctx.fillStyle = text ? '#64748B' : '#CBD5E1';
+    if (text) {
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    } else {
+      for (let y = 30; y < 160; y += 14) {
+        ctx.fillRect(16, y, canvas.width - 32, 5);
+      }
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Pág. ${pageNum}`, canvas.width / 2, 180);
+    }
+  }
+
+  /**
+   * Renderiza a lista clássica de arquivos com títulos de menu.
+   */
   function renderMergeFileList() {
     fileList.innerHTML = '';
 
@@ -1432,8 +2043,11 @@
 
       li.querySelector('.btn-remove').addEventListener('click', (e) => {
         e.stopPropagation();
-        state.mergeFiles.splice(index, 1);
+        const removedFile = state.mergeFiles.splice(index, 1)[0];
+        // Remove também as páginas pertencentes a este arquivo
+        state.mergePages = state.mergePages.filter(p => p.fileId !== removedFile.id);
         renderMergeFileList();
+        renderMergePagesGrid();
       });
 
       fileList.appendChild(li);
@@ -1480,27 +2094,38 @@
     });
   }
 
+  /**
+   * Executa a unificação com a ordem personalizada de páginas ou arquivos.
+   */
   async function onExecuteMerge() {
-    if (state.mergeFiles.length < 2) {
-      showToast('Por favor, adicione ao menos 2 arquivos PDF para unificar.', 'error');
+    if (state.mergeFiles.length === 0 || state.mergePages.length === 0) {
+      showToast('Por favor, adicione ao menos 1 arquivo PDF para unificar.', 'error');
       return;
     }
 
     await ensureFilesUploaded(state.mergeFiles);
 
-    startProcessingUI('Unificando PDFs com Menu de Documentos...', 'Gerando página de sumário e marcadores clicáveis...');
+    startProcessingUI('Unificando e Organizando PDFs...', 'Montando nova sequência estrutural de páginas...');
 
     try {
       updateProcessingStep(1, 'Gravando arquivos em disco rígido...', 20);
       await delay(200);
 
-      updateProcessingStep(2, 'Calculando estrutura de páginas e gerando sumário visual...', 50);
+      updateProcessingStep(2, 'Organizando estrutura de páginas e gerando sumário...', 50);
       await delay(200);
 
-      updateProcessingStep(3, 'Inserindo hiperlinks clicáveis e marcadores com QPDF C++...', 75);
+      updateProcessingStep(3, 'Compilando páginas com rotações e motor QPDF C++...', 75);
 
       let cleanName = outputFilenameMerge.value.trim() || 'documento_unificado';
       if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+      // Monta a ordem exata de páginas organizadas pelo usuário
+      const pageOrder = state.mergePages.map(p => ({
+        file_id: p.isBlank ? null : (p.fileItem ? p.fileItem.serverSavedName : null),
+        page: typeof p.origPage === 'number' ? p.origPage : 1,
+        rotation: p.rotation || 0,
+        is_blank: !!p.isBlank,
+      }));
 
       const payload = {
         session_id: state.sessionId,
@@ -1508,10 +2133,11 @@
           id: f.serverSavedName,
           menu_title: f.menuTitle || cleanFileNameToTitle(f.name)
         })),
+        page_order: pageOrder,
         output_filename: cleanName,
-        create_visual_menu: toggleVisualMenu.checked,
-        add_bookmarks: toggleBookmarks.checked,
-        linearize: toggleLinearize.checked,
+        create_visual_menu: toggleVisualMenu ? toggleVisualMenu.checked : true,
+        add_bookmarks: toggleBookmarks ? toggleBookmarks.checked : true,
+        linearize: toggleLinearize ? toggleLinearize.checked : true,
         menu_footer_text: mergeFooterTextInput ? mergeFooterTextInput.value : undefined,
       };
 
@@ -1529,19 +2155,19 @@
       }
 
       const data = await res.json();
-      updateProgress(100, 'PDF com Menu de Documentos pronto!');
+      updateProgress(100, 'PDF com páginas organizadas pronto!');
       await delay(300);
 
       showResultUI({
-        title: 'PDF com Menu de Documentos Criado!',
+        title: 'PDF Unificado e Organizado com Sucesso!',
         filename: data.output_filename,
         downloadUrl: data.download_url,
         previewUrl: data.preview_url,
         isZip: false,
-        label1: 'Itens no Menu',
-        val1: `${data.metrics.total_files} itens`,
-        label2: 'Total de Páginas',
-        val2: `${data.metrics.total_pages} págs`,
+        label1: 'Total de Páginas',
+        val1: `${data.metrics.total_pages} págs`,
+        label2: 'Arquivos Unificados',
+        val2: `${data.metrics.total_files} docs`,
         sizeBytes: data.metrics.merged_bytes,
         durationSec: data.metrics.duration_seconds,
       });
@@ -2605,14 +3231,16 @@
     renderZoomPage();
   }
 
-  async function openPageZoomModal(pageNum, initialRotation = 0, itemRef = null, context = 'organize') {
-    if (!state.activeDoc || !state.activeDoc.pdfDoc) {
+  async function openPageZoomModal(pageNum, initialRotation = 0, itemRef = null, context = 'organize', customPdfDoc = null) {
+    const docToUse = customPdfDoc || (itemRef && itemRef.fileItem && itemRef.fileItem.pdfDoc) || (state.activeDoc && state.activeDoc.pdfDoc);
+    if (!docToUse) {
       showToast('Documento PDF não carregado para inspeção.', 'error');
       return;
     }
 
+    zoomState.pdfDoc = docToUse;
     zoomState.isOpen = true;
-    zoomState.currentPage = pageNum;
+    zoomState.currentPage = typeof pageNum === 'number' ? pageNum : 1;
     zoomState.rotation = (initialRotation || 0) % 360;
     zoomState.activeItemRef = itemRef;
     zoomState.sourceContext = context;
@@ -2641,14 +3269,21 @@
   }
 
   function updateZoomNavAndBadge() {
-    if (zoomState.sourceContext === 'organize' && zoomState.activeItemRef) {
+    if (zoomState.sourceContext === 'merge' && zoomState.activeItemRef) {
+      const curIdx = state.mergePages.indexOf(zoomState.activeItemRef);
+      const total = state.mergePages.length;
+      const fileLabel = zoomState.activeItemRef.fileName || 'Arquivo';
+      zoomPageBadge.textContent = `${fileLabel} • Pág. ${zoomState.activeItemRef.origPage} (#${curIdx + 1} de ${total})`;
+      btnZoomPrevPage.disabled = curIdx <= 0;
+      btnZoomNextPage.disabled = curIdx >= total - 1;
+    } else if (zoomState.sourceContext === 'organize' && zoomState.activeItemRef) {
       const curIdx = state.organizeItems.indexOf(zoomState.activeItemRef);
       const total = state.organizeItems.length;
       zoomPageBadge.textContent = `Página ${zoomState.activeItemRef.origPage} (#${curIdx + 1} de ${total})`;
       btnZoomPrevPage.disabled = curIdx <= 0;
       btnZoomNextPage.disabled = curIdx >= total - 1;
     } else {
-      const total = state.activeDoc.pageCount;
+      const total = (zoomState.pdfDoc && zoomState.pdfDoc.numPages) || (state.activeDoc ? state.activeDoc.pageCount : 1);
       zoomPageBadge.textContent = `Página ${zoomState.currentPage} de ${total}`;
       btnZoomPrevPage.disabled = zoomState.currentPage <= 1;
       btnZoomNextPage.disabled = zoomState.currentPage >= total;
@@ -2658,7 +3293,25 @@
   }
 
   async function navigateZoomPage(delta) {
-    if (zoomState.sourceContext === 'organize' && zoomState.activeItemRef) {
+    if (zoomState.sourceContext === 'merge' && zoomState.activeItemRef) {
+      const curIdx = state.mergePages.indexOf(zoomState.activeItemRef);
+      const nextIdx = curIdx + delta;
+      if (nextIdx >= 0 && nextIdx < state.mergePages.length) {
+        const nextItem = state.mergePages[nextIdx];
+        zoomState.activeItemRef = nextItem;
+        zoomState.currentPage = typeof nextItem.origPage === 'number' ? nextItem.origPage : 1;
+        zoomState.rotation = nextItem.rotation || 0;
+        if (nextItem.fileItem && nextItem.fileItem.pdfDoc) {
+          zoomState.pdfDoc = nextItem.fileItem.pdfDoc;
+        }
+        updateZoomNavAndBadge();
+        if (zoomCanvasContainer) {
+          zoomCanvasContainer.scrollTop = 0;
+          zoomCanvasContainer.scrollLeft = 0;
+        }
+        await renderZoomPage();
+      }
+    } else if (zoomState.sourceContext === 'organize' && zoomState.activeItemRef) {
       const curIdx = state.organizeItems.indexOf(zoomState.activeItemRef);
       const nextIdx = curIdx + delta;
       if (nextIdx >= 0 && nextIdx < state.organizeItems.length) {
@@ -2673,8 +3326,9 @@
         await renderZoomPage();
       }
     } else {
+      const totalPages = (zoomState.pdfDoc && zoomState.pdfDoc.numPages) || (state.activeDoc ? state.activeDoc.pageCount : 1);
       const nextP = zoomState.currentPage + delta;
-      if (nextP >= 1 && nextP <= state.activeDoc.pageCount) {
+      if (nextP >= 1 && nextP <= totalPages) {
         zoomState.currentPage = nextP;
         if (zoomState.sourceContext === 'rotate') {
           zoomState.rotation = state.rotateMap[nextP] || 0;
@@ -2692,7 +3346,8 @@
   }
 
   async function renderZoomPage() {
-    if (!state.activeDoc || !state.activeDoc.pdfDoc || !zoomPageCanvas) return;
+    const docToRender = zoomState.pdfDoc || (state.activeDoc && state.activeDoc.pdfDoc);
+    if (!docToRender || !zoomPageCanvas) return;
 
     if (zoomState.renderTask) {
       try {
@@ -2706,10 +3361,12 @@
 
     const pageNum = (zoomState.sourceContext === 'organize' && zoomState.activeItemRef)
       ? zoomState.activeItemRef.origPage
-      : zoomState.currentPage;
+      : ((zoomState.sourceContext === 'merge' && zoomState.activeItemRef)
+          ? (typeof zoomState.activeItemRef.origPage === 'number' ? zoomState.activeItemRef.origPage : 1)
+          : zoomState.currentPage);
 
     try {
-      const page = await state.activeDoc.pdfDoc.getPage(pageNum);
+      const page = await docToRender.getPage(pageNum);
       
       const baseViewport = page.getViewport({ scale: 1.0, rotation: zoomState.rotation });
       const containerHeight = (zoomCanvasContainer && zoomCanvasContainer.clientHeight > 200)

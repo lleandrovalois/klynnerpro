@@ -589,30 +589,126 @@
         <!-- ESTADO 2.1: WORKSPACE JUNTAR PDF (MERGE)                       -->
         <!-- ============================================================== -->
         <div class="tool-stage hidden" id="stage-merge">
-          <div class="files-header">
-            <div class="files-title-box">
-              <h3 class="files-section-title">
-                Itens do Menu & Sequência dos Arquivos
-                <span class="files-counter" id="files-counter">0 arquivos</span>
-              </h3>
-              <p class="files-instruction">
-                Os itens do menu usarão o nome de cada arquivo. Você pode reordenar arrastando ou ajustar o texto do título do menu diretamente nos campos abaixo:
-              </p>
-            </div>
-            <div class="files-actions-top">
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-add-more">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Adicionar Mais
+          <!-- Barra Superior Principal do Juntar / Organizar (conforme screenshot) -->
+          <div class="merge-top-toolbar">
+            <div class="merge-toolbar-left">
+              <!-- Alternador de Modos: Páginas vs Arquivos -->
+              <div class="merge-view-switcher" role="tablist">
+                <button type="button" class="merge-tab-btn active" id="btn-merge-view-pages" role="tab" aria-selected="true" title="Visualizar e organizar todas as páginas">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <span>Páginas</span>
+                  <span class="crown-badge" title="Organizador Visual Multi-Arquivo">👑</span>
+                </button>
+                <button type="button" class="merge-tab-btn" id="btn-merge-view-files" role="tab" aria-selected="false" title="Visualizar lista de arquivos e títulos do menu">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  <span>Arquivos</span>
+                </button>
+              </div>
+
+              <div class="toolbar-divider"></div>
+
+              <!-- Botão Adicionar Mais Arquivos -->
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-merge-add-more">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Adicionar</span>
               </button>
-              <button type="button" class="btn btn-ghost btn-sm btn-danger-hover" id="btn-clear-all">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                Limpar Tudo
+
+              <!-- Ações Rápidas de Página (Girar / Excluir selecionadas) -->
+              <div class="toolbar-btn-group" id="merge-page-actions-group">
+                <button type="button" class="btn-tool-action" id="btn-merge-rot-ccw" title="Girar 90° para esquerda (anti-horário)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                </button>
+                <button type="button" class="btn-tool-action" id="btn-merge-rot-cw" title="Girar 90° para direita (horário)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+                <button type="button" class="btn-tool-action btn-tool-action-danger" id="btn-merge-delete-selected" title="Excluir página(s) selecionada(s)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Botão Primário Terminar no Cabeçalho Superior -->
+            <div class="merge-toolbar-right">
+              <button type="button" class="btn btn-primary btn-sm btn-finish-merge" id="btn-merge-finish-top">
+                <span>Terminar</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
               </button>
             </div>
           </div>
 
-          <!-- Lista Reordenável com Campos de Título de Menu -->
-          <ul class="file-list" id="file-list" aria-label="Lista de arquivos para o menu"></ul>
+          <!-- Sub-Barra do Modo Páginas: Selecionar tudo, Contagem e Ordenação -->
+          <div class="merge-subbar" id="merge-pages-subbar">
+            <div class="subbar-left">
+              <label class="merge-select-all-label">
+                <input type="checkbox" id="merge-select-all-checkbox">
+                <span>Selecionar tudo</span>
+              </label>
+              <span class="selection-status-badge" id="merge-selection-status">0 de 0 páginas</span>
+            </div>
+
+            <div class="subbar-right">
+              <!-- Menu de Ordenação Rápida -->
+              <div class="dropdown-wrapper">
+                <button type="button" class="btn-subbar-action" id="btn-merge-sort-menu" title="Opções de ordenação">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                  <span>Ordenar</span>
+                </button>
+                <div class="subbar-dropdown-menu hidden" id="merge-sort-dropdown">
+                  <button type="button" class="subbar-dropdown-item" data-sort="orig-files">Ordem original dos arquivos</button>
+                  <button type="button" class="subbar-dropdown-item" data-sort="reverse">Inverter ordem das páginas</button>
+                  <button type="button" class="subbar-dropdown-item" data-sort="group-by-file">Agrupar por arquivo</button>
+                </div>
+              </div>
+
+              <!-- Densidade de Visualização (Grade vs Compacto) -->
+              <div class="view-density-group">
+                <button type="button" class="btn-density active" id="btn-density-grid" title="Visualização em Grade">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </button>
+                <button type="button" class="btn-density" id="btn-density-compact" title="Visualização Compacta">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODO 1: WORKSPACE DE PÁGINAS (ORGANIZADOR MULTI-ARQUIVO COM MINIATURAS E DRAG & DROP) -->
+          <div class="merge-view-container" id="merge-view-pages">
+            <div class="merge-pages-loading-overlay hidden" id="merge-pages-loading">
+              <div class="spinner"></div>
+              <p id="merge-pages-loading-text">Processando e renderizando miniaturas das páginas...</p>
+            </div>
+            <!-- Grade interativa onde todas as páginas de todos os PDFs são exibidas -->
+            <div class="merge-pages-grid" id="merge-pages-grid" aria-label="Grade de páginas dos PDFs para reorganização"></div>
+          </div>
+
+          <!-- MODO 2: WORKSPACE DE ARQUIVOS (LISTA TRADICIONAL COM TÍTULOS DO MENU VISUAL) -->
+          <div class="merge-view-container hidden" id="merge-view-files">
+            <div class="files-header">
+              <div class="files-title-box">
+                <h3 class="files-section-title">
+                  Itens do Menu & Sequência dos Arquivos
+                  <span class="files-counter" id="files-counter">0 arquivos</span>
+                </h3>
+                <p class="files-instruction">
+                  Os itens do menu usarão o nome de cada arquivo. Você pode reordenar arrastando ou ajustar o texto do título do menu diretamente nos campos abaixo:
+                </p>
+              </div>
+              <div class="files-actions-top">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-add-more">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Adicionar Mais
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm btn-danger-hover" id="btn-clear-all">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Limpar Tudo
+                </button>
+              </div>
+            </div>
+
+            <!-- Lista Reordenável com Campos de Título de Menu -->
+            <ul class="file-list" id="file-list" aria-label="Lista de arquivos para o menu"></ul>
+          </div>
 
           <!-- Painel de Configurações de Saída -->
           <div class="options-panel">

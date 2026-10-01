@@ -129,6 +129,10 @@ class MergeRequest(BaseModel):
         ...,
         description="Lista ordenada dos arquivos. Pode conter dicionários com {id, menu_title} ou strings de IDs."
     )
+    page_order: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Lista ordenada de páginas personalizadas de múltiplos arquivos: [{'file_id': '...', 'page': 1, 'rotation': 0, 'is_blank': False}, ...]"
+    )
     output_filename: Optional[str] = Field(default="documento_unificado.pdf")
     create_visual_menu: bool = Field(
         default=True,
@@ -467,6 +471,7 @@ async def merge_files(request: MergeRequest):
             add_bookmarks=request.add_bookmarks,
             linearize=request.linearize,
             menu_footer_text=request.menu_footer_text,
+            page_order=request.page_order,
         )
 
         return JSONResponse({
