@@ -37,6 +37,7 @@ from app.pdf_to_word import execute_pdf_to_word
 from app.word_to_pdf import execute_word_to_pdf
 from app.image_to_pdf import execute_image_to_pdf
 from app.watermark import execute_pdf_watermark
+from app.logo_adder import execute_add_logo
 from app.footer_customizer import execute_pdf_footer
 from app.footer_remover import execute_pdf_remove_footer
 from app.comparator import execute_pdf_compare
@@ -272,6 +273,21 @@ class WatermarkRequest(BaseModel):
     layer: str = Field(default="overlay", description="'overlay' ou 'underlay'")
     pages: str = Field(default="all", description="'all', 'first', ou intervalos '1-3, 5'")
     output_filename: Optional[str] = Field(default="documento_marca_dagua.pdf")
+    linearize: bool = Field(default=True)
+
+
+class AddLogoRequest(BaseModel):
+    session_id: str
+    file_id: str
+    logo_image_id: str = Field(..., description="ID ou nome do arquivo de imagem do logotipo")
+    position: str = Field(default="top-right", description="'top-left', 'top-center', 'top-right', 'center-left', 'center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'")
+    scale: float = Field(default=0.20, description="Escala relativa da imagem em relação à largura da folha (0.05 a 0.85)")
+    margin_x: float = Field(default=36.0, description="Margem horizontal em pontos")
+    margin_y: float = Field(default=36.0, description="Margem vertical em pontos")
+    opacity: float = Field(default=1.0, description="Nível de opacidade da imagem (0.05 a 1.0)")
+    layer: str = Field(default="overlay", description="'overlay' ou 'underlay'")
+    pages: str = Field(default="all", description="'all', 'first', 'except-first', ou intervalos '1-3, 5'")
+    output_filename: Optional[str] = Field(default="documento_com_logo.pdf")
     linearize: bool = Field(default=True)
 
 
@@ -1071,6 +1087,77 @@ async def add_pdf_watermark(request: WatermarkRequest):
         )
 
 
+@app.post("/api/add-logo")
+async def add_logo_to_pdf(request: AddLogoRequest):
+    """
+    Insere logotipo institucional ou imagem de marca em documentos PDF.
+    """
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o arquivo novamente."
+        )
+
+    safe_name = Path(request.file_id).name
+    file_path = session_dir / safe_name
+    if not file_path.exists() and (session_dir / "output" / safe_name).exists():
+        file_path = session_dir / "output" / safe_name
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo '{safe_name}' não encontrado na sessão."
+        )
+
+    safe_logo = Path(request.logo_image_id).name
+    logo_path = session_dir / safe_logo
+    if not logo_path.exists() and (session_dir / "output" / safe_logo).exists():
+        logo_path = session_dir / "output" / safe_logo
+    if not logo_path.exists() or not logo_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo de logotipo '{safe_logo}' não encontrado na sessão."
+        )
+
+    clean_output_name = Path(request.output_filename or "documento_com_logo.pdf").name
+    if not clean_output_name.lower().endswith(".pdf"):
+        clean_output_name += ".pdf"
+
+    output_path = session_dir / "output" / clean_output_name
+
+    try:
+        result = await asyncio.to_thread(
+            execute_add_logo,
+            input_pdf_path=file_path,
+            output_pdf_path=output_path,
+            logo_image_path=logo_path,
+            position=request.position,
+            scale=request.scale,
+            margin_x=request.margin_x,
+            margin_y=request.margin_y,
+            opacity=request.opacity,
+            layer=request.layer,
+            pages=request.pages,
+            linearize=request.linearize,
+        )
+
+        out_name = result["output_filename"]
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "metrics": result,
+        })
+    except Exception as e:
+        logger.error(f"Erro ao adicionar logotipo no PDF: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao adicionar logotipo no PDF: {str(e)}"
+        )
+
+
 @app.post("/api/footer")
 async def add_pdf_footer(request: FooterRequest):
     """
@@ -1340,6 +1427,7 @@ async def health_check():
             "Converter PDF para Word (PDF to Word)",
             "Converter Word para PDF (Word to PDF)",
             "Converter Imagem para PDF (Image to PDF)",
+            "Adicionar Logotipo no PDF (Add Logo)",
             "Inserir Marca d'água (Watermark PDF)",
             "Personalizar Rodapé e Numeração (Footer Customizer)",
             "Remover Rodapé e Cabeçalho (Footer Remover)",

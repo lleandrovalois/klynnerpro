@@ -207,14 +207,16 @@ def merge_pdfs_pikepdf(
                 if not fid or p_act.get("is_blank"):
                     return False
                 path_obj = file_item["path"]
-                return (
+                if (
                     fid == path_obj.name
                     or fid == path_obj.stem
                     or fid == str(path_obj)
                     or Path(fid).name == path_obj.name
-                    or fid in path_obj.name
-                    or path_obj.stem in fid
-                )
+                    or Path(fid).stem == path_obj.stem
+                ):
+                    return True
+                fid_name = Path(fid).name
+                return fid_name in path_obj.name or path_obj.name in fid_name
 
             for item in ordered_files_info:
                 matching_indices = [
@@ -233,6 +235,9 @@ def merge_pdfs_pikepdf(
                         "pages_count": pages_cnt,
                         "path": item["path"],
                     })
+
+        # Garante ordenação estritamente crescente das páginas de destino no sumário
+        menu_items_data.sort(key=lambda x: (x["target_page_idx"], str(x.get("title", ""))))
 
         # Cria o PDF final
         merged_pdf = pikepdf.Pdf.new()
@@ -420,6 +425,25 @@ def merge_pdfs_pypdf_fallback(
     duration = time.perf_counter() - start_time
     merged_bytes = output_path.stat().st_size if output_path.exists() else 0
 
+    fallback_items = []
+    if page_order:
+        def match_fallback(p_act: Dict[str, Any], file_item: Dict[str, Any]) -> bool:
+            fid = str(p_act.get("file_id", "") or "").strip()
+            if not fid or p_act.get("is_blank"):
+                return False
+            path_obj = file_item["path"]
+            return fid == path_obj.name or fid == path_obj.stem or Path(fid).name == path_obj.name
+
+        ordered_by_appearance = []
+        for item in ordered_files_info:
+            indices = [idx for idx, p in enumerate(page_order) if match_fallback(p, item)]
+            if indices:
+                ordered_by_appearance.append((indices[0], item.get("menu_title") or item["path"].stem))
+        ordered_by_appearance.sort(key=lambda x: x[0])
+        fallback_items = [title for _, title in ordered_by_appearance]
+    if not fallback_items:
+        fallback_items = [item.get("menu_title") or item["path"].stem for item in ordered_files_info]
+
     return {
         "success": True,
         "engine": "PyPDF (Motor de Tolerância Fallback)",
@@ -430,7 +454,7 @@ def merge_pdfs_pypdf_fallback(
         "duration_seconds": round(duration, 3),
         "linearized": False,
         "menu_created": False,
-        "menu_items": [item.get("menu_title") or item["path"].stem for item in ordered_files_info],
+        "menu_items": fallback_items,
     }
 
 

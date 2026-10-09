@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=2.1.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.9.0">
   <!-- PDF.js para renderização de miniaturas no navegador com zero sobrecarga de RAM do servidor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- Google AdSense Integrado de Forma Discreta (Klynner PRO Monetization) -->
@@ -295,7 +295,7 @@
                   </div>
                   <div class="dropdown-item-info">
                     <span class="dropdown-item-title">Organizar Páginas</span>
-                    <span class="dropdown-item-desc">Reordenar miniaturas, duplicar ou excluir</span>
+                    <span class="dropdown-item-desc">Reordenar miniaturas, duplicar ou excluir (um ou múltiplos PDFs)</span>
                   </div>
                   <span class="dropdown-check-icon">✓</span>
                 </button>
@@ -342,7 +342,7 @@
             <div class="cat-dropdown-menu" id="menu-cat-edit" role="menu">
               <div class="dropdown-cat-header">
                 <span>Edição & Estamparia</span>
-                <span class="dropdown-count-pill">3 ferramentas</span>
+                <span class="dropdown-count-pill">4 ferramentas</span>
               </div>
               <div class="dropdown-items-list">
                 <!-- 1. Rodapé & Numeração -->
@@ -369,7 +369,19 @@
                   <span class="dropdown-check-icon">✓</span>
                 </button>
 
-                <!-- 3. Marca d'água -->
+                <!-- 3. Adicionar Logo -->
+                <button type="button" class="tool-nav-btn dropdown-tool-item" data-tool="add-logo" role="menuitem">
+                  <div class="dropdown-item-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
+                  <div class="dropdown-item-info">
+                    <span class="dropdown-item-title">Adicionar Logo</span>
+                    <span class="dropdown-item-desc">Estampar logotipo institucional com posição milimétrica</span>
+                  </div>
+                  <span class="dropdown-check-icon">✓</span>
+                </button>
+
+                <!-- 4. Marca d'água -->
                 <button type="button" class="tool-nav-btn dropdown-tool-item" data-tool="watermark" role="menuitem">
                   <div class="dropdown-item-icon">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0 7 7c0 7-7 13-7 13s-7-6-7-13a7 7 0 0 1 7-7z"/></svg>
@@ -608,9 +620,15 @@
               <div class="toolbar-divider"></div>
 
               <!-- Botão Adicionar Mais Arquivos -->
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-merge-add-more">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-merge-add-more" title="Adicionar mais arquivos PDF">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span>Adicionar</span>
+              </button>
+
+              <!-- Botão Limpar / Trocar Arquivos -->
+              <button type="button" class="btn btn-ghost btn-sm btn-danger-hover" id="btn-merge-top-clear" title="Remover todos os arquivos e recomeçar">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <span>Limpar</span>
               </button>
 
               <!-- Ações Rápidas de Página (Girar / Excluir selecionadas) -->
@@ -644,6 +662,23 @@
                 <span>Selecionar tudo</span>
               </label>
               <span class="selection-status-badge" id="merge-selection-status">0 de 0 páginas</span>
+
+              <div class="collapse-controls-group">
+                <button type="button" class="btn-subbar-action active" id="btn-merge-layout-grid" title="Visualização completa de todas as páginas em grade contínua com drag & drop">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <span>Todas as Páginas</span>
+                </button>
+                <button type="button" class="btn-subbar-action" id="btn-merge-layout-boxes" title="Agrupar documentos em caixas minimizáveis (ideal para arquivos grandes)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 12 6 20 14"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+                  <span>Por Arquivo</span>
+                </button>
+                <button type="button" class="btn-subbar-action" id="btn-merge-collapse-all" title="Minimizar todos os arquivos em caixas">
+                  <span>Minimizar Todos</span>
+                </button>
+                <button type="button" class="btn-subbar-action" id="btn-merge-expand-all" title="Expandir todas as caixas de páginas">
+                  <span>Expandir Todos</span>
+                </button>
+              </div>
             </div>
 
             <div class="subbar-right">
@@ -670,6 +705,12 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <!-- Dica de Organização por Caixas Minimizadas -->
+          <div class="merge-hint-banner" id="merge-hint-banner">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span>Arquivos organizados em <strong>caixas minimizadas</strong> para eliminar a poluição visual. Arraste a caixa ou use as setas <strong>▲ / ▼</strong> para reordenar o documento inteiro. Clique em <strong>Ver Páginas</strong> para inspecionar ou ajustar páginas individuais.</span>
           </div>
 
           <!-- MODO 1: WORKSPACE DE PÁGINAS (ORGANIZADOR MULTI-ARQUIVO COM MINIATURAS E DRAG & DROP) -->
@@ -1982,6 +2023,188 @@
         </div>
 
         <!-- ============================================================== -->
+        <!-- ESTADO 2N: ADICIONAR LOGOTIPO NO PDF                          -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-add-logo">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento Alvo:</span>
+              <span class="active-doc-name" id="logo-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="logo-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="logo-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-logo-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Configurações do Logotipo</h4>
+                <p class="security-box-desc">Adicione a marca da sua empresa, carimbo institucional ou selo em cabeçalhos, rodapés ou cantos do documento.</p>
+              </div>
+            </div>
+
+            <!-- Upload do Logotipo -->
+            <div class="pwd-field-group">
+              <label class="option-label">Arquivo de Logotipo (PNG com transparência, JPG ou WebP)</label>
+              <div class="wm-img-upload-box" id="logo-img-upload-box">
+                <input type="file" id="logo-img-file-input" accept="image/png,image/jpeg,image/jpg,image/webp" class="file-input-hidden">
+                <div class="wm-img-upload-prompt" id="logo-img-upload-prompt">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <span>Clique ou arraste para carregar a imagem do logotipo</span>
+                </div>
+                <div class="wm-img-preview-box hidden" id="logo-img-preview-box">
+                  <img id="logo-img-preview" alt="Prévia Logotipo">
+                  <div style="display:flex; flex-direction:column; gap:2px; flex:1; min-width:0;">
+                    <span id="logo-img-name" style="font-weight:600; color:var(--text-main);">logo.png</span>
+                    <span id="logo-img-meta" style="font-size:0.75rem; color:var(--text-muted);">0 KB</span>
+                  </div>
+                  <button type="button" class="btn btn-ghost btn-sm" id="btn-logo-remove-img">Trocar Imagem</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grade de Posicionamento 3x3 -->
+            <div class="pwd-field-group" style="margin-top: 1.25rem;">
+              <label class="option-label">Posicionamento na Página (Grade 3x3):</label>
+              <div class="logo-position-grid" id="logo-position-grid">
+                <button type="button" class="logo-pos-btn" data-pos="top-left" title="Cabeçalho Esquerdo">
+                  <span class="pos-dot top left"></span>
+                  <span class="pos-text">Topo Esq</span>
+                </button>
+                <button type="button" class="logo-pos-btn" data-pos="top-center" title="Cabeçalho Centro">
+                  <span class="pos-dot top center"></span>
+                  <span class="pos-text">Topo Centro</span>
+                </button>
+                <button type="button" class="logo-pos-btn active" data-pos="top-right" title="Cabeçalho Direito (Padrão)">
+                  <span class="pos-dot top right"></span>
+                  <span class="pos-text">Topo Dir</span>
+                </button>
+                <button type="button" class="logo-pos-btn" data-pos="center-left" title="Meio Esquerdo">
+                  <span class="pos-dot middle left"></span>
+                  <span class="pos-text">Meio Esq</span>
+                </button>
+                <button type="button" class="logo-pos-btn" data-pos="center" title="Centro da Página">
+                  <span class="pos-dot middle center"></span>
+                  <span class="pos-text">Centro</span>
+                </button>
+                <button type="button" class="logo-pos-btn" data-pos="center-right" title="Meio Direito">
+                  <span class="pos-dot middle right"></span>
+                  <span class="pos-text">Meio Dir</span>
+                </button>
+                <button type="button" class="logo-pos-btn" data-pos="bottom-left" title="Rodapé Esquerdo">
+                  <span class="pos-dot bottom left"></span>
+                  <span class="pos-text">Rodapé Esq</span>
+                </button>
+                <button type="button" class="logo-pos-btn" data-pos="bottom-center" title="Rodapé Centro">
+                  <span class="pos-dot bottom center"></span>
+                  <span class="pos-text">Rodapé Centro</span>
+                </button>
+                <button type="button" class="logo-pos-btn" data-pos="bottom-right" title="Rodapé Direito">
+                  <span class="pos-dot bottom right"></span>
+                  <span class="pos-text">Rodapé Dir</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dimensões, Margens e Opacidade -->
+            <div class="passwords-grid" style="margin-top: 1.25rem;">
+              <div class="pwd-field-group">
+                <label for="logo-scale" class="option-label">Tamanho do Logotipo: <span id="logo-scale-val">20% da folha</span></label>
+                <input type="range" id="logo-scale" class="range-slider" min="5" max="65" step="1" value="20">
+                <span class="input-hint">Ideal para cabeçalhos: 15% a 25%.</span>
+              </div>
+
+              <div class="pwd-field-group">
+                <label for="logo-margin" class="option-label">Distância das Bordas: <span id="logo-margin-val">36 pt (~1.2 cm)</span></label>
+                <input type="range" id="logo-margin" class="range-slider" min="0" max="72" step="2" value="36">
+                <span class="input-hint">Afastamento do topo/rodapé e das laterais.</span>
+              </div>
+            </div>
+
+            <div class="passwords-grid" style="margin-top: 1rem;">
+              <div class="pwd-field-group">
+                <label for="logo-opacity" class="option-label">Opacidade / Transparência: <span id="logo-opacity-val">100% (Nítido)</span></label>
+                <input type="range" id="logo-opacity" class="range-slider" min="10" max="100" step="5" value="100">
+                <span class="input-hint">100% para logo oficial, ou reduza para marca d'água sutil.</span>
+              </div>
+
+              <div class="pwd-field-group">
+                <label for="logo-layer" class="option-label">Camada de Exibição:</label>
+                <select id="logo-layer" class="text-input">
+                  <option value="overlay" selected>Sobreposto ao Texto (Frente / Cabeçalho)</option>
+                  <option value="underlay">Por trás do Texto (Fundo / Marca d'água)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Seleção de Páginas -->
+            <div class="pwd-field-group" style="margin-top: 1rem;">
+              <label for="logo-pages-select" class="option-label">Aplicar nas Páginas:</label>
+              <div class="input-with-helper">
+                <select id="logo-pages-select" class="text-input" style="margin-bottom: 0.5rem;">
+                  <option value="all" selected>Todas as Páginas</option>
+                  <option value="except-first">Todas as Páginas (Exceto Capa)</option>
+                  <option value="first">Apenas na 1ª Página (Capa)</option>
+                  <option value="custom">Intervalo Personalizado...</option>
+                </select>
+                <div class="custom-range-inputs hidden" id="logo-custom-pages-box">
+                  <input type="text" id="logo-custom-pages-input" class="text-input" placeholder="Ex: 1-5, 8, 10-12">
+                  <span class="input-hint">Separe páginas e intervalos por vírgula (ex: <strong>1-3, 5</strong>).</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="logo-output-filename" class="option-label">Nome do Arquivo com Logotipo</label>
+              <div class="input-with-suffix">
+                <input type="text" id="logo-output-filename" class="text-input" value="documento_com_logo">
+                <span class="input-suffix">.pdf</span>
+              </div>
+            </div>
+            <div class="toggles-grid">
+              <label class="toggle-control" for="toggle-logo-linearize">
+                <input type="checkbox" id="toggle-logo-linearize" checked>
+                <div class="toggle-switch"></div>
+                <div class="toggle-label-group">
+                  <span class="toggle-title">Fast Web View (Linearização)</span>
+                  <span class="toggle-desc">Otimiza para abertura veloz após a aplicação do logotipo.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Posição Selecionada:</span>
+              <span class="summary-value" id="logo-summary-label">Topo Direito (Cabeçalho)</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-add-logo">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <span>Inserir Logotipo no PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
         <!-- ESTADO 2M: PERSONALIZAR RODAPÉ E NUMERAÇÃO DE PÁGINAS          -->
         <!-- ============================================================== -->
         <div class="tool-stage hidden" id="stage-footer">
@@ -3169,7 +3392,7 @@
           <div class="tools-cat-group" data-cat-group="edit">
             <div class="tools-cat-header">
               <span class="tools-cat-pill">Cabeçalho, Rodapé & Marca</span>
-              <span class="tools-cat-count">3 ferramentas</span>
+              <span class="tools-cat-count">4 ferramentas</span>
             </div>
             <div class="tools-cat-grid">
               
@@ -3195,7 +3418,18 @@
                 </div>
               </button>
 
-              <!-- 8. Marca d'água -->
+              <!-- 8. Adicionar Logo -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="add-logo" data-keywords="adicionar logo logotipo imagem marca cabecalho timbrado estampar empresa icon selo">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">Adicionar Logo</span>
+                  <span class="card-desc">Estampar logotipo ou selo com posição milimétrica e transparência</span>
+                </div>
+              </button>
+
+              <!-- 9. Marca d'água -->
               <button type="button" class="tool-nav-btn all-tools-card" data-tool="watermark" data-keywords="marca dagua watermark carimbo logo texto confidencia copia transparência">
                 <div class="card-icon-box">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/></svg>
@@ -3385,6 +3619,6 @@
     </footer>
   </div>
 
-  <script src="/static/js/app.js?v=2.8.0"></script>
+  <script src="/static/js/app.js?v=2.9.1"></script>
 </body>
 </html>

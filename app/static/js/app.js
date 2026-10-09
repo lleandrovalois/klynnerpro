@@ -39,14 +39,14 @@
       stageId: 'stage-split',
     },
     organize: {
-      heroTitle: 'Reorganize, duplique ou exclua páginas do PDF',
-      heroSub: 'Visualização completa em grade das miniaturas (thumbnails) com arrastar-e-soltar (drag and drop) para reorganizar, duplicar páginas importantes ou excluir páginas desnecessárias.',
-      dropHeading: 'Arraste o arquivo PDF para organizar as páginas',
-      dropSub: 'ou clique para selecionar do computador',
-      dropBadges: ['Miniaturas em alta resolução', 'Arrastar e soltar (Drag & Drop)', 'Duplicação e exclusão instantânea'],
-      multiple: false,
-      enginePill: 'Organizador Visual Ativo',
-      stageId: 'stage-organize',
+      heroTitle: 'Organize, junte, reordene, duplique ou exclua páginas',
+      heroSub: 'Visualização completa em grade das miniaturas ou por arquivo (caixas minimizadas). Arraste e solte páginas livremente entre documentos, duplique, exclua ou rotacione.',
+      dropHeading: 'Arraste um ou mais arquivos PDF para organizar as páginas',
+      dropSub: 'ou clique para selecionar do computador (suporta múltiplos arquivos)',
+      dropBadges: ['Múltiplos arquivos ou documento único', 'Visualização em grade ou por arquivo', 'Miniaturas em alta resolução', 'Arrastar e soltar (Drag & Drop)'],
+      multiple: true,
+      enginePill: 'Organizador de Páginas Ativo',
+      stageId: 'stage-merge',
     },
     rotate: {
       heroTitle: 'Gire páginas de PDF para corrigir a orientação',
@@ -128,6 +128,16 @@
       enginePill: 'Conversor Img2PDF Ativo',
       stageId: 'stage-image-to-pdf',
     },
+    'add-logo': {
+      heroTitle: 'Adicione Logotipo em Arquivos PDF',
+      heroSub: 'Insira o logotipo da sua empresa, carimbo institucional ou selo em cabeçalhos, rodapés ou cantos de PDFs com ajuste milimétrico de posição, margens e transparência.',
+      dropHeading: 'Arraste o arquivo PDF que receberá o logotipo',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Suporte a PNG transparente e JPG', 'Posicionamento visual em 9 pontos na folha', 'Controle de margens, escala e opacidade'],
+      multiple: false,
+      enginePill: 'Estampador de Logotipo Ativo',
+      stageId: 'stage-add-logo',
+    },
     watermark: {
       heroTitle: 'Insira Marca d\'água em Arquivos PDF',
       heroSub: 'Proteja seus documentos adicionando carimbos de confidencialidade, cópias controladas, textos personalizados ou logotipos com transparência, rotação e repetição em grade.',
@@ -185,6 +195,7 @@
     mergeFiles: [], // { id, name, menuTitle, size, pageCount, fileObj, isUploaded, serverSavedName, pdfDoc, colorIndex }
     mergePages: [], // [ { uid, fileId, fileItem, fileName, fileIndex, origPage, rotation: 0, selected: false, isBlank: false } ]
     mergeViewMode: 'pages', // 'pages' | 'files'
+    mergePageLayout: 'grid', // 'grid' (todas as páginas) | 'boxes' (caixas por arquivo)
     draggedMergePageIdx: null,
 
     // Imagem para PDF
@@ -203,6 +214,10 @@
 
     // Ferramentas de 1 Documento
     activeDoc: null, // { name, size, pageCount, serverSavedName, fileObj, pdfDoc }
+
+    // Adicionar Logo
+    logoImageDoc: null, // { name, size, fileObj, serverSavedName, previewUrl }
+    logoSelectedPos: 'top-right',
 
     // Marca d'água (imagem opcional)
     watermarkImageDoc: null, // { name, size, fileObj, serverSavedName, previewUrl }
@@ -223,6 +238,33 @@
 
   // Cache de miniaturas geradas
   const thumbnailCache = new Map();
+
+  // Observador de interseção para renderização lazy ultrarrápida de miniaturas
+  const thumbnailObserver = (typeof IntersectionObserver !== 'undefined')
+    ? new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const canvas = entry.target;
+            observer.unobserve(canvas);
+            if (canvas._renderTask) {
+              const task = canvas._renderTask;
+              canvas._renderTask = null;
+              task();
+            }
+          }
+        });
+      }, { rootMargin: '350px 0px 350px 0px' })
+    : null;
+
+  function queueThumbnailRender(canvas, renderFn) {
+    if (!canvas) return;
+    if (thumbnailObserver) {
+      canvas._renderTask = renderFn;
+      thumbnailObserver.observe(canvas);
+    } else {
+      setTimeout(renderFn, 0);
+    }
+  }
 
   // Elementos do DOM Compartilhados
   // Elementos da Barra de Navegação com Menus Suspensos por Categoria
@@ -246,6 +288,7 @@
 
     footer: 'edit',
     'remove-footer': 'edit',
+    'add-logo': 'edit',
     watermark: 'edit',
 
     compare: 'compare',
@@ -273,6 +316,7 @@
     'word-to-pdf': 'Word para PDF',
     'image-to-pdf': 'Imagem para PDF',
     watermark: 'Marca d\'água',
+    'add-logo': 'Adicionar Logo',
     footer: 'Rodapé & Numeração',
     'remove-footer': 'Remover Rodapé',
   };
@@ -354,6 +398,7 @@
   const mergeSelectAllCheckbox = document.getElementById('merge-select-all-checkbox');
   const mergeSelectionStatus = document.getElementById('merge-selection-status');
   const btnMergeAddMore = document.getElementById('btn-merge-add-more');
+  const btnMergeTopClear = document.getElementById('btn-merge-top-clear');
   const btnMergeRotCcw = document.getElementById('btn-merge-rot-ccw');
   const btnMergeRotCw = document.getElementById('btn-merge-rot-cw');
   const btnMergeDeleteSelected = document.getElementById('btn-merge-delete-selected');
@@ -362,6 +407,10 @@
   const mergeSortDropdown = document.getElementById('merge-sort-dropdown');
   const btnDensityGrid = document.getElementById('btn-density-grid');
   const btnDensityCompact = document.getElementById('btn-density-compact');
+  const btnMergeLayoutGrid = document.getElementById('btn-merge-layout-grid');
+  const btnMergeLayoutBoxes = document.getElementById('btn-merge-layout-boxes');
+  const btnMergeCollapseAll = document.getElementById('btn-merge-collapse-all');
+  const btnMergeExpandAll = document.getElementById('btn-merge-expand-all');
   const fileList = document.getElementById('file-list');
   const filesCounter = document.getElementById('files-counter');
   const totalSizeLabel = document.getElementById('total-size-label');
@@ -559,6 +608,36 @@
   const toggleWmLinearize = document.getElementById('toggle-wm-linearize');
   const btnStartWatermark = document.getElementById('btn-start-watermark');
 
+  // Elementos Adicionar Logotipo (.pdf)
+  const stageAddLogo = document.getElementById('stage-add-logo');
+  const logoDocName = document.getElementById('logo-doc-name');
+  const logoDocPages = document.getElementById('logo-doc-pages');
+  const logoDocSize = document.getElementById('logo-doc-size');
+  const btnLogoChangeDoc = document.getElementById('btn-logo-change-doc');
+  const logoImgUploadBox = document.getElementById('logo-img-upload-box');
+  const logoImgFileInput = document.getElementById('logo-img-file-input');
+  const logoImgUploadPrompt = document.getElementById('logo-img-upload-prompt');
+  const logoImgPreviewBox = document.getElementById('logo-img-preview-box');
+  const logoImgPreview = document.getElementById('logo-img-preview');
+  const logoImgName = document.getElementById('logo-img-name');
+  const logoImgMeta = document.getElementById('logo-img-meta');
+  const btnLogoRemoveImg = document.getElementById('btn-logo-remove-img');
+  const logoPositionGrid = document.getElementById('logo-position-grid');
+  const logoScale = document.getElementById('logo-scale');
+  const logoScaleVal = document.getElementById('logo-scale-val');
+  const logoMargin = document.getElementById('logo-margin');
+  const logoMarginVal = document.getElementById('logo-margin-val');
+  const logoOpacity = document.getElementById('logo-opacity');
+  const logoOpacityVal = document.getElementById('logo-opacity-val');
+  const logoLayer = document.getElementById('logo-layer');
+  const logoPagesSelect = document.getElementById('logo-pages-select');
+  const logoCustomPagesBox = document.getElementById('logo-custom-pages-box');
+  const logoCustomPagesInput = document.getElementById('logo-custom-pages-input');
+  const logoOutputFilename = document.getElementById('logo-output-filename');
+  const toggleLogoLinearize = document.getElementById('toggle-logo-linearize');
+  const logoSummaryLabel = document.getElementById('logo-summary-label');
+  const btnStartAddLogo = document.getElementById('btn-start-add-logo');
+
   // Elementos Personalizar Rodapé (.pdf)
   const stageFooter = document.getElementById('stage-footer');
   const footerDocName = document.getElementById('footer-doc-name');
@@ -683,6 +762,7 @@
     setupWordToPdfEvents();
     setupImageToPdfEvents();
     setupWatermarkEvents();
+    setupAddLogoEvents();
     setupFooterEvents();
     setupRemoveFooterEvents();
     setupCompareEvents();
@@ -1063,12 +1143,33 @@
     document.querySelectorAll('.tool-stage').forEach(el => el.classList.add('hidden'));
 
     // Verifica se a ferramenta já possui dados carregados
-    if (toolKey === 'merge') {
+    if (toolKey === 'merge' || toolKey === 'organize') {
       if (state.mergeFiles.length > 0) {
         dropzone.classList.add('hidden');
         stageMerge.classList.remove('hidden');
         renderMergeFileList();
         renderMergePagesGrid();
+        if (toolKey === 'organize') {
+          switchMergeViewMode('pages');
+          if (btnStartMerge) {
+            const span = btnStartMerge.querySelector('span');
+            if (span) span.textContent = 'Salvar PDF Organizado';
+          }
+          if (btnMergeFinishTop) {
+            const span = btnMergeFinishTop.querySelector('span');
+            if (span) span.textContent = 'Salvar PDF';
+          }
+        } else {
+          switchMergeViewMode('files');
+          if (btnStartMerge) {
+            const span = btnStartMerge.querySelector('span');
+            if (span) span.textContent = 'Unificar com Menu de Documentos';
+          }
+          if (btnMergeFinishTop) {
+            const span = btnMergeFinishTop.querySelector('span');
+            if (span) span.textContent = 'Terminar';
+          }
+        }
       } else {
         dropzone.classList.remove('hidden');
       }
@@ -1125,6 +1226,8 @@
       initWordToPdfWorkspace();
     } else if (toolKey === 'watermark') {
       initWatermarkWorkspace();
+    } else if (toolKey === 'add-logo') {
+      initAddLogoWorkspace();
     } else if (toolKey === 'footer') {
       initFooterWorkspace();
     } else if (toolKey === 'remove-footer') {
@@ -1202,8 +1305,27 @@
 
     if (validFiles.length === 0) return;
 
-    if (state.activeTool === 'merge') {
+    if (state.activeTool === 'merge' || state.activeTool === 'organize') {
       await addFilesToMerge(validFiles);
+      if (state.activeTool === 'organize') {
+        switchMergeViewMode('pages');
+        if (btnStartMerge) {
+          const span = btnStartMerge.querySelector('span');
+          if (span) span.textContent = 'Salvar PDF Organizado';
+        }
+        if (btnMergeFinishTop) {
+          const span = btnMergeFinishTop.querySelector('span');
+          if (span) span.textContent = 'Salvar PDF';
+        }
+        if (validFiles.length === 1) {
+          const baseStem = cleanFileNameToTitle(validFiles[0].name);
+          if (outputFilenameMerge) outputFilenameMerge.value = `${baseStem}_organizado`;
+          if (toggleVisualMenu) toggleVisualMenu.checked = false;
+        } else {
+          if (outputFilenameMerge) outputFilenameMerge.value = 'documentos_organizados';
+        }
+        showToast(`${validFiles.length} arquivo(s) carregado(s) com todas as páginas no organizador.`, 'success');
+      }
 
     } else if (state.activeTool === 'image-to-pdf') {
       // Adiciona à lista de imagens para PDF
@@ -1343,47 +1465,161 @@
   // =========================================================================
   // FERRAMENTA 1: JUNTAR & ORGANIZAR PÁGINAS DE PDF (MULTI-ARQUIVO)
   // =========================================================================
+  function switchMergeViewMode(mode) {
+    state.mergeViewMode = mode;
+    if (mode === 'pages') {
+      if (btnMergeViewPages) {
+        btnMergeViewPages.classList.add('active');
+        btnMergeViewPages.setAttribute('aria-selected', 'true');
+      }
+      if (btnMergeViewFiles) {
+        btnMergeViewFiles.classList.remove('active');
+        btnMergeViewFiles.setAttribute('aria-selected', 'false');
+      }
+      if (mergeViewPages) mergeViewPages.classList.remove('hidden');
+      if (mergePagesSubbar) mergePagesSubbar.classList.remove('hidden');
+      if (mergeViewFiles) mergeViewFiles.classList.add('hidden');
+      renderMergePagesGrid();
+    } else {
+      if (btnMergeViewFiles) {
+        btnMergeViewFiles.classList.add('active');
+        btnMergeViewFiles.setAttribute('aria-selected', 'true');
+      }
+      if (btnMergeViewPages) {
+        btnMergeViewPages.classList.remove('active');
+        btnMergeViewPages.setAttribute('aria-selected', 'false');
+      }
+      if (mergeViewFiles) mergeViewFiles.classList.remove('hidden');
+      if (mergeViewPages) mergeViewPages.classList.add('hidden');
+      if (mergePagesSubbar) mergePagesSubbar.classList.add('hidden');
+
+      // Sincroniza a ordem de arquivos com base na primeira aparição nas páginas organizadas
+      const fileAppearanceOrder = [];
+      const seenFileIds = new Set();
+      state.mergePages.forEach(p => {
+        if (!p.isBlank && p.fileItem && !seenFileIds.has(p.fileItem.id)) {
+          seenFileIds.add(p.fileItem.id);
+          fileAppearanceOrder.push(p.fileItem);
+        }
+      });
+      state.mergeFiles.forEach(f => {
+        if (!seenFileIds.has(f.id)) {
+          seenFileIds.add(f.id);
+          fileAppearanceOrder.push(f);
+        }
+      });
+      state.mergeFiles = fileAppearanceOrder;
+      renderMergeFileList();
+    }
+  }
+
   function setupMergeEvents() {
     // Alternância entre Modo Páginas e Modo Arquivos
     if (btnMergeViewPages) {
-      btnMergeViewPages.addEventListener('click', () => {
-        state.mergeViewMode = 'pages';
-        btnMergeViewPages.classList.add('active');
-        btnMergeViewPages.setAttribute('aria-selected', 'true');
-        btnMergeViewFiles.classList.remove('active');
-        btnMergeViewFiles.setAttribute('aria-selected', 'false');
-        mergeViewPages.classList.remove('hidden');
-        mergePagesSubbar.classList.remove('hidden');
-        mergeViewFiles.classList.add('hidden');
-      });
+      btnMergeViewPages.addEventListener('click', () => switchMergeViewMode('pages'));
     }
 
     if (btnMergeViewFiles) {
-      btnMergeViewFiles.addEventListener('click', () => {
-        state.mergeViewMode = 'files';
-        btnMergeViewFiles.classList.add('active');
-        btnMergeViewFiles.setAttribute('aria-selected', 'true');
-        btnMergeViewPages.classList.remove('active');
-        btnMergeViewPages.setAttribute('aria-selected', 'false');
-        mergeViewFiles.classList.remove('hidden');
-        mergeViewPages.classList.add('hidden');
-        mergePagesSubbar.classList.add('hidden');
-      });
+      btnMergeViewFiles.addEventListener('click', () => switchMergeViewMode('files'));
     }
 
     // Botões para adicionar mais arquivos
     if (btnMergeAddMore) btnMergeAddMore.addEventListener('click', () => fileInput.click());
     if (btnAddMore) btnAddMore.addEventListener('click', () => fileInput.click());
 
-    // Limpar tudo
+    // Botão Limpar no topo
+    if (btnMergeTopClear) {
+      btnMergeTopClear.addEventListener('click', () => {
+        if (confirm('Deseja realmente remover todos os arquivos selecionados e escolher outros?')) {
+          state.mergeFiles = [];
+          state.mergePages = [];
+          if (stageMerge) stageMerge.classList.add('hidden');
+          if (dropzone) dropzone.classList.remove('hidden');
+          if (fileInput) fileInput.value = '';
+          showToast('Todos os arquivos foram removidos.', 'info');
+        }
+      });
+    }
+
+    // Limpar tudo na lista de arquivos
     if (btnClearAll) {
       btnClearAll.addEventListener('click', () => {
         if (confirm('Deseja realmente remover todos os arquivos selecionados?')) {
           state.mergeFiles = [];
           state.mergePages = [];
-          renderMergeFileList();
-          renderMergePagesGrid();
+          if (stageMerge) stageMerge.classList.add('hidden');
+          if (dropzone) dropzone.classList.remove('hidden');
+          if (fileInput) fileInput.value = '';
+          showToast('Todos os arquivos foram removidos.', 'info');
         }
+      });
+    }
+
+    // Suporte para soltar mais arquivos diretamente sobre o workspace
+    if (stageMerge) {
+      ['dragenter', 'dragover'].forEach(name => {
+        stageMerge.addEventListener(name, (e) => {
+          if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+            e.preventDefault();
+            e.stopPropagation();
+            stageMerge.classList.add('dragover');
+          }
+        });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        stageMerge.addEventListener(name, (e) => {
+          if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+            stageMerge.classList.remove('dragover');
+          }
+        });
+      });
+      stageMerge.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleIncomingFiles(e.dataTransfer.files);
+        }
+      });
+    }
+
+    // Alternância de Modo de Exibição de Páginas (Todas as Páginas vs Por Arquivo)
+    if (btnMergeLayoutGrid) {
+      btnMergeLayoutGrid.addEventListener('click', () => {
+        state.mergePageLayout = 'grid';
+        btnMergeLayoutGrid.classList.add('active');
+        if (btnMergeLayoutBoxes) btnMergeLayoutBoxes.classList.remove('active');
+        renderMergePagesGrid();
+        showToast('Modo de visualização: Grade de Todas as Páginas com Drag & Drop ativo.', 'info');
+      });
+    }
+
+    if (btnMergeLayoutBoxes) {
+      btnMergeLayoutBoxes.addEventListener('click', () => {
+        state.mergePageLayout = 'boxes';
+        btnMergeLayoutBoxes.classList.add('active');
+        if (btnMergeLayoutGrid) btnMergeLayoutGrid.classList.remove('active');
+        renderMergePagesGrid();
+        showToast('Modo de visualização: Caixas Minimizáveis por Documento.', 'info');
+      });
+    }
+
+    // Controles de Minimizar / Expandir todas as caixas de arquivo
+    if (btnMergeCollapseAll) {
+      btnMergeCollapseAll.addEventListener('click', () => {
+        state.mergePageLayout = 'boxes';
+        if (btnMergeLayoutBoxes) btnMergeLayoutBoxes.classList.add('active');
+        if (btnMergeLayoutGrid) btnMergeLayoutGrid.classList.remove('active');
+        state.mergeFiles.forEach(f => { f.collapsed = true; });
+        renderMergePagesGrid();
+        showToast('Todas as caixas de arquivo foram minimizadas.', 'info');
+      });
+    }
+
+    if (btnMergeExpandAll) {
+      btnMergeExpandAll.addEventListener('click', () => {
+        state.mergeFiles.forEach(f => { f.collapsed = false; });
+        renderMergePagesGrid();
+        showToast('Todas as caixas de páginas foram expandidas.', 'info');
       });
     }
 
@@ -1577,6 +1813,7 @@
         pdfDoc: pdfDoc,
         colorIndex: colorIdx,
         isUploaded: false,
+        collapsed: pageCount > 15, // Arquivos grandes iniciam minimizados; arquivos com poucas páginas iniciam abertos
       };
 
       state.mergeFiles.push(fileItem);
@@ -1614,19 +1851,32 @@
   }
 
   /**
-   * Renderiza a grade de páginas com botões (+) intermediários.
+   * Renderiza a visualização de páginas no Juntar PDF:
+   * Suporta o modo 'grid' (Todas as páginas em grade contínua com botões (+) e drag-drop livre)
+   * e o modo 'boxes' (Caixas minimizáveis por arquivo para documentos muito grandes).
    */
   async function renderMergePagesGrid() {
     if (!mergePagesGrid) return;
     mergePagesGrid.innerHTML = '';
 
-    if (state.mergePages.length === 0) {
-      if (state.mergeFiles.length === 0) {
-        stageMerge.classList.add('hidden');
-        dropzone.classList.remove('hidden');
-      }
+    if (state.mergePages.length === 0 && state.mergeFiles.length === 0) {
+      if (stageMerge) stageMerge.classList.add('hidden');
+      if (dropzone) dropzone.classList.remove('hidden');
       return;
     }
+
+    if (state.mergePageLayout === 'boxes') {
+      renderMergeBoxesLayout();
+    } else {
+      renderMergeGridLayout();
+    }
+
+    updateMergeSelectionStatus();
+  }
+
+  function renderMergeGridLayout() {
+    mergePagesGrid.classList.remove('boxes-view');
+    mergePagesGrid.classList.add('grid-view');
 
     for (let i = 0; i < state.mergePages.length; i++) {
       const item = state.mergePages[i];
@@ -1654,12 +1904,12 @@
       mergePagesGrid.appendChild(card);
     }
 
-    // Botão (+) final após a última página
+    // Botão (+) final
     const finalAddBtn = document.createElement('button');
     finalAddBtn.type = 'button';
-    finalAddBtn.className = 'btn-interpage-add';
+    finalAddBtn.className = 'btn-interpage-add final-slot';
     finalAddBtn.dataset.slot = state.mergePages.length;
-    finalAddBtn.title = 'Adicionar página no final do documento';
+    finalAddBtn.title = 'Inserir no final';
     finalAddBtn.innerHTML = `
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -1671,8 +1921,255 @@
       openInterpagePopover(finalAddBtn, state.mergePages.length);
     });
     mergePagesGrid.appendChild(finalAddBtn);
+  }
 
-    updateMergeSelectionStatus();
+  function renderMergeBoxesLayout() {
+    mergePagesGrid.classList.remove('grid-view');
+    mergePagesGrid.classList.add('boxes-view');
+
+    const container = document.createElement('div');
+    container.className = 'merge-files-container';
+
+    state.mergeFiles.forEach((fileItem, fileIdx) => {
+      const filePages = state.mergePages.filter(p => !p.isBlank && p.fileId === fileItem.id);
+      const isCollapsed = fileItem.collapsed === true;
+
+      const box = document.createElement('div');
+      box.className = `merge-file-box ${isCollapsed ? 'collapsed' : 'expanded'}`;
+      box.dataset.fileId = fileItem.id;
+      box.dataset.index = fileIdx;
+
+      box.innerHTML = `
+        <div class="file-box-header" title="Arraste para mover este documento ou use as setas ▲/▼ ao lado">
+          <div class="file-box-left">
+            <div class="file-box-drag" title="Arraste para mover este arquivo">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+                <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+              </svg>
+            </div>
+            <span class="file-box-order-badge page-doc-badge color-${fileItem.colorIndex}">${fileIdx + 1}</span>
+            <div class="file-box-thumb">
+              <canvas class="file-box-cover-canvas" width="36" height="48"></canvas>
+            </div>
+            <div class="file-box-info">
+              <div class="file-box-name-row">
+                <span class="file-box-name" title="${escapeHtml(fileItem.name)}">${escapeHtml(fileItem.name)}</span>
+                <span class="file-box-page-count-badge">${filePages.length} pág${filePages.length > 1 ? 's' : ''}</span>
+                <span class="file-box-size-badge">${formatBytes(fileItem.size)}</span>
+              </div>
+              <div class="file-box-title-input-wrapper">
+                <span class="menu-label-tag">Menu:</span>
+                <input type="text" class="file-box-menu-input" value="${escapeHtml(fileItem.menuTitle)}" placeholder="Nome no sumário..." title="Como este documento aparecerá no sumário do PDF">
+              </div>
+            </div>
+          </div>
+
+          <div class="file-box-right">
+            <button type="button" class="btn-toggle-pages ${!isCollapsed ? 'active' : ''}" title="Alternar visualização das páginas deste documento">
+              <span class="toggle-text">${isCollapsed ? `Ver Páginas (${filePages.length})` : 'Ocultar Páginas'}</span>
+              <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <button type="button" class="btn-icon btn-file-move-up" title="Mover este documento para cima" ${fileIdx === 0 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+            <button type="button" class="btn-icon btn-file-move-down" title="Mover este documento para baixo" ${fileIdx === state.mergeFiles.length - 1 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <button type="button" class="btn-icon btn-icon-danger btn-file-remove" title="Remover este arquivo">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="file-box-pages ${isCollapsed ? 'hidden' : ''}">
+          <div class="file-box-pages-header">
+            <span>Páginas de <strong>${escapeHtml(fileItem.name)}</strong> (${filePages.length} páginas)</span>
+            <span style="font-size: 0.75rem; color: #94A3B8;">Clique para ampliar com a lupa ou use os checkboxes para ações em lote</span>
+          </div>
+          <div class="file-pages-subgrid"></div>
+        </div>
+      `;
+
+      // Renderiza a capa (página 1) no canvas do cabeçalho
+      const coverCanvas = box.querySelector('.file-box-cover-canvas');
+      drawGenericPageThumbnail(coverCanvas, 1);
+      if (fileItem.pdfDoc) {
+        queueThumbnailRender(coverCanvas, () => renderThumbnailForDoc(fileItem.pdfDoc, fileItem.name, 1, coverCanvas));
+      }
+
+      // Sincroniza o input do título do menu
+      const titleInput = box.querySelector('.file-box-menu-input');
+      titleInput.addEventListener('input', (e) => {
+        fileItem.menuTitle = e.target.value.trim() || cleanFileNameToTitle(fileItem.name);
+      });
+      titleInput.addEventListener('mousedown', (e) => e.stopPropagation());
+
+      // Botão de alternar visibilidade (Expandir / Minimizar)
+      const toggleBtn = box.querySelector('.btn-toggle-pages');
+      const pagesBox = box.querySelector('.file-box-pages');
+      const toggleText = box.querySelector('.toggle-text');
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileItem.collapsed = !fileItem.collapsed;
+        const nowCollapsed = fileItem.collapsed;
+        pagesBox.classList.toggle('hidden', nowCollapsed);
+        toggleBtn.classList.toggle('active', !nowCollapsed);
+        box.classList.toggle('collapsed', nowCollapsed);
+        box.classList.toggle('expanded', !nowCollapsed);
+        toggleText.textContent = nowCollapsed ? `Ver Páginas (${filePages.length})` : 'Ocultar Páginas';
+
+        if (!nowCollapsed) {
+          renderSubgridPages(box.querySelector('.file-pages-subgrid'), fileItem);
+        }
+      });
+
+      // Mover arquivo para cima
+      box.querySelector('.btn-file-move-up').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (fileIdx > 0) swapMergeFiles(fileIdx, fileIdx - 1);
+      });
+
+      // Mover arquivo para baixo
+      box.querySelector('.btn-file-move-down').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (fileIdx < state.mergeFiles.length - 1) swapMergeFiles(fileIdx, fileIdx + 1);
+      });
+
+      // Remover arquivo
+      box.querySelector('.btn-file-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const removed = state.mergeFiles.splice(fileIdx, 1)[0];
+        state.mergePages = state.mergePages.filter(p => p.fileId !== removed.id);
+        renderMergeFileList();
+        renderMergePagesGrid();
+        showToast(`Arquivo "${removed.name}" removido com sucesso.`, 'info');
+      });
+
+      // Se já estava expandido, renderiza as páginas
+      if (!isCollapsed) {
+        renderSubgridPages(box.querySelector('.file-pages-subgrid'), fileItem);
+      }
+
+      // Configura Arrastar e Soltar da Caixa de Arquivo
+      setupFileBoxDragDrop(box, fileIdx);
+
+      container.appendChild(box);
+    });
+
+    // Se houver páginas em branco avulsas, renderiza uma caixa especial para elas
+    const blankPages = state.mergePages.filter(p => p.isBlank);
+    if (blankPages.length > 0) {
+      const blankBox = document.createElement('div');
+      blankBox.className = 'merge-file-box expanded';
+      blankBox.innerHTML = `
+        <div class="file-box-header">
+          <div class="file-box-left">
+            <span class="file-box-order-badge page-doc-badge color-7">✦</span>
+            <div class="file-box-info">
+              <div class="file-box-name-row">
+                <span class="file-box-name">Páginas em Branco Inseridas</span>
+                <span class="file-box-page-count-badge">${blankPages.length} página(s)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="file-box-pages">
+          <div class="file-pages-subgrid"></div>
+        </div>
+      `;
+      const subgrid = blankBox.querySelector('.file-pages-subgrid');
+      blankPages.forEach(p => {
+        const globalIdx = state.mergePages.indexOf(p);
+        subgrid.appendChild(createMergePageCard(p, globalIdx));
+      });
+      container.appendChild(blankBox);
+    }
+
+    mergePagesGrid.appendChild(container);
+  }
+
+  function renderSubgridPages(subgridEl, fileItem) {
+    if (!subgridEl) return;
+    subgridEl.innerHTML = '';
+    const filePages = state.mergePages.filter(p => !p.isBlank && p.fileId === fileItem.id);
+    filePages.forEach(pageItem => {
+      const globalIdx = state.mergePages.indexOf(pageItem);
+      const card = createMergePageCard(pageItem, globalIdx);
+      subgridEl.appendChild(card);
+    });
+  }
+
+  let draggedFileBoxIndex = null;
+
+  function setupFileBoxDragDrop(boxElement, index) {
+    const header = boxElement.querySelector('.file-box-header');
+    if (!header) return;
+
+    header.draggable = true;
+
+    header.addEventListener('dragstart', (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('input'))) {
+        e.preventDefault();
+        return;
+      }
+      draggedFileBoxIndex = index;
+      boxElement.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+    });
+
+    header.addEventListener('dragend', () => {
+      boxElement.classList.remove('dragging');
+      draggedFileBoxIndex = null;
+      document.querySelectorAll('.merge-file-box').forEach(b => {
+        b.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+    });
+
+    boxElement.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (draggedFileBoxIndex === null || draggedFileBoxIndex === index) return;
+
+      const rect = boxElement.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      if (e.clientY < midY) {
+        boxElement.classList.add('drag-over-top');
+        boxElement.classList.remove('drag-over-bottom');
+      } else {
+        boxElement.classList.add('drag-over-bottom');
+        boxElement.classList.remove('drag-over-top');
+      }
+    });
+
+    boxElement.addEventListener('dragleave', (e) => {
+      if (!boxElement.contains(e.relatedTarget)) {
+        boxElement.classList.remove('drag-over-top', 'drag-over-bottom');
+      }
+    });
+
+    boxElement.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      boxElement.classList.remove('drag-over-top', 'drag-over-bottom');
+
+      if (draggedFileBoxIndex === null || draggedFileBoxIndex === index) return;
+
+      const rect = boxElement.getBoundingClientRect();
+      const isTop = e.clientY < (rect.top + rect.height / 2);
+      let targetIndex = isTop ? index : index + 1;
+      if (draggedFileBoxIndex < targetIndex) targetIndex--;
+
+      const movedFile = state.mergeFiles.splice(draggedFileBoxIndex, 1)[0];
+      state.mergeFiles.splice(targetIndex, 0, movedFile);
+
+      syncMergePagesToFileOrder();
+      renderMergeFileList();
+      renderMergePagesGrid();
+      showToast(`Arquivo "${movedFile.name}" movido para a posição #${targetIndex + 1}!`, 'info');
+    });
   }
 
   /**
@@ -1710,14 +2207,15 @@
       </span>
     `;
 
-    // Renderiza o canvas
+    // Renderiza o canvas com lazy loading de alta performance
     const canvas = card.querySelector(`#canvas-merge-${item.uid}`);
     applyPageRotationStyle(canvas, item.rotation);
 
     if (item.isBlank) {
       drawGenericPageThumbnail(canvas, index + 1, 'Página em Branco');
     } else if (item.fileItem && item.fileItem.pdfDoc) {
-      renderThumbnailForDoc(item.fileItem.pdfDoc, item.fileItem.name, item.origPage, canvas);
+      drawGenericPageThumbnail(canvas, item.origPage);
+      queueThumbnailRender(canvas, () => renderThumbnailForDoc(item.fileItem.pdfDoc, item.fileItem.name, item.origPage, canvas));
     } else {
       drawGenericPageThumbnail(canvas, item.origPage);
     }
@@ -1752,39 +2250,60 @@
    */
   function setupMergePageDragDrop(card, index) {
     card.addEventListener('dragstart', (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('input'))) {
+        e.preventDefault();
+        return;
+      }
       state.draggedMergePageIdx = index;
       card.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', index);
+      e.dataTransfer.setData('text/plain', String(index));
     });
 
     card.addEventListener('dragend', () => {
       card.classList.remove('dragging');
       state.draggedMergePageIdx = null;
-      document.querySelectorAll('.merge-page-card').forEach(c => c.classList.remove('drag-over'));
+      document.querySelectorAll('.merge-page-card').forEach(c => c.classList.remove('drag-over', 'drag-over-left', 'drag-over-right'));
     });
 
     card.addEventListener('dragover', (e) => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      card.classList.add('drag-over');
+      if (state.draggedMergePageIdx === null || state.draggedMergePageIdx === index) return;
+      const rect = card.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      if (e.clientX < midX) {
+        card.classList.add('drag-over-left');
+        card.classList.remove('drag-over-right');
+      } else {
+        card.classList.add('drag-over-right');
+        card.classList.remove('drag-over-left');
+      }
     });
 
-    card.addEventListener('dragleave', () => {
-      card.classList.remove('drag-over');
+    card.addEventListener('dragleave', (e) => {
+      if (!card.contains(e.relatedTarget)) {
+        card.classList.remove('drag-over-left', 'drag-over-right');
+      }
     });
 
     card.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      card.classList.remove('drag-over');
+      card.classList.remove('drag-over', 'drag-over-left', 'drag-over-right');
 
-      const targetIdx = index;
-      if (state.draggedMergePageIdx !== null && state.draggedMergePageIdx !== targetIdx) {
-        const moved = state.mergePages.splice(state.draggedMergePageIdx, 1)[0];
-        state.mergePages.splice(targetIdx, 0, moved);
+      if (state.draggedMergePageIdx === null) return;
+      const fromIdx = state.draggedMergePageIdx;
+      const rect = card.getBoundingClientRect();
+      const isLeft = e.clientX < (rect.left + rect.width / 2);
+      let toIdx = isLeft ? index : index + 1;
+      if (fromIdx < toIdx) toIdx--;
+
+      if (fromIdx !== toIdx && toIdx >= 0 && toIdx < state.mergePages.length) {
+        const moved = state.mergePages.splice(fromIdx, 1)[0];
+        state.mergePages.splice(toIdx, 0, moved);
         renderMergePagesGrid();
-        showToast(`Página movida para a posição #${targetIdx + 1}.`, 'info');
+        showToast(`Página movida para a posição #${toIdx + 1}.`, 'info');
       }
     });
   }
@@ -2046,6 +2565,11 @@
         const removedFile = state.mergeFiles.splice(index, 1)[0];
         // Remove também as páginas pertencentes a este arquivo
         state.mergePages = state.mergePages.filter(p => p.fileId !== removedFile.id);
+        if (state.mergeFiles.length === 0) {
+          if (stageMerge) stageMerge.classList.add('hidden');
+          if (dropzone) dropzone.classList.remove('hidden');
+          if (fileInput) fileInput.value = '';
+        }
         renderMergeFileList();
         renderMergePagesGrid();
       });
@@ -2056,11 +2580,37 @@
     totalSizeLabel.textContent = formatBytes(totalBytes);
   }
 
+  function syncMergePagesToFileOrder() {
+    if (!state.mergeFiles || state.mergeFiles.length === 0) return;
+    const pagesByFile = new Map();
+    state.mergeFiles.forEach(f => pagesByFile.set(f.id, []));
+    const blankPages = [];
+
+    state.mergePages.forEach(p => {
+      if (p.isBlank) {
+        blankPages.push(p);
+      } else if (pagesByFile.has(p.fileId)) {
+        pagesByFile.get(p.fileId).push(p);
+      }
+    });
+
+    const newPages = [];
+    state.mergeFiles.forEach(f => {
+      const pList = pagesByFile.get(f.id);
+      if (pList) newPages.push(...pList);
+    });
+    newPages.push(...blankPages);
+
+    state.mergePages = newPages;
+    renderMergePagesGrid();
+  }
+
   function swapMergeFiles(i, j) {
     const tmp = state.mergeFiles[i];
     state.mergeFiles[i] = state.mergeFiles[j];
     state.mergeFiles[j] = tmp;
     renderMergeFileList();
+    syncMergePagesToFileOrder();
   }
 
   let draggedMergeIndex = null;
@@ -2090,6 +2640,7 @@
         const moved = state.mergeFiles.splice(draggedMergeIndex, 1)[0];
         state.mergeFiles.splice(targetIndex, 0, moved);
         renderMergeFileList();
+        syncMergePagesToFileOrder();
       }
     });
   }
@@ -2127,9 +2678,25 @@
         is_blank: !!p.isBlank,
       }));
 
+      // Ordena a lista de arquivos para refletir a primeira aparição de cada arquivo nas páginas organizadas
+      const fileAppearanceOrder = [];
+      const seenFileIds = new Set();
+      state.mergePages.forEach(p => {
+        if (!p.isBlank && p.fileItem && !seenFileIds.has(p.fileItem.id)) {
+          seenFileIds.add(p.fileItem.id);
+          fileAppearanceOrder.push(p.fileItem);
+        }
+      });
+      state.mergeFiles.forEach(f => {
+        if (!seenFileIds.has(f.id)) {
+          seenFileIds.add(f.id);
+          fileAppearanceOrder.push(f);
+        }
+      });
+
       const payload = {
         session_id: state.sessionId,
-        file_order: state.mergeFiles.map(f => ({
+        file_order: fileAppearanceOrder.map(f => ({
           id: f.serverSavedName,
           menu_title: f.menuTitle || cleanFileNameToTitle(f.name)
         })),
@@ -2159,7 +2726,7 @@
       await delay(300);
 
       showResultUI({
-        title: 'PDF Unificado e Organizado com Sucesso!',
+        title: state.activeTool === 'organize' ? 'Páginas Organizadas com Sucesso!' : 'PDF Unificado e Organizado com Sucesso!',
         filename: data.output_filename,
         downloadUrl: data.download_url,
         previewUrl: data.preview_url,
@@ -2407,10 +2974,13 @@
       </div>
     `;
 
-    // Renderiza a miniatura no canvas
+    // Renderiza a miniatura no canvas com lazy loading
     const canvas = card.querySelector(`#canvas-org-${item.uid}`);
     applyPageRotationStyle(canvas, item.rotation);
-    renderThumbnailPage(item.origPage, canvas);
+    drawGenericPageThumbnail(canvas, item.origPage);
+    if (state.activeDoc && state.activeDoc.pdfDoc) {
+      queueThumbnailRender(canvas, () => renderThumbnailPage(item.origPage, canvas));
+    }
 
     // Evento de abertura da Lupa (no preview ou no botão específico)
     card.querySelector('.page-card-preview-wrapper').addEventListener('click', (e) => {
@@ -2475,38 +3045,61 @@
 
   function setupOrganizeCardDrag(card, index) {
     card.addEventListener('dragstart', (e) => {
+      if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.card-action-btn'))) {
+        e.preventDefault();
+        return;
+      }
       state.draggedOrganizeIdx = index;
       card.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', index);
+      e.dataTransfer.setData('text/plain', String(index));
     });
 
     card.addEventListener('dragend', () => {
       card.classList.remove('dragging');
       state.draggedOrganizeIdx = null;
-      document.querySelectorAll('.page-card').forEach(c => c.classList.remove('drag-over'));
+      document.querySelectorAll('.page-card').forEach(c => c.classList.remove('drag-over', 'drag-over-left', 'drag-over-right'));
     });
 
     card.addEventListener('dragover', (e) => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      card.classList.add('drag-over');
+      if (state.draggedOrganizeIdx === null || state.draggedOrganizeIdx === index) return;
+      const rect = card.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      if (e.clientX < midX) {
+        card.classList.add('drag-over-left');
+        card.classList.remove('drag-over-right');
+      } else {
+        card.classList.add('drag-over-right');
+        card.classList.remove('drag-over-left');
+      }
     });
 
-    card.addEventListener('dragleave', () => {
-      card.classList.remove('drag-over');
+    card.addEventListener('dragleave', (e) => {
+      if (!card.contains(e.relatedTarget)) {
+        card.classList.remove('drag-over-left', 'drag-over-right');
+      }
     });
 
     card.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      card.classList.remove('drag-over');
+      card.classList.remove('drag-over', 'drag-over-left', 'drag-over-right');
 
-      const targetIdx = index;
-      if (state.draggedOrganizeIdx !== null && state.draggedOrganizeIdx !== targetIdx) {
-        const moved = state.organizeItems.splice(state.draggedOrganizeIdx, 1)[0];
-        state.organizeItems.splice(targetIdx, 0, moved);
+      if (state.draggedOrganizeIdx === null) return;
+      const fromIdx = state.draggedOrganizeIdx;
+      const rect = card.getBoundingClientRect();
+      const isLeft = e.clientX < (rect.left + rect.width / 2);
+      let toIdx = isLeft ? index : index + 1;
+      if (fromIdx < toIdx) toIdx--;
+
+      if (fromIdx !== toIdx && toIdx >= 0 && toIdx < state.organizeItems.length) {
+        const moved = state.organizeItems.splice(fromIdx, 1)[0];
+        state.organizeItems.splice(toIdx, 0, moved);
+        updateOrganizeCounter();
         renderOrganizeGrid();
+        showToast(`Página movida para a posição #${toIdx + 1}.`, 'info');
       }
     });
   }
@@ -3223,6 +3816,9 @@
           }
         }
       }
+    } else if (zoomState.sourceContext === 'merge' && zoomState.activeItemRef) {
+      zoomState.activeItemRef.rotation = zoomState.rotation;
+      renderMergePagesGrid();
     } else if (zoomState.sourceContext === 'rotate') {
       state.rotateMap[zoomState.currentPage] = zoomState.rotation;
       updateRotateDisplay();
@@ -4654,6 +5250,257 @@
       console.error(e);
       showToast(e.message || 'Erro ao aplicar marca d\'água no PDF.', 'error');
       stopProcessingUI(stageWatermark);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA: ADICIONAR LOGOTIPO NO PDF
+  // =========================================================================
+  const LOGO_POS_NAMES = {
+    'top-left': 'Topo Esquerdo',
+    'top-center': 'Topo Centro',
+    'top-right': 'Topo Direito (Cabeçalho)',
+    'center-left': 'Meio Esquerdo',
+    'center': 'Centro da Página',
+    'center-right': 'Meio Direito',
+    'bottom-left': 'Rodapé Esquerdo',
+    'bottom-center': 'Rodapé Centro',
+    'bottom-right': 'Rodapé Direito',
+  };
+
+  function setupAddLogoEvents() {
+    if (btnLogoChangeDoc) btnLogoChangeDoc.addEventListener('click', resetCurrentDocument);
+
+    if (logoImgUploadBox && logoImgFileInput) {
+      if (logoImgUploadPrompt) {
+        logoImgUploadPrompt.addEventListener('click', () => logoImgFileInput.click());
+      }
+      logoImgFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleLogoImageFile(e.target.files[0]);
+          logoImgFileInput.value = '';
+        }
+      });
+
+      // Suporte a drag and drop de imagem na caixa
+      ['dragenter', 'dragover'].forEach(name => {
+        logoImgUploadBox.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          logoImgUploadBox.style.borderColor = 'var(--accent-primary)';
+        });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        logoImgUploadBox.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          logoImgUploadBox.style.borderColor = '';
+        });
+      });
+      logoImgUploadBox.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleLogoImageFile(files[0]);
+        }
+      });
+    }
+
+    if (btnLogoRemoveImg) {
+      btnLogoRemoveImg.addEventListener('click', () => {
+        state.logoImageDoc = null;
+        if (logoImgPreviewBox) logoImgPreviewBox.classList.add('hidden');
+        if (logoImgUploadPrompt) logoImgUploadPrompt.classList.remove('hidden');
+      });
+    }
+
+    // Grade de Posicionamento 3x3
+    document.querySelectorAll('#stage-add-logo .logo-pos-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#stage-add-logo .logo-pos-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.logoSelectedPos = btn.dataset.pos || 'top-right';
+        if (logoSummaryLabel) {
+          logoSummaryLabel.textContent = LOGO_POS_NAMES[state.logoSelectedPos] || state.logoSelectedPos;
+        }
+      });
+    });
+
+    // Slider de Escala
+    if (logoScale && logoScaleVal) {
+      logoScale.addEventListener('input', () => {
+        logoScaleVal.textContent = `${logoScale.value}% da folha`;
+      });
+    }
+
+    // Slider de Margens
+    if (logoMargin && logoMarginVal) {
+      logoMargin.addEventListener('input', () => {
+        const pt = parseInt(logoMargin.value, 10) || 0;
+        const cm = (pt * 0.0352).toFixed(1);
+        logoMarginVal.textContent = `${pt} pt (~${cm} cm)`;
+      });
+    }
+
+    // Slider de Opacidade
+    if (logoOpacity && logoOpacityVal) {
+      logoOpacity.addEventListener('input', () => {
+        const val = parseInt(logoOpacity.value, 10) || 100;
+        logoOpacityVal.textContent = `${val}%${val === 100 ? ' (Nítido)' : ''}`;
+      });
+    }
+
+    // Seletor de Páginas
+    if (logoPagesSelect && logoCustomPagesBox) {
+      logoPagesSelect.addEventListener('change', () => {
+        if (logoPagesSelect.value === 'custom') {
+          logoCustomPagesBox.classList.remove('hidden');
+        } else {
+          logoCustomPagesBox.classList.add('hidden');
+        }
+      });
+    }
+
+    if (btnStartAddLogo) {
+      btnStartAddLogo.addEventListener('click', onExecuteAddLogo);
+    }
+  }
+
+  async function handleLogoImageFile(file) {
+    if (!file) return;
+    const validExts = ['.png', '.jpg', '.jpeg', '.webp'];
+    const lower = file.name.toLowerCase();
+    if (!validExts.some(ext => lower.endsWith(ext))) {
+      showToast('Formato de imagem não suportado. Por favor, envie PNG, JPG ou WebP.', 'warning');
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    state.logoImageDoc = {
+      name: file.name,
+      size: file.size,
+      fileObj: file,
+      serverSavedName: null,
+      previewUrl: previewUrl,
+    };
+
+    if (logoImgPreview) logoImgPreview.src = previewUrl;
+    if (logoImgName) logoImgName.textContent = file.name;
+    if (logoImgMeta) logoImgMeta.textContent = formatBytes(file.size);
+    if (logoImgUploadPrompt) logoImgUploadPrompt.classList.add('hidden');
+    if (logoImgPreviewBox) logoImgPreviewBox.classList.remove('hidden');
+
+    // Upload em background do logotipo
+    try {
+      const formData = new FormData();
+      formData.append('session_id', state.sessionId);
+      formData.append('files', file, file.name);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+          state.logoImageDoc.serverSavedName = data.files[0].saved_filename;
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao subir logotipo em segundo plano:', e);
+    }
+  }
+
+  function initAddLogoWorkspace() {
+    if (!state.activeDoc) return;
+    if (logoDocName) logoDocName.textContent = state.activeDoc.name;
+    if (logoDocPages) logoDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (logoDocSize) logoDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (logoOutputFilename) logoOutputFilename.value = `${base}_com_logo`;
+  }
+
+  async function onExecuteAddLogo() {
+    if (!state.activeDoc) return;
+    await ensureDocUploaded(state.activeDoc);
+
+    if (!state.logoImageDoc) {
+      showToast('Por favor, carregue a imagem do logotipo que deseja inserir.', 'error');
+      return;
+    }
+
+    if (!state.logoImageDoc.serverSavedName) {
+      await ensureDocUploaded(state.logoImageDoc);
+    }
+
+    startProcessingUI('Inserindo Logotipo...', 'Renderizando o logotipo na posição selecionada com PyMuPDF e PikePDF...');
+
+    try {
+      updateProcessingStep(1, 'Lendo geometria das páginas e dimensões do logotipo...', 25);
+      await delay(200);
+
+      updateProcessingStep(2, 'Calculando escala proporcional e posicionamento na folha...', 60);
+
+      let cleanName = (logoOutputFilename ? logoOutputFilename.value.trim() : '') || 'documento_com_logo';
+      if (!cleanName.toLowerCase().endsWith('.pdf')) cleanName += '.pdf';
+
+      let pagesVal = logoPagesSelect ? logoPagesSelect.value : 'all';
+      if (pagesVal === 'custom' && logoCustomPagesInput) {
+        pagesVal = logoCustomPagesInput.value.trim() || 'all';
+      }
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        logo_image_id: state.logoImageDoc.serverSavedName,
+        position: state.logoSelectedPos || 'top-right',
+        scale: logoScale ? (parseInt(logoScale.value, 10) || 20) / 100 : 0.20,
+        margin_x: logoMargin ? (parseFloat(logoMargin.value) || 36) : 36,
+        margin_y: logoMargin ? (parseFloat(logoMargin.value) || 36) : 36,
+        opacity: logoOpacity ? (parseInt(logoOpacity.value, 10) || 100) / 100 : 1.0,
+        layer: logoLayer ? logoLayer.value : 'overlay',
+        pages: pagesVal,
+        output_filename: cleanName,
+        linearize: toggleLogoLinearize ? toggleLogoLinearize.checked : true,
+      };
+
+      updateProcessingStep(3, 'Estampando imagem vetorial e gerando Fast Web View...', 85);
+
+      const res = await fetch('/api/add-logo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao adicionar logotipo no PDF.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Logotipo inserido com sucesso!');
+      await delay(300);
+
+      showResultUI({
+        title: 'Logotipo Inserido com Sucesso!',
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: false,
+        isDocx: false,
+        label1: 'Páginas Processadas',
+        val1: `${data.metrics.pages_applied} de ${data.metrics.total_pages} págs`,
+        label2: 'Posição do Logo',
+        val2: `${LOGO_POS_NAMES[data.metrics.position] || data.metrics.position} (${Math.round(data.metrics.scale * 100)}% folha)`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro ao adicionar logotipo no PDF.', 'error');
+      stopProcessingUI(stageAddLogo);
     }
   }
 
