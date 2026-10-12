@@ -1,0 +1,27 @@
+# ==============================================================================
+# ARQUIVO SYSTEMD PARA KLYNNER PRO (klynner.service)
+# Salve em: /etc/systemd/system/klynner.service
+# Comandos:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable klynner
+#   sudo systemctl restart klynner
+#   sudo systemctl status klynner
+# ==============================================================================
+
+[Unit]
+Description=Klynner PDF Pro - FastAPI Application
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/klynnerpro
+Environment="PATH=/var/www/klynnerpro/.venv/bin:/usr/local/bin:/usr/bin"
+Environment="PORT=8000"
+Environment="HOST=127.0.0.1"
+ExecStart=/var/www/klynnerpro/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2 --timeout-keep-alive 120
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

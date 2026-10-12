@@ -106,21 +106,44 @@ Klynner PDF PRO disponibiliza uma plataforma unificada de alta performance divid
 
 ## 🌐 Hospedagem (Hostinger / VPS / Render)
 
-### Hospedagem na Hostinger (VPS ou Docker)
-1. **Opção 1 - Docker / Docker Compose (Recomendado na Hostinger VPS):**
+### Hospedagem na Hostinger VPS (com Nginx e Múltiplas Aplicações)
+
+Como a VPS já possui o Nginx escutando na porta `80`/`443` gerenciando seus domínios, a aplicação Klynner PRO roda na porta local `127.0.0.1:8000`:
+
+1. **Opção 1 - Docker Compose (Recomendado):**
    ```bash
    git clone https://github.com/lleandrovalois/klynnerpro.git
    cd klynnerpro
    docker compose up -d --build
    ```
+   *(O `docker-compose.yml` expõe `127.0.0.1:8000:8000`, evitando conflitos com o Nginx na porta 80).*
+
 2. **Opção 2 - Python Direto (Systemd / Uvicorn na VPS):**
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
-   uvicorn app.main:app --host 0.0.0.0 --port 8000
+   uvicorn app.main:app --host 127.0.0.1 --port 8000
    ```
-3. Configure o Nginx ou Apache com proxy reverso apontando para a porta `8000`.
+   *(Ou configure o serviço systemd usando o modelo [klynner.service.example](klynner.service.example)).*
+
+3. **Configuração do Nginx (`/etc/nginx/sites-available/klynner.com.br`):**
+   Utilize o modelo pronto [nginx.conf.example](nginx.conf.example). Não se esqueça de adicionar `client_max_body_size 500M;` para permitir uploads de PDFs grandes:
+   ```nginx
+   server {
+       server_name klynner.com.br www.klynner.com.br;
+       client_max_body_size 500M;
+
+       location / {
+           proxy_pass http://127.0.0.1:8000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+   Aplique com: `sudo nginx -t && sudo systemctl reload nginx`.
 
 ---
 

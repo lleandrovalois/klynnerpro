@@ -16,9 +16,17 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
         pass
 
 ROOT_DIR = Path(__file__).resolve().parent
-VENV_SITE = ROOT_DIR / ".venv" / "Lib" / "site-packages"
-if VENV_SITE.exists() and str(VENV_SITE) not in sys.path:
-    sys.path.insert(0, str(VENV_SITE))
+# Suporte a venv no Windows (.venv/Lib/site-packages) e Linux (.venv/lib/pythonX.Y/site-packages)
+VENV_WINDOWS = ROOT_DIR / ".venv" / "Lib" / "site-packages"
+if VENV_WINDOWS.exists() and str(VENV_WINDOWS) not in sys.path:
+    sys.path.insert(0, str(VENV_WINDOWS))
+
+VENV_LINUX_PARENT = ROOT_DIR / ".venv" / "lib"
+if VENV_LINUX_PARENT.exists():
+    for p in VENV_LINUX_PARENT.glob("python*/site-packages"):
+        if str(p) not in sys.path:
+            sys.path.insert(0, str(p))
+
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
