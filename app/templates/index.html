@@ -3612,6 +3612,62 @@
       </div>
     </div>
 
+    <!-- Modal de Resposta Oficial ao Comentário (Moderação) -->
+    <div class="modal-overlay hidden" id="feedback-reply-modal" role="dialog" aria-modal="true" aria-labelledby="reply-modal-title">
+      <div class="modal-container modal-container-sm">
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <h3 class="modal-title" id="reply-modal-title">Responder Comentário</h3>
+            <span class="modal-badge badge-primary">Moderação</span>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-reply-modal" aria-label="Fechar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="reply-target-preview">
+            <div class="reply-target-author" id="reply-target-author">Comentário de ...</div>
+            <p class="reply-target-text" id="reply-target-text">"..."</p>
+          </div>
+
+          <form id="feedback-reply-form">
+            <input type="hidden" id="reply-feedback-id" value="">
+
+            <div class="feedback-field-group">
+              <label for="reply-author-input" class="feedback-field-label">Assinatura / Nome da Resposta:</label>
+              <input type="text" id="reply-author-input" class="feedback-input" value="Equipe Klynner" maxlength="50" required>
+            </div>
+
+            <div class="feedback-field-group" style="margin-top: 1rem;">
+              <div class="textarea-header-labels">
+                <label for="reply-text-input" class="feedback-field-label">Sua Resposta Oficial:</label>
+                <span class="char-counter"><span id="reply-char-count">0</span>/2000</span>
+              </div>
+              <textarea id="reply-text-input" class="feedback-textarea" rows="4" placeholder="Escreva a resposta pública da equipe para este comentário..." maxlength="2000" required></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-top: 1.25rem;">
+              <button type="button" class="btn btn-danger btn-sm hidden" id="btn-delete-reply" title="Remover apenas esta resposta oficial">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>Excluir Resposta</span>
+              </button>
+
+              <div style="display: flex; gap: 0.75rem; margin-left: auto;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-cancel-reply-modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="btn-submit-reply">
+                  <span id="btn-submit-reply-text">Publicar Resposta</span>
+                  <span class="spinner-sm hidden" id="spinner-reply"></span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
     <footer class="app-footer">
@@ -3619,6 +3675,6 @@
     </footer>
   </div>
 
-  <script src="/static/js/app.js?v=2.9.1"></script>
+  <script src="/static/js/app.js?v=2.9.2"></script>
 </body>
 </html>

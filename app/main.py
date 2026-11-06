@@ -20,11 +20,14 @@ from pydantic import BaseModel, Field
 from app.analytics import get_current_stats, init_analytics_db, record_page_visit
 from app.feedback import (
     delete_feedback,
+    delete_feedback_reply,
+    get_feedback_by_id,
     get_feedback_count,
     get_recent_feedbacks,
     init_feedback_db,
     is_valid_admin_key,
     save_feedback,
+    save_feedback_reply,
 )
 from app.merger import execute_pdf_merge
 from app.splitter import execute_pdf_split
@@ -1524,6 +1527,48 @@ async def delete_feedback_endpoint(feedback_id: int, request: Request):
             detail="Comentário não encontrado ou já excluído."
         )
     return JSONResponse({"success": True, "message": f"Comentário #{feedback_id} excluído com sucesso."})
+
+
+class FeedbackReplyRequest(BaseModel):
+    reply: str = Field(..., min_length=1, max_length=2000, description="Texto da resposta oficial")
+    replied_by: Optional[str] = Field("Equipe Klynner", max_length=50, description="Nome ou assinatura da moderação")
+
+
+@app.post("/api/feedback/{feedback_id}/reply")
+async def reply_feedback_endpoint(feedback_id: int, body: FeedbackReplyRequest, request: Request):
+    key = request.headers.get("x-admin-key") or request.query_params.get("admin_key")
+    if not is_valid_admin_key(key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Acesso não autorizado. Chave de moderação inválida."
+        )
+
+    updated = await asyncio.to_thread(save_feedback_reply, feedback_id, body.reply, body.replied_by)
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comentário não encontrado para resposta."
+        )
+    return JSONResponse({"success": True, "message": "Resposta publicada com sucesso."})
+
+
+@app.delete("/api/feedback/{feedback_id}/reply")
+async def delete_feedback_reply_endpoint(feedback_id: int, request: Request):
+    key = request.headers.get("x-admin-key") or request.query_params.get("admin_key")
+    if not is_valid_admin_key(key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Acesso não autorizado. Chave de moderação inválida."
+        )
+
+    cleared = await asyncio.to_thread(delete_feedback_reply, feedback_id)
+    if not cleared:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comentário não encontrado ou resposta já removida."
+        )
+    return JSONResponse({"success": True, "message": "Resposta removida com sucesso."})
+
 
 
 
