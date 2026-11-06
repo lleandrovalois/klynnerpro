@@ -39,6 +39,7 @@ from app.redactor import execute_pdf_redact
 from app.pdf_to_word import execute_pdf_to_word
 from app.word_to_pdf import execute_word_to_pdf
 from app.image_to_pdf import execute_image_to_pdf
+from app.pdf_to_image import execute_pdf_to_image
 from app.watermark import execute_pdf_watermark
 from app.logo_adder import execute_add_logo
 from app.footer_customizer import execute_pdf_footer
@@ -259,6 +260,19 @@ class ImageToPdfRequest(BaseModel):
     margin: str = Field(default="none", description="'none', 'small', ou 'big'")
     output_filename: Optional[str] = Field(default="imagens_convertidas.pdf")
     linearize: bool = Field(default=True)
+
+
+class PdfToImageRequest(BaseModel):
+    session_id: str
+    file_id: Optional[str] = None
+    pdf_filename: Optional[str] = None
+    mode: str = Field(default="individual", description="'individual' (ZIP se > 1 pág) ou 'unified' (imagem contínua)")
+    image_format: str = Field(default="png", description="'png' ou 'jpeg'")
+    dpi: int = Field(default=150, description="Densidade de pixels: 72, 150 ou 300")
+    page_range: Optional[str] = Field(default="all", description="'all' ou intervalo '1-5, 8'")
+    start_page: Optional[int] = Field(default=None)
+    end_page: Optional[int] = Field(default=None)
+    output_filename: Optional[str] = Field(default=None)
 
 
 class WatermarkRequest(BaseModel):
@@ -1020,6 +1034,82 @@ async def convert_image_to_pdf(request: ImageToPdfRequest):
         )
 
 
+@app.post("/api/convert/pdf-to-image")
+async def convert_pdf_to_image(request: PdfToImageRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o PDF novamente."
+        )
+
+    pdf_filename = request.pdf_filename or request.file_id
+    pdf_path = None
+    if pdf_filename:
+        safe_name = Path(pdf_filename).name
+        target = session_dir / safe_name
+        if target.exists() and target.is_file():
+            pdf_path = target
+        elif (session_dir / "output" / safe_name).exists():
+            pdf_path = session_dir / "output" / safe_name
+
+    if not pdf_path:
+        pdfs = list(session_dir.glob("*.pdf"))
+        if pdfs:
+            pdf_path = pdfs[0]
+
+    if not pdf_path or not pdf_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Arquivo PDF de origem não encontrado nesta sessão."
+        )
+
+    output_dir = session_dir / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    page_range = request.page_range or "all"
+    if request.start_page is not None and request.end_page is not None:
+        page_range = f"{request.start_page}-{request.end_page}"
+    elif request.start_page is not None:
+        page_range = f"{request.start_page}-"
+
+    try:
+        result = await asyncio.to_thread(
+            execute_pdf_to_image,
+            pdf_path=pdf_path,
+            output_dir=output_dir,
+            mode=request.mode,
+            image_format=request.image_format,
+            dpi=request.dpi,
+            page_range=page_range,
+            output_filename=request.output_filename,
+        )
+
+        out_name = result["output_filename"]
+        is_zip = result.get("is_zip", False)
+
+        return JSONResponse({
+            "success": True,
+            "session_id": request.session_id,
+            "output_filename": out_name,
+            "download_url": f"/api/download/{request.session_id}?filename={urllib.parse.quote(out_name)}",
+            "preview_url": f"/api/preview/{request.session_id}?filename={urllib.parse.quote(out_name)}" if not is_zip else None,
+            "metrics": result,
+        })
+    except ValueError as ve:
+        logger.warning(f"Validação ao converter PDF para Imagem: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve)
+        )
+    except Exception as e:
+        logger.error(f"Erro ao converter PDF para Imagem: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao converter PDF para Imagem: {str(e)}"
+        )
+
+
 @app.post("/api/watermark")
 async def add_pdf_watermark(request: WatermarkRequest):
     session_dir = get_session_dir(request.session_id)
@@ -1326,7 +1416,15 @@ async def download_merged_pdf(session_id: str, filename: Optional[str] = "docume
     if not output_path.exists():
         out_dir = session_dir / "output"
         if out_dir.exists():
-            files = list(out_dir.glob("*.pdf")) + list(out_dir.glob("*.zip")) + list(out_dir.glob("*.docx")) + list(out_dir.glob("*.html"))
+            files = (
+                list(out_dir.glob("*.pdf")) +
+                list(out_dir.glob("*.zip")) +
+                list(out_dir.glob("*.docx")) +
+                list(out_dir.glob("*.html")) +
+                list(out_dir.glob("*.png")) +
+                list(out_dir.glob("*.jpg")) +
+                list(out_dir.glob("*.jpeg"))
+            )
             if files:
                 files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
                 output_path = files[0]
@@ -1338,15 +1436,23 @@ async def download_merged_pdf(session_id: str, filename: Optional[str] = "docume
             detail="Arquivo resultante não encontrado para esta sessão."
         )
 
-    is_zip = clean_name.lower().endswith(".zip")
-    is_docx = clean_name.lower().endswith(".docx")
-    is_html = clean_name.lower().endswith(".html")
+    lower_name = clean_name.lower()
+    is_zip = lower_name.endswith(".zip")
+    is_docx = lower_name.endswith(".docx")
+    is_html = lower_name.endswith(".html")
+    is_png = lower_name.endswith(".png")
+    is_jpg = lower_name.endswith(".jpg") or lower_name.endswith(".jpeg")
+
     if is_docx:
         media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     elif is_zip:
         media_type = "application/zip"
     elif is_html:
         media_type = "text/html; charset=utf-8"
+    elif is_png:
+        media_type = "image/png"
+    elif is_jpg:
+        media_type = "image/jpeg"
     else:
         media_type = "application/pdf"
 
@@ -1380,17 +1486,25 @@ async def preview_merged_pdf(session_id: str, filename: Optional[str] = "documen
     if not output_path.exists():
         out_dir = session_dir / "output"
         if out_dir.exists():
-            pdfs = list(out_dir.glob("*.pdf"))
-            if pdfs:
-                pdfs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-                output_path = pdfs[0]
+            candidates = list(out_dir.glob("*.pdf")) + list(out_dir.glob("*.png")) + list(out_dir.glob("*.jpg")) + list(out_dir.glob("*.jpeg"))
+            if candidates:
+                candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+                output_path = candidates[0]
                 clean_name = output_path.name
+                lower_name = clean_name.lower()
 
     if not output_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Arquivo PDF não encontrado para pré-visualização."
+            detail="Arquivo não encontrado para pré-visualização."
         )
+
+    if lower_name.endswith(".png"):
+        media_type = "image/png"
+    elif lower_name.endswith(".jpg") or lower_name.endswith(".jpeg"):
+        media_type = "image/jpeg"
+    else:
+        media_type = "application/pdf"
 
     encoded_filename = urllib.parse.quote(clean_name)
     headers = {
@@ -1400,7 +1514,7 @@ async def preview_merged_pdf(session_id: str, filename: Optional[str] = "documen
 
     return FileResponse(
         path=str(output_path),
-        media_type="application/pdf",
+        media_type=media_type,
         headers=headers,
     )
 

@@ -128,6 +128,16 @@
       enginePill: 'Conversor Img2PDF Ativo',
       stageId: 'stage-image-to-pdf',
     },
+    'pdf-to-image': {
+      heroTitle: 'Converta Documentos PDF em Imagens (PNG/JPG)',
+      heroSub: 'Exporte páginas como imagens avulsas em arquivo .ZIP ou fundidas em uma única imagem longa contínua (infográfico). Densidade configurável até 300 DPI.',
+      dropHeading: 'Arraste o arquivo PDF para converter em imagens',
+      dropSub: 'ou clique para selecionar do computador',
+      dropBadges: ['Páginas individuais (.ZIP)', 'Imagem contínua unificada', 'Resolução de 150 e 300 DPI'],
+      multiple: false,
+      enginePill: 'Conversor PyMuPDF Ativo',
+      stageId: 'stage-pdf-to-image',
+    },
     'add-logo': {
       heroTitle: 'Adicione Logotipo em Arquivos PDF',
       heroSub: 'Insira o logotipo da sua empresa, carimbo institucional ou selo em cabeçalhos, rodapés ou cantos de PDFs com ajuste milimétrico de posição, margens e transparência.',
@@ -300,6 +310,7 @@
     'pdf-to-word': 'convert',
     'word-to-pdf': 'convert',
     'image-to-pdf': 'convert',
+    'pdf-to-image': 'convert',
   };
 
   const TOOL_SHORT_NAMES = {
@@ -315,6 +326,7 @@
     'pdf-to-word': 'PDF para Word',
     'word-to-pdf': 'Word para PDF',
     'image-to-pdf': 'Imagem para PDF',
+    'pdf-to-image': 'PDF para Imagem',
     watermark: 'Marca d\'água',
     'add-logo': 'Adicionar Logo',
     footer: 'Rodapé & Numeração',
@@ -591,6 +603,31 @@
   const i2pTotalSizeLabel = document.getElementById('i2p-total-size-label');
   const btnStartI2p = document.getElementById('btn-start-i2p');
 
+  // Elementos PDF para Imagem (PNG/JPEG)
+  const stagePdfToImage = document.getElementById('stage-pdf-to-image');
+  const p2iDocName = document.getElementById('p2i-doc-name');
+  const p2iDocPages = document.getElementById('p2i-doc-pages');
+  const p2iDocSize = document.getElementById('p2i-doc-size');
+  const btnP2iChangeDoc = document.getElementById('btn-p2i-change-doc');
+  const p2iModeIndividual = document.getElementById('p2i-mode-individual');
+  const p2iModeUnified = document.getElementById('p2i-mode-unified');
+  const cardP2iModeIndividual = document.getElementById('card-p2i-mode-individual');
+  const cardP2iModeUnified = document.getElementById('card-p2i-mode-unified');
+  const p2iCanvasWarning = document.getElementById('p2i-canvas-warning');
+  const p2iWarningText = document.getElementById('p2i-warning-text');
+  const p2iFmtPng = document.getElementById('p2i-fmt-png');
+  const p2iFmtJpeg = document.getElementById('p2i-fmt-jpeg');
+  const p2iDpiSelect = document.getElementById('p2i-dpi-select');
+  const p2iRangeAll = document.getElementById('p2i-range-all');
+  const p2iRangeCustom = document.getElementById('p2i-range-custom');
+  const p2iRangeInputsBox = document.getElementById('p2i-range-inputs-box');
+  const p2iStartPage = document.getElementById('p2i-start-page');
+  const p2iEndPage = document.getElementById('p2i-end-page');
+  const p2iOutputFilename = document.getElementById('p2i-output-filename');
+  const p2iSuffixLabel = document.getElementById('p2i-suffix-label');
+  const p2iSummaryLabel = document.getElementById('p2i-summary-label');
+  const btnStartP2i = document.getElementById('btn-start-p2i');
+
   // Elementos Marca d'água (.pdf)
   const stageWatermark = document.getElementById('stage-watermark');
   const wmDocName = document.getElementById('wm-doc-name');
@@ -779,6 +816,7 @@
     setupPdfToWordEvents();
     setupWordToPdfEvents();
     setupImageToPdfEvents();
+    setupPdfToImageEvents();
     setupWatermarkEvents();
     setupAddLogoEvents();
     setupFooterEvents();
@@ -1242,6 +1280,8 @@
       initPdfToWordWorkspace();
     } else if (toolKey === 'word-to-pdf') {
       initWordToPdfWorkspace();
+    } else if (toolKey === 'pdf-to-image') {
+      initPdfToImageWorkspace();
     } else if (toolKey === 'watermark') {
       initWatermarkWorkspace();
     } else if (toolKey === 'add-logo') {
@@ -4475,6 +4515,8 @@
       btnDownloadText.textContent = 'Baixar Arquivos (.ZIP)';
     } else if (opts.isDocx) {
       btnDownloadText.textContent = 'Baixar Documento Word (.DOCX)';
+    } else if (opts.isImage) {
+      btnDownloadText.textContent = `Baixar Imagem (${(opts.imageFormat || 'PNG').toUpperCase()})`;
     } else {
       btnDownloadText.textContent = 'Baixar Documento (.PDF)';
     }
@@ -5408,6 +5450,245 @@
       console.error(e);
       showToast(e.message || 'Erro durante a conversão das imagens.', 'error');
       stopProcessingUI(stageImageToPdf);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA 11B: CONVERTER PDF EM IMAGENS (ZIP OU IMAGEM CONTÍNUA)
+  // =========================================================================
+  function setupPdfToImageEvents() {
+    if (btnP2iChangeDoc) btnP2iChangeDoc.addEventListener('click', resetCurrentDocument);
+
+    // Seleção de modo (Individual vs Unificada)
+    document.querySelectorAll('input[name="p2i-export-mode"]').forEach(radio => {
+      radio.addEventListener('change', updatePdfToImageUI);
+    });
+
+    // Formato da imagem (PNG vs JPEG)
+    document.querySelectorAll('input[name="p2i-format"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        // Atualiza estilo visual das pílulas de formato
+        document.querySelectorAll('input[name="p2i-format"]').forEach(r => {
+          const pill = r.closest('.btn-format-pill');
+          if (pill) {
+            if (r.checked) pill.classList.add('active');
+            else pill.classList.remove('active');
+          }
+        });
+        updatePdfToImageUI();
+      });
+    });
+
+    // Resolução DPI
+    if (p2iDpiSelect) {
+      p2iDpiSelect.addEventListener('change', updatePdfToImageUI);
+    }
+
+    // Intervalo de páginas
+    document.querySelectorAll('input[name="p2i-range-mode"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const isRange = p2iRangeCustom && p2iRangeCustom.checked;
+        if (p2iRangeInputsBox) {
+          if (isRange) p2iRangeInputsBox.classList.remove('hidden');
+          else p2iRangeInputsBox.classList.add('hidden');
+        }
+        updatePdfToImageUI();
+      });
+    });
+
+    if (p2iStartPage) p2iStartPage.addEventListener('input', updatePdfToImageUI);
+    if (p2iEndPage) p2iEndPage.addEventListener('input', updatePdfToImageUI);
+
+    if (btnStartP2i) btnStartP2i.addEventListener('click', onExecutePdfToImage);
+  }
+
+  function initPdfToImageWorkspace() {
+    if (!state.activeDoc) return;
+
+    if (p2iDocName) p2iDocName.textContent = state.activeDoc.name;
+    const totalP = state.activeDoc.pageCount || 1;
+    if (p2iDocPages) p2iDocPages.textContent = `${totalP} pág${totalP > 1 ? 's' : ''}`;
+    if (p2iDocSize) p2iDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    if (p2iStartPage) {
+      p2iStartPage.min = 1;
+      p2iStartPage.max = totalP;
+      p2iStartPage.value = 1;
+    }
+    if (p2iEndPage) {
+      p2iEndPage.min = 1;
+      p2iEndPage.max = totalP;
+      p2iEndPage.value = totalP;
+    }
+
+    if (p2iModeIndividual) p2iModeIndividual.checked = true;
+    if (p2iRangeAll) p2iRangeAll.checked = true;
+    if (p2iRangeInputsBox) p2iRangeInputsBox.classList.add('hidden');
+
+    // Sincroniza classes das pílulas de formato
+    document.querySelectorAll('input[name="p2i-format"]').forEach(r => {
+      const pill = r.closest('.btn-format-pill');
+      if (pill) {
+        if (r.checked) pill.classList.add('active');
+        else pill.classList.remove('active');
+      }
+    });
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (p2iOutputFilename) p2iOutputFilename.value = `${base}_imagens`;
+
+    updatePdfToImageUI();
+  }
+
+  function updatePdfToImageUI() {
+    if (!state.activeDoc) return;
+
+    const exportMode = document.querySelector('input[name="p2i-export-mode"]:checked')?.value || 'individual';
+    const imageFormat = document.querySelector('input[name="p2i-format"]:checked')?.value || 'png';
+    const dpi = parseInt(p2iDpiSelect ? p2iDpiSelect.value : '150', 10) || 150;
+    const isRange = p2iRangeCustom && p2iRangeCustom.checked;
+    const totalP = state.activeDoc.pageCount || 1;
+
+    let selectedPages = totalP;
+    if (isRange && p2iStartPage && p2iEndPage) {
+      let s = parseInt(p2iStartPage.value, 10) || 1;
+      let e = parseInt(p2iEndPage.value, 10) || totalP;
+      if (s < 1) s = 1;
+      if (e > totalP) e = totalP;
+      if (s > e) [s, e] = [e, s];
+      selectedPages = Math.max(1, e - s + 1);
+    }
+
+    const fmtExt = imageFormat === 'jpeg' ? '.jpg' : '.png';
+
+    // RN-01: Se modo individual com 1 página selecionada, baixa direto a imagem sem zip!
+    // Se modo individual com > 1 página, baixa em .zip
+    // Se modo unificado, baixa direto a imagem contínua
+    if (exportMode === 'individual') {
+      if (selectedPages === 1) {
+        if (p2iSuffixLabel) p2iSuffixLabel.textContent = fmtExt;
+        if (p2iSummaryLabel) p2iSummaryLabel.textContent = `Página Única Direta (${fmtExt.toUpperCase().replace('.', '')}) • ${dpi} DPI`;
+      } else {
+        if (p2iSuffixLabel) p2iSuffixLabel.textContent = '.zip';
+        if (p2iSummaryLabel) p2iSummaryLabel.textContent = `Páginas Individuais (.ZIP) [${selectedPages} págs] • ${dpi} DPI • ${imageFormat.toUpperCase()}`;
+      }
+      if (p2iCanvasWarning) p2iCanvasWarning.classList.add('hidden');
+    } else {
+      // Modo Unificado
+      if (p2iSuffixLabel) p2iSuffixLabel.textContent = fmtExt;
+      if (p2iSummaryLabel) p2iSummaryLabel.textContent = `Imagem Única Contínua [${selectedPages} págs unificadas] • ${dpi} DPI • ${imageFormat.toUpperCase()}`;
+
+      // RN-04: Tratamento de Limites na Imagem Única
+      const approxHeightPerPg = 842 * (dpi / 72.0);
+      const approxTotalHeight = selectedPages * approxHeightPerPg;
+
+      if (selectedPages > 30 || approxTotalHeight > 55000) {
+        if (p2iCanvasWarning) p2iCanvasWarning.classList.remove('hidden');
+        if (p2iWarningText) {
+          p2iWarningText.textContent = `Atenção (RN-04): Este documento possui ${selectedPages} páginas (altura estimada ~${Math.round(approxTotalHeight).toLocaleString('pt-BR')} px). A unificação contínua será protegida pelo servidor para prevenir sobrecarga de memória gráfica.`;
+        }
+      } else {
+        if (p2iCanvasWarning) p2iCanvasWarning.classList.add('hidden');
+      }
+    }
+  }
+
+  async function onExecutePdfToImage() {
+    if (!state.activeDoc) {
+      showToast('Nenhum documento PDF selecionado.', 'warning');
+      return;
+    }
+
+    await ensureDocUploaded(state.activeDoc);
+
+    const exportMode = document.querySelector('input[name="p2i-export-mode"]:checked')?.value || 'individual';
+    const imageFormat = document.querySelector('input[name="p2i-format"]:checked')?.value || 'png';
+    const dpi = parseInt(p2iDpiSelect ? p2iDpiSelect.value : '150', 10) || 150;
+    const isRange = p2iRangeCustom && p2iRangeCustom.checked;
+    const totalP = state.activeDoc.pageCount || 1;
+
+    let startPage = null;
+    let endPage = null;
+
+    if (isRange && p2iStartPage && p2iEndPage) {
+      startPage = parseInt(p2iStartPage.value, 10) || 1;
+      endPage = parseInt(p2iEndPage.value, 10) || totalP;
+      if (startPage < 1) startPage = 1;
+      if (endPage > totalP) endPage = totalP;
+      if (startPage > endPage) [startPage, endPage] = [endPage, startPage];
+    }
+
+    let cleanName = (p2iOutputFilename ? p2iOutputFilename.value.trim() : '') || 'documento_convertido';
+    cleanName = cleanName.replace(/\.(zip|png|jpe?g)$/i, '');
+
+    startProcessingUI(
+      'Convertendo PDF para Imagem...',
+      'Iniciando renderização de alta definição via PyMuPDF...'
+    );
+
+    try {
+      updateProcessingStep(1, `Configurando renderizador com densidade de ${dpi} DPI (${imageFormat.toUpperCase()})...`, 25);
+      await delay(250);
+
+      if (exportMode === 'unified') {
+        updateProcessingStep(2, 'Concatenando páginas sequencialmente em imagem contínua única...', 60);
+      } else {
+        updateProcessingStep(2, 'Renderizando páginas individuais e preparando pacote de entrega...', 60);
+      }
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        mode: exportMode,
+        format: imageFormat,
+        dpi: dpi,
+        start_page: startPage,
+        end_page: endPage,
+        output_filename: cleanName,
+      };
+
+      updateProcessingStep(3, 'Finalizando compressão e otimização dos arquivos...', 85);
+
+      const res = await fetch('/api/convert/pdf-to-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || 'Falha ao converter o documento em imagens.');
+      }
+
+      const data = await res.json();
+      updateProgress(100, 'Conversão para imagem concluída com sucesso!');
+      await delay(300);
+
+      const isZip = !!data.metrics.is_zip;
+      const resultTitle = exportMode === 'unified'
+        ? 'Imagem Contínua Única Criada com Sucesso!'
+        : (isZip ? 'Imagens Individuais Compactadas em ZIP!' : 'Imagem de Página Única Criada com Sucesso!');
+
+      showResultUI({
+        title: resultTitle,
+        filename: data.output_filename,
+        downloadUrl: data.download_url,
+        previewUrl: data.preview_url,
+        isZip: isZip,
+        isImage: !isZip,
+        imageFormat: data.metrics.format,
+        label1: 'Páginas Renderizadas',
+        val1: `${data.metrics.pages_converted} págs`,
+        label2: 'Resolução / Modo',
+        val2: `${data.metrics.dpi} DPI • ${exportMode === 'unified' ? 'Contínua' : (isZip ? 'ZIP' : 'Direto')}`,
+        sizeBytes: data.metrics.output_bytes,
+        durationSec: data.metrics.duration_seconds,
+      });
+
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Erro durante a conversão do PDF para imagem.', 'error');
+      stopProcessingUI(stagePdfToImage);
     }
   }
 

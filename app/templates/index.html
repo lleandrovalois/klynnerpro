@@ -506,6 +506,18 @@
                   </div>
                   <span class="dropdown-check-icon">✓</span>
                 </button>
+
+                <!-- 4. PDF para Imagem -->
+                <button type="button" class="tool-nav-btn dropdown-tool-item" data-tool="pdf-to-image" role="menuitem">
+                  <div class="dropdown-item-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="12" r="1.5"/><polyline points="18 18 14 14 10 18"/></svg>
+                  </div>
+                  <div class="dropdown-item-info">
+                    <span class="dropdown-item-title">PDF para Imagem</span>
+                    <span class="dropdown-item-desc">Páginas em ZIP ou Imagem Única Contínua</span>
+                  </div>
+                  <span class="dropdown-check-icon">✓</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1873,6 +1885,160 @@
             <button type="button" class="btn btn-primary btn-lg" id="btn-start-i2p">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 18 12 12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
               <span>Converter Imagens para PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2K-2: PDF PARA IMAGEM (INDIVIDUAL ZIP OU IMAGEM ÚNICA)  -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-pdf-to-image">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento PDF de Origem:</span>
+              <span class="active-doc-name" id="p2i-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="p2i-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="p2i-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-p2i-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Conversão de Documento PDF em Imagens</h4>
+                <p class="security-box-desc">Exporte as páginas como imagens individuais ou fundidas em uma única imagem longa contínua de alta definição.</p>
+              </div>
+            </div>
+
+            <!-- RN-01: Seleção de Modo de Exportação -->
+            <div class="conversion-options-box" style="margin-top: 1.25rem;">
+              <span class="sub-section-title">Modo de Exportação (Obrigatório):</span>
+              <div class="p2w-pages-radios" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                <label class="enc-radio-card" id="card-p2i-mode-individual">
+                  <input type="radio" name="p2i-export-mode" value="individual" checked id="p2i-mode-individual">
+                  <div class="enc-card-body">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                      <strong>Páginas Individuais (.ZIP)</strong>
+                      <span class="badge badge-primary" style="font-size: 0.7rem;">Padrão</span>
+                    </div>
+                    <small>Cada página é salva como um arquivo de imagem individual. Para PDFs com mais de 1 página, o download é empacotado em um arquivo .ZIP. PDFs de 1 página baixam direto a imagem.</small>
+                  </div>
+                </label>
+
+                <label class="enc-radio-card" id="card-p2i-mode-unified">
+                  <input type="radio" name="p2i-export-mode" value="unified" id="p2i-mode-unified">
+                  <div class="enc-card-body">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                      <strong>Imagem Única Contínua (Long Image)</strong>
+                      <span class="badge badge-warning" style="font-size: 0.7rem;">Infográfico</span>
+                    </div>
+                    <small>Concatena todas as páginas verticalmente em uma imagem única corrida, ideal para infográficos, apresentações, redes sociais e relatórios contínuos.</small>
+                  </div>
+                </label>
+              </div>
+
+              <!-- RN-04: Tratamento de Limites na Imagem Única -->
+              <div class="merge-hint-banner hidden" id="p2i-canvas-warning" style="margin-top: 1rem; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.1); color: #FCD34D;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FBBF24" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span id="p2i-warning-text">Aviso: Este PDF possui muitas páginas. A imagem unificada será processada com segurança pelo servidor para evitar saturação de memória do navegador.</span>
+              </div>
+            </div>
+
+            <!-- RN-02 e RN-03: Formato e Resolução / DPI -->
+            <div class="p2i-settings-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1.25rem;">
+              <!-- Formato -->
+              <div class="option-group">
+                <label class="option-label">Formato da Imagem (RN-02)</label>
+                <div class="format-selector-row" style="display: flex; gap: 0.75rem; margin-top: 0.35rem;">
+                  <label class="btn-format-pill" style="flex: 1;">
+                    <input type="radio" name="p2i-format" value="png" checked id="p2i-fmt-png">
+                    <span>PNG (Sem perdas)</span>
+                  </label>
+                  <label class="btn-format-pill" style="flex: 1;">
+                    <input type="radio" name="p2i-format" value="jpeg" id="p2i-fmt-jpeg">
+                    <span>JPEG (Otimizado)</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Resolução DPI -->
+              <div class="option-group">
+                <label for="p2i-dpi-select" class="option-label">Resolução / Densidade (RN-03)</label>
+                <select id="p2i-dpi-select" class="select-input" style="width: 100%; margin-top: 0.35rem;">
+                  <option value="150" selected>150 DPI (Padrão Klynner - Equilíbrio Perfeito)</option>
+                  <option value="300">300 DPI (Alta Definição / Impressão - Textos Cristalinos)</option>
+                  <option value="72">72 DPI (Tela Rápida / Rascunho Ultra Leve)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Intervalo de Páginas -->
+            <div class="conversion-options-box" style="margin-top: 1.25rem;">
+              <span class="sub-section-title">Intervalo de Páginas:</span>
+              <div class="p2w-pages-radios">
+                <label class="enc-radio-card">
+                  <input type="radio" name="p2i-range-mode" value="all" checked id="p2i-range-all">
+                  <div class="enc-card-body">
+                    <strong>Todas as Páginas</strong>
+                    <small>Renderiza todas as páginas do documento PDF</small>
+                  </div>
+                </label>
+                <label class="enc-radio-card">
+                  <input type="radio" name="p2i-range-mode" value="range" id="p2i-range-custom">
+                  <div class="enc-card-body">
+                    <strong>Faixa Personalizada</strong>
+                    <small>Especificar páginas ou intervalo (ex: 1-5, 8)</small>
+                  </div>
+                </label>
+              </div>
+
+              <div class="custom-range-inputs hidden" id="p2i-range-inputs-box">
+                <div class="range-inputs-row">
+                  <div class="range-col">
+                    <label for="p2i-start-page" class="range-sublabel">Página Inicial</label>
+                    <input type="number" id="p2i-start-page" class="num-input" min="1" value="1">
+                  </div>
+                  <div class="range-sep">até</div>
+                  <div class="range-col">
+                    <label for="p2i-end-page" class="range-sublabel">Página Final</label>
+                    <input type="number" id="p2i-end-page" class="num-input" min="1" value="1">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Nome do Arquivo -->
+          <div class="options-panel">
+            <div class="option-group">
+              <label for="p2i-output-filename" class="option-label">Nome Base do Arquivo Gerado</label>
+              <div class="input-with-suffix">
+                <input type="text" id="p2i-output-filename" class="text-input" value="documento_imagens">
+                <span class="input-suffix" id="p2i-suffix-label">.zip</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Modo Selecionado:</span>
+              <span class="summary-value" id="p2i-summary-label">Páginas Individuais (.ZIP) • 150 DPI • PNG</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-p2i">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <span>Converter e Baixar</span>
             </button>
           </div>
         </div>
@@ -3544,7 +3710,7 @@
           <div class="tools-cat-group" data-cat-group="convert">
             <div class="tools-cat-header">
               <span class="tools-cat-pill">Conversão & Imagens</span>
-              <span class="tools-cat-count">3 ferramentas</span>
+              <span class="tools-cat-count">4 ferramentas</span>
             </div>
             <div class="tools-cat-grid">
               
@@ -3578,6 +3744,17 @@
                 <div class="card-info">
                   <span class="card-title">Imagem para PDF</span>
                   <span class="card-desc">Converter fotos e imagens (JPG, PNG, WebP) em PDF</span>
+                </div>
+              </button>
+
+              <!-- 15. PDF para Imagem -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="pdf-to-image" data-keywords="pdf para imagem converter png jpg jpeg zip continua unificada longa infografico">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="12" r="1.5"/><polyline points="18 18 14 14 10 18"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">PDF para Imagem</span>
+                  <span class="card-desc">Exportar páginas em ZIP ou fundir em imagem única contínua</span>
                 </div>
               </button>
 

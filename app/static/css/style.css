@@ -4096,6 +4096,37 @@ select optgroup {
   color: var(--text-muted);
 }
 
+.btn-format-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-format-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.btn-format-pill:has(input:checked) {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38BDF8;
+  color: #38BDF8;
+}
+
+.btn-format-pill input[type="radio"] {
+  accent-color: #38BDF8;
+  cursor: pointer;
+}
+
 /* Preset Chips Grid */
 .preset-chips-grid {
   display: grid;
