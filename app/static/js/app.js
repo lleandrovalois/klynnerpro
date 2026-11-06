@@ -7723,6 +7723,13 @@
     const feedbackReplyForm = document.getElementById('feedback-reply-form');
     const replyFeedbackIdInput = document.getElementById('reply-feedback-id');
     const replyTargetAuthor = document.getElementById('reply-target-author');
+    const replyTargetEmailBadge = document.getElementById('reply-target-email-badge');
+    const replyTargetEmail = document.getElementById('reply-target-email');
+    const replyTargetEmailName = document.getElementById('reply-target-email-name');
+    const replyEmailOptionsBox = document.getElementById('reply-email-options-box');
+    const replySendEmailCheckbox = document.getElementById('reply-send-email-checkbox');
+    const replyEmailSubjectInput = document.getElementById('reply-email-subject-input');
+    const replyNoEmailHint = document.getElementById('reply-no-email-hint');
     const replyTargetText = document.getElementById('reply-target-text');
     const replyAuthorInput = document.getElementById('reply-author-input');
     const replyTextInput = document.getElementById('reply-text-input');
@@ -7738,18 +7745,43 @@
     function openReplyModal(item) {
       if (!feedbackReplyModal) return;
       if (replyFeedbackIdInput) replyFeedbackIdInput.value = item.id;
-      if (replyTargetAuthor) replyTargetAuthor.textContent = `Comentário de ${item.name || 'Usuário'}:`;
+      if (replyTargetAuthor) replyTargetAuthor.textContent = `Comentário de ${item.full_name || item.name || 'Usuário'}:`;
       if (replyTargetText) replyTargetText.textContent = `"${item.message || ''}"`;
       if (replyAuthorInput) replyAuthorInput.value = item.replied_by || 'Equipe Klynner';
       if (replyTextInput) replyTextInput.value = item.admin_reply || '';
       if (replyCharCount) replyCharCount.textContent = (item.admin_reply || '').length;
+
+      // Configuração de envio por e-mail para o autor
+      const authorEmail = (item.email || '').trim();
+      const hasEmail = Boolean(authorEmail && authorEmail.includes('@'));
+
+      if (hasEmail) {
+        if (replyTargetEmail) replyTargetEmail.textContent = authorEmail;
+        if (replyTargetEmailBadge) replyTargetEmailBadge.classList.remove('hidden');
+        if (replyEmailOptionsBox) replyEmailOptionsBox.classList.remove('hidden');
+        if (replyNoEmailHint) replyNoEmailHint.classList.add('hidden');
+        if (replyTargetEmailName) replyTargetEmailName.textContent = item.full_name || item.name || authorEmail;
+        if (replySendEmailCheckbox) replySendEmailCheckbox.checked = true;
+        if (replyEmailSubjectInput) {
+          replyEmailSubjectInput.value = `Sua mensagem no Klynner Suite foi respondida!`;
+        }
+      } else {
+        if (replyTargetEmailBadge) replyTargetEmailBadge.classList.add('hidden');
+        if (replyEmailOptionsBox) replyEmailOptionsBox.classList.add('hidden');
+        if (replyNoEmailHint) replyNoEmailHint.classList.remove('hidden');
+        if (replySendEmailCheckbox) replySendEmailCheckbox.checked = false;
+      }
 
       const hasReply = Boolean(item.admin_reply);
       if (replyModalTitle) {
         replyModalTitle.textContent = hasReply ? 'Editar Resposta Oficial' : 'Responder Comentário';
       }
       if (btnSubmitReplyText) {
-        btnSubmitReplyText.textContent = hasReply ? 'Salvar Alterações' : 'Publicar Resposta';
+        if (hasReply) {
+          btnSubmitReplyText.textContent = hasEmail ? 'Salvar e Reenviar E-mail' : 'Salvar Alterações';
+        } else {
+          btnSubmitReplyText.textContent = hasEmail ? 'Publicar e Enviar E-mail' : 'Publicar Resposta';
+        }
       }
       if (btnDeleteReply) {
         btnDeleteReply.classList.toggle('hidden', !hasReply);
@@ -7833,6 +7865,9 @@
         if (btnSubmitReply) btnSubmitReply.disabled = true;
         if (spinnerReply) spinnerReply.classList.remove('hidden');
 
+        const sendEmail = Boolean(replySendEmailCheckbox && replySendEmailCheckbox.checked);
+        const emailSubject = replyEmailSubjectInput ? replyEmailSubjectInput.value.trim() : null;
+
         try {
           const resp = await fetch(`/api/feedback/${feedbackId}/reply`, {
             method: 'POST',
@@ -7843,12 +7878,14 @@
             body: JSON.stringify({
               reply: replyText,
               replied_by: authorText,
+              send_email: sendEmail,
+              email_subject: emailSubject,
             }),
           });
 
           const resData = await resp.json();
           if (resp.ok && resData.success) {
-            showToast('Resposta publicada com sucesso no mural!', 'success');
+            showToast(resData.message || 'Resposta publicada com sucesso!', 'success');
             closeReplyModal();
             loadRecentFeedbacks();
           } else if (resp.status === 401) {
@@ -7874,7 +7911,13 @@
     async function loadRecentFeedbacks() {
       if (!cardsGrid) return;
       try {
-        const res = await fetch('/api/feedback/recent');
+        const reqHeaders = {};
+        const adminKey = getAdminKey();
+        if (adminKey) {
+          reqHeaders['x-admin-key'] = adminKey;
+        }
+
+        const res = await fetch('/api/feedback/recent', { headers: reqHeaders });
         if (!res.ok) throw new Error('Falha ao carregar mural');
         const data = await res.json();
 
@@ -7912,6 +7955,13 @@
           const hasReply = Boolean(item.admin_reply);
           const replyDateStr = item.replied_at ? new Date(item.replied_at).toLocaleDateString('pt-BR') : '';
 
+          const emailBadgeHtml = (isAdmin && item.email)
+            ? `<div style="display: flex; align-items: center; gap: 0.35rem; margin-top: 0.2rem; flex-wrap: wrap;">
+                 <span style="font-size: 0.72rem; color: #60a5fa; background: rgba(59, 130, 246, 0.12); padding: 1px 6px; border-radius: 9999px; border: 1px solid rgba(59, 130, 246, 0.25);" title="E-mail cadastrado pelo usuário">✉️ ${escapeHtml(item.email)}</span>
+                 ${item.email_sent ? '<span style="font-size: 0.72rem; color: #34d399; background: rgba(16, 185, 129, 0.12); padding: 1px 6px; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.25);" title="Resposta entregue por e-mail">✓ E-mail enviado</span>' : ''}
+               </div>`
+            : '';
+
           const replyBoxHtml = hasReply
             ? `
               <div class="feedback-reply-box">
@@ -7931,11 +7981,11 @@
             : '';
 
           const replyBtnHtml = isAdmin
-            ? `<button type="button" class="feedback-reply-btn ${hasReply ? 'has-reply' : ''}" data-id="${item.id}" title="${hasReply ? 'Editar ou remover resposta oficial' : 'Responder a este comentário'}">
+            ? `<button type="button" class="feedback-reply-btn ${hasReply ? 'has-reply' : ''}" data-id="${item.id}" title="${hasReply ? 'Editar ou reenviar resposta oficial' : (item.email ? 'Responder e enviar e-mail para ' + item.email : 'Responder a este comentário')}">
                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                  </svg>
-                 <span>${hasReply ? 'Editar Resposta' : 'Responder'}</span>
+                 <span>${hasReply ? 'Editar Resposta' : (item.email ? 'Responder & E-mail' : 'Responder')}</span>
                </button>`
             : '';
 
@@ -7953,7 +8003,10 @@
               <div class="feedback-item-header">
                 <div class="feedback-item-user">
                   <div class="feedback-user-avatar">${escapeHtml(initials)}</div>
-                  <span class="feedback-user-name">${escapeHtml(item.name || 'Usuário')}</span>
+                  <div>
+                    <span class="feedback-user-name">${escapeHtml(item.name || 'Usuário')}</span>
+                    ${emailBadgeHtml}
+                  </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.4rem;">
                   <span class="feedback-item-cat-badge ${catInfo.cls}">${catInfo.label}</span>

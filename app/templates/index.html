@@ -3924,6 +3924,10 @@
         <div class="modal-body">
           <div class="reply-target-preview">
             <div class="reply-target-author" id="reply-target-author">Comentário de ...</div>
+            <div class="reply-target-email-badge hidden" id="reply-target-email-badge" style="font-size: 0.8rem; color: #60a5fa; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              <span>E-mail: <strong id="reply-target-email">usuario@exemplo.com</strong></span>
+            </div>
             <p class="reply-target-text" id="reply-target-text">"..."</p>
           </div>
 
@@ -3941,6 +3945,28 @@
                 <span class="char-counter"><span id="reply-char-count">0</span>/2000</span>
               </div>
               <textarea id="reply-text-input" class="feedback-textarea" rows="4" placeholder="Escreva a resposta pública da equipe para este comentário..." maxlength="2000" required></textarea>
+            </div>
+
+            <!-- Opções de envio por e-mail -->
+            <div class="reply-email-options-box hidden" id="reply-email-options-box" style="margin-top: 1rem; padding: 0.85rem; background: rgba(30, 58, 138, 0.15); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px;">
+              <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.88rem; font-weight: 500; color: #f1f5f9;">
+                <input type="checkbox" id="reply-send-email-checkbox" checked style="width: 16px; height: 16px; accent-color: #2563eb; cursor: pointer;">
+                <span>Enviar esta resposta diretamente por e-mail para <strong id="reply-target-email-name">o usuário</strong></span>
+              </label>
+              
+              <div class="reply-email-subject-group" id="reply-email-subject-group" style="margin-top: 0.75rem;">
+                <label for="reply-email-subject-input" class="feedback-field-label" style="font-size: 0.78rem;">Assunto do E-mail:</label>
+                <input type="text" id="reply-email-subject-input" class="feedback-input" style="font-size: 0.82rem; padding: 0.4rem 0.65rem;" value="Sua mensagem no Klynner Suite foi respondida!">
+              </div>
+
+              <div id="reply-email-status-hint" style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">
+                ℹ️ O e-mail conterá a mensagem original e sua resposta oficial formatada.
+              </div>
+            </div>
+
+            <div class="reply-no-email-hint hidden" id="reply-no-email-hint" style="margin-top: 0.75rem; font-size: 0.8rem; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <span>Este usuário não cadastrou e-mail (a resposta será exibida exclusivamente no Mural Público).</span>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-top: 1.25rem;">

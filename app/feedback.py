@@ -74,6 +74,12 @@ def init_feedback_db() -> None:
                 cursor.execute("ALTER TABLE user_feedbacks ADD COLUMN replied_at TIMESTAMP;")
             if "replied_by" not in columns:
                 cursor.execute("ALTER TABLE user_feedbacks ADD COLUMN replied_by TEXT;")
+            if "email_sent" not in columns:
+                cursor.execute("ALTER TABLE user_feedbacks ADD COLUMN email_sent INTEGER DEFAULT 0;")
+            if "last_email_sent_at" not in columns:
+                cursor.execute("ALTER TABLE user_feedbacks ADD COLUMN last_email_sent_at TIMESTAMP;")
+            if "email_error" not in columns:
+                cursor.execute("ALTER TABLE user_feedbacks ADD COLUMN email_error TEXT;")
 
             conn.commit()
 
@@ -123,14 +129,14 @@ def save_feedback(
     }
 
 
-def get_recent_feedbacks(limit: int = 6) -> List[Dict[str, Any]]:
-    """Retorna os feedbacks mais recentes para exibição comunitária."""
+def get_recent_feedbacks(limit: int = 6, is_admin: bool = False) -> List[Dict[str, Any]]:
+    """Retorna os feedbacks mais recentes para exibição comunitária (ou com dados de moderação se is_admin=True)."""
     with _db_lock:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, category, name, rating, message, tool_context, created_at,
-                       admin_reply, replied_at, replied_by
+                SELECT id, category, name, email, rating, message, tool_context, created_at,
+                       admin_reply, replied_at, replied_by, email_sent, last_email_sent_at, email_error
                 FROM user_feedbacks
                 ORDER BY created_at DESC
                 LIMIT ?
@@ -143,7 +149,7 @@ def get_recent_feedbacks(limit: int = 6) -> List[Dict[str, Any]]:
         if not name_val:
             display_name = "Usuário Anônimo"
         else:
-            # Exibe primeiro nome e inicial do sobrenome para privacidade
+            # Exibe primeiro nome e inicial do sobrenome para privacidade pública
             parts = name_val.split()
             if len(parts) > 1:
                 display_name = f"{parts[0]} {parts[1][0]}."
@@ -151,7 +157,7 @@ def get_recent_feedbacks(limit: int = 6) -> List[Dict[str, Any]]:
                 display_name = parts[0]
 
         row_keys = r.keys()
-        results.append({
+        item = {
             "id": r["id"],
             "category": r["category"],
             "name": display_name,
@@ -162,18 +168,28 @@ def get_recent_feedbacks(limit: int = 6) -> List[Dict[str, Any]]:
             "admin_reply": r["admin_reply"] if "admin_reply" in row_keys else None,
             "replied_at": r["replied_at"] if "replied_at" in row_keys else None,
             "replied_by": r["replied_by"] if "replied_by" in row_keys else None,
-        })
+        }
+
+        # Dados adicionais para administradores/moderadores
+        if is_admin:
+            item["full_name"] = name_val or "Usuário Anônimo"
+            item["email"] = r["email"] if "email" in row_keys else None
+            item["email_sent"] = bool(r["email_sent"]) if "email_sent" in row_keys and r["email_sent"] else False
+            item["last_email_sent_at"] = r["last_email_sent_at"] if "last_email_sent_at" in row_keys else None
+            item["email_error"] = r["email_error"] if "email_error" in row_keys else None
+
+        results.append(item)
     return results
 
 
 def get_feedback_by_id(feedback_id: int) -> Optional[Dict[str, Any]]:
-    """Busca um feedback específico pelo ID."""
+    """Busca um feedback específico pelo ID com todos os campos disponíveis."""
     with _db_lock:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, category, name, rating, message, tool_context, created_at,
-                       admin_reply, replied_at, replied_by
+                SELECT id, category, name, email, rating, message, tool_context, created_at,
+                       admin_reply, replied_at, replied_by, email_sent, last_email_sent_at, email_error
                 FROM user_feedbacks
                 WHERE id = ?
             """, (int(feedback_id),))
@@ -186,6 +202,7 @@ def get_feedback_by_id(feedback_id: int) -> Optional[Dict[str, Any]]:
                 "id": r["id"],
                 "category": r["category"],
                 "name": r["name"] or "Usuário Anônimo",
+                "email": r["email"] if "email" in row_keys else None,
                 "rating": r["rating"],
                 "message": r["message"],
                 "tool_context": r["tool_context"],
@@ -193,13 +210,18 @@ def get_feedback_by_id(feedback_id: int) -> Optional[Dict[str, Any]]:
                 "admin_reply": r["admin_reply"] if "admin_reply" in row_keys else None,
                 "replied_at": r["replied_at"] if "replied_at" in row_keys else None,
                 "replied_by": r["replied_by"] if "replied_by" in row_keys else None,
+                "email_sent": bool(r["email_sent"]) if "email_sent" in row_keys and r["email_sent"] else False,
+                "last_email_sent_at": r["last_email_sent_at"] if "last_email_sent_at" in row_keys else None,
+                "email_error": r["email_error"] if "email_error" in row_keys else None,
             }
 
 
 def save_feedback_reply(
     feedback_id: int,
     reply_text: str,
-    replied_by: Optional[str] = "Equipe Klynner"
+    replied_by: Optional[str] = "Equipe Klynner",
+    email_sent: Optional[bool] = None,
+    email_error: Optional[str] = None,
 ) -> bool:
     """Salva ou atualiza a resposta oficial de moderação para um comentário."""
     clean_reply = html.escape(reply_text.strip())
@@ -209,16 +231,26 @@ def save_feedback_reply(
     with _db_lock:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE user_feedbacks
-                SET admin_reply = ?, replied_at = ?, replied_by = ?
-                WHERE id = ?
-            """, (clean_reply, now_iso, clean_author, int(feedback_id)))
+            if email_sent is not None:
+                email_sent_int = 1 if email_sent else 0
+                sent_at = now_iso if email_sent else None
+                cursor.execute("""
+                    UPDATE user_feedbacks
+                    SET admin_reply = ?, replied_at = ?, replied_by = ?,
+                        email_sent = ?, last_email_sent_at = ?, email_error = ?
+                    WHERE id = ?
+                """, (clean_reply, now_iso, clean_author, email_sent_int, sent_at, email_error, int(feedback_id)))
+            else:
+                cursor.execute("""
+                    UPDATE user_feedbacks
+                    SET admin_reply = ?, replied_at = ?, replied_by = ?
+                    WHERE id = ?
+                """, (clean_reply, now_iso, clean_author, int(feedback_id)))
             updated = cursor.rowcount > 0
             conn.commit()
 
     if updated:
-        logger.info(f"Feedback #{feedback_id} respondido com sucesso por '{clean_author}'.")
+        logger.info(f"Feedback #{feedback_id} respondido com sucesso por '{clean_author}' (email_sent={email_sent}).")
     return updated
 
 
@@ -229,7 +261,8 @@ def delete_feedback_reply(feedback_id: int) -> bool:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE user_feedbacks
-                SET admin_reply = NULL, replied_at = NULL, replied_by = NULL
+                SET admin_reply = NULL, replied_at = NULL, replied_by = NULL,
+                    email_sent = 0, last_email_sent_at = NULL, email_error = NULL
                 WHERE id = ?
             """, (int(feedback_id),))
             cleared = cursor.rowcount > 0

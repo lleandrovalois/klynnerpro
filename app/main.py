@@ -17,7 +17,11 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from app.analytics import get_current_stats, init_analytics_db, record_page_visit
+from app.email_service import get_smtp_config, is_smtp_configured, send_feedback_reply_email
 from app.feedback import (
     delete_feedback,
     delete_feedback_reply,
@@ -1605,10 +1609,17 @@ async def create_feedback_endpoint(request: Request, body: FeedbackRequest):
 
 
 @app.get("/api/feedback/recent")
-async def get_recent_feedbacks_endpoint():
-    feedbacks = await asyncio.to_thread(get_recent_feedbacks, 6)
+async def get_recent_feedbacks_endpoint(request: Request):
+    key = request.headers.get("x-admin-key") or request.query_params.get("admin_key")
+    is_admin = is_valid_admin_key(key)
+    feedbacks = await asyncio.to_thread(get_recent_feedbacks, 6, is_admin)
     total_count = await asyncio.to_thread(get_feedback_count)
-    return JSONResponse({"success": True, "feedbacks": feedbacks, "total": total_count})
+    return JSONResponse({
+        "success": True,
+        "feedbacks": feedbacks,
+        "total": total_count,
+        "is_admin": is_admin,
+    })
 
 
 class AdminAuthRequest(BaseModel):
@@ -1646,6 +1657,8 @@ async def delete_feedback_endpoint(feedback_id: int, request: Request):
 class FeedbackReplyRequest(BaseModel):
     reply: str = Field(..., min_length=1, max_length=2000, description="Texto da resposta oficial")
     replied_by: Optional[str] = Field("Equipe Klynner", max_length=50, description="Nome ou assinatura da moderação")
+    send_email: bool = Field(True, description="Se True e o autor tiver e-mail, envia a resposta por e-mail")
+    email_subject: Optional[str] = Field(None, max_length=150, description="Assunto customizado do e-mail")
 
 
 @app.post("/api/feedback/{feedback_id}/reply")
@@ -1657,13 +1670,72 @@ async def reply_feedback_endpoint(feedback_id: int, body: FeedbackReplyRequest, 
             detail="Acesso não autorizado. Chave de moderação inválida."
         )
 
-    updated = await asyncio.to_thread(save_feedback_reply, feedback_id, body.reply, body.replied_by)
-    if not updated:
+    # Busca o feedback original para obter destinatário, mensagem e dados de contato
+    feedback = await asyncio.to_thread(get_feedback_by_id, feedback_id)
+    if not feedback:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Comentário não encontrado para resposta."
         )
-    return JSONResponse({"success": True, "message": "Resposta publicada com sucesso."})
+
+    email_status = {"attempted": False, "delivered": False, "message": "Nenhum e-mail enviado."}
+    email_sent_flag = False
+    email_error_text = None
+
+    # Se o usuário cadastrou e-mail e a opção send_email estiver ativa, dispara envio
+    user_email = (feedback.get("email") or "").strip()
+    if body.send_email and user_email and "@" in user_email:
+        email_status["attempted"] = True
+        try:
+            send_res = await asyncio.to_thread(
+                send_feedback_reply_email,
+                to_email=user_email,
+                recipient_name=feedback.get("name"),
+                original_message=feedback.get("message", ""),
+                reply_message=body.reply,
+                replied_by=body.replied_by or "Equipe Klynner",
+                subject=body.email_subject,
+            )
+            email_status.update(send_res)
+            email_sent_flag = bool(send_res.get("delivered", False))
+            if not send_res.get("success", False) and send_res.get("error"):
+                email_error_text = send_res.get("error")
+        except Exception as mail_exc:
+            logger.error(f"Erro inesperado no envio de e-mail para {user_email}: {mail_exc}", exc_info=True)
+            email_error_text = str(mail_exc)
+            email_status["error"] = email_error_text
+            email_status["success"] = False
+
+    updated = await asyncio.to_thread(
+        save_feedback_reply,
+        feedback_id=feedback_id,
+        reply_text=body.reply,
+        replied_by=body.replied_by,
+        email_sent=email_sent_flag if email_status["attempted"] else None,
+        email_error=email_error_text,
+    )
+
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Falha ao salvar a resposta no banco de dados."
+        )
+
+    success_msg = "Resposta publicada com sucesso no mural!"
+    if email_status["attempted"]:
+        if email_status.get("delivered"):
+            success_msg += f" E-mail enviado com sucesso para {user_email}."
+        elif email_status.get("mock"):
+            success_msg += " (Aviso: SMTP não configurado no servidor, o e-mail não foi disparado fisicamente)."
+        elif email_status.get("error"):
+            success_msg += f" (Aviso: O e-mail não pôde ser entregue: {email_status['error']})."
+
+    return JSONResponse({
+        "success": True,
+        "message": success_msg,
+        "email_status": email_status,
+        "feedback_id": feedback_id,
+    })
 
 
 @app.delete("/api/feedback/{feedback_id}/reply")
@@ -1682,6 +1754,26 @@ async def delete_feedback_reply_endpoint(feedback_id: int, request: Request):
             detail="Comentário não encontrado ou resposta já removida."
         )
     return JSONResponse({"success": True, "message": "Resposta removida com sucesso."})
+
+
+@app.post("/api/feedback/smtp/status")
+async def get_smtp_status_endpoint(request: Request):
+    key = request.headers.get("x-admin-key") or request.query_params.get("admin_key")
+    if not is_valid_admin_key(key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Acesso não autorizado."
+        )
+    cfg = get_smtp_config()
+    return JSONResponse({
+        "configured": is_smtp_configured(),
+        "host": cfg["host"] or None,
+        "port": cfg["port"],
+        "user": cfg["user"] or None,
+        "sender": cfg["sender"],
+        "use_tls": cfg["use_tls"],
+        "use_ssl": cfg["use_ssl"],
+    })
 
 
 
