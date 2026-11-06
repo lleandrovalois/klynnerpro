@@ -7034,6 +7034,158 @@
       });
     }
 
+    // 6.1 Modal de Resposta Oficial aos Comentários (Moderação)
+    const feedbackReplyModal = document.getElementById('feedback-reply-modal');
+    const feedbackReplyForm = document.getElementById('feedback-reply-form');
+    const replyFeedbackIdInput = document.getElementById('reply-feedback-id');
+    const replyTargetAuthor = document.getElementById('reply-target-author');
+    const replyTargetText = document.getElementById('reply-target-text');
+    const replyAuthorInput = document.getElementById('reply-author-input');
+    const replyTextInput = document.getElementById('reply-text-input');
+    const replyCharCount = document.getElementById('reply-char-count');
+    const btnCloseReplyModal = document.getElementById('btn-close-reply-modal');
+    const btnCancelReplyModal = document.getElementById('btn-cancel-reply-modal');
+    const btnDeleteReply = document.getElementById('btn-delete-reply');
+    const btnSubmitReply = document.getElementById('btn-submit-reply');
+    const btnSubmitReplyText = document.getElementById('btn-submit-reply-text');
+    const spinnerReply = document.getElementById('spinner-reply');
+    const replyModalTitle = document.getElementById('reply-modal-title');
+
+    function openReplyModal(item) {
+      if (!feedbackReplyModal) return;
+      if (replyFeedbackIdInput) replyFeedbackIdInput.value = item.id;
+      if (replyTargetAuthor) replyTargetAuthor.textContent = `Comentário de ${item.name || 'Usuário'}:`;
+      if (replyTargetText) replyTargetText.textContent = `"${item.message || ''}"`;
+      if (replyAuthorInput) replyAuthorInput.value = item.replied_by || 'Equipe Klynner';
+      if (replyTextInput) replyTextInput.value = item.admin_reply || '';
+      if (replyCharCount) replyCharCount.textContent = (item.admin_reply || '').length;
+
+      const hasReply = Boolean(item.admin_reply);
+      if (replyModalTitle) {
+        replyModalTitle.textContent = hasReply ? 'Editar Resposta Oficial' : 'Responder Comentário';
+      }
+      if (btnSubmitReplyText) {
+        btnSubmitReplyText.textContent = hasReply ? 'Salvar Alterações' : 'Publicar Resposta';
+      }
+      if (btnDeleteReply) {
+        btnDeleteReply.classList.toggle('hidden', !hasReply);
+      }
+
+      feedbackReplyModal.classList.remove('hidden');
+      setTimeout(() => {
+        if (replyTextInput) {
+          replyTextInput.focus();
+          replyTextInput.setSelectionRange(replyTextInput.value.length, replyTextInput.value.length);
+        }
+      }, 150);
+    }
+
+    function closeReplyModal() {
+      if (feedbackReplyModal) feedbackReplyModal.classList.add('hidden');
+    }
+
+    if (btnCloseReplyModal) btnCloseReplyModal.addEventListener('click', closeReplyModal);
+    if (btnCancelReplyModal) btnCancelReplyModal.addEventListener('click', closeReplyModal);
+
+    if (replyTextInput && replyCharCount) {
+      replyTextInput.addEventListener('input', () => {
+        replyCharCount.textContent = replyTextInput.value.length;
+      });
+    }
+
+    if (btnDeleteReply) {
+      btnDeleteReply.addEventListener('click', async () => {
+        const feedbackId = replyFeedbackIdInput ? replyFeedbackIdInput.value : null;
+        if (!feedbackId) return;
+
+        if (!confirm('Deseja remover apenas a resposta oficial deste comentário? O comentário original continuará no mural.')) {
+          return;
+        }
+
+        try {
+          btnDeleteReply.disabled = true;
+          const resp = await fetch(`/api/feedback/${feedbackId}/reply`, {
+            method: 'DELETE',
+            headers: {
+              'x-admin-key': getAdminKey(),
+            },
+          });
+
+          const resData = await resp.json();
+          if (resp.ok && resData.success) {
+            showToast('Resposta oficial removida com sucesso!', 'success');
+            closeReplyModal();
+            loadRecentFeedbacks();
+          } else if (resp.status === 401) {
+            showToast('Sessão de moderação expirada.', 'error');
+            sessionStorage.removeItem('klynner_admin_key');
+            updateAdminUiState();
+            closeReplyModal();
+            loadRecentFeedbacks();
+          } else {
+            showToast(resData.detail || 'Não foi possível remover a resposta.', 'error');
+          }
+        } catch (err) {
+          console.error('Erro ao excluir resposta:', err);
+          showToast('Erro de conexão ao remover resposta.', 'error');
+        } finally {
+          btnDeleteReply.disabled = false;
+        }
+      });
+    }
+
+    if (feedbackReplyForm) {
+      feedbackReplyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const feedbackId = replyFeedbackIdInput ? replyFeedbackIdInput.value : null;
+        const replyText = (replyTextInput ? replyTextInput.value : '').trim();
+        const authorText = (replyAuthorInput ? replyAuthorInput.value : '').trim() || 'Equipe Klynner';
+
+        if (!replyText) {
+          showToast('Por favor, escreva o texto da resposta.', 'warning');
+          return;
+        }
+
+        if (btnSubmitReply) btnSubmitReply.disabled = true;
+        if (spinnerReply) spinnerReply.classList.remove('hidden');
+
+        try {
+          const resp = await fetch(`/api/feedback/${feedbackId}/reply`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-key': getAdminKey(),
+            },
+            body: JSON.stringify({
+              reply: replyText,
+              replied_by: authorText,
+            }),
+          });
+
+          const resData = await resp.json();
+          if (resp.ok && resData.success) {
+            showToast('Resposta publicada com sucesso no mural!', 'success');
+            closeReplyModal();
+            loadRecentFeedbacks();
+          } else if (resp.status === 401) {
+            showToast('Sessão de moderação expirada.', 'error');
+            sessionStorage.removeItem('klynner_admin_key');
+            updateAdminUiState();
+            closeReplyModal();
+            loadRecentFeedbacks();
+          } else {
+            showToast(resData.detail || 'Erro ao publicar resposta.', 'error');
+          }
+        } catch (err) {
+          console.error('Erro ao enviar resposta:', err);
+          showToast('Erro de conexão ao enviar resposta.', 'error');
+        } finally {
+          if (btnSubmitReply) btnSubmitReply.disabled = false;
+          if (spinnerReply) spinnerReply.classList.add('hidden');
+        }
+      });
+    }
+
     // 7. Carregar Mural da Comunidade
     async function loadRecentFeedbacks() {
       if (!cardsGrid) return;
@@ -7073,6 +7225,36 @@
           const initials = (item.name || 'U').substring(0, 2).toUpperCase();
           const dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : '';
 
+          const hasReply = Boolean(item.admin_reply);
+          const replyDateStr = item.replied_at ? new Date(item.replied_at).toLocaleDateString('pt-BR') : '';
+
+          const replyBoxHtml = hasReply
+            ? `
+              <div class="feedback-reply-box">
+                <div class="feedback-reply-header">
+                  <span class="feedback-reply-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>${escapeHtml(item.replied_by || 'Equipe Klynner')}</span>
+                    <span class="feedback-reply-tag">Resposta Oficial</span>
+                  </span>
+                  ${replyDateStr ? `<span class="feedback-reply-date">${replyDateStr}</span>` : ''}
+                </div>
+                <p class="feedback-reply-text">${escapeHtml(item.admin_reply)}</p>
+              </div>
+            `
+            : '';
+
+          const replyBtnHtml = isAdmin
+            ? `<button type="button" class="feedback-reply-btn ${hasReply ? 'has-reply' : ''}" data-id="${item.id}" title="${hasReply ? 'Editar ou remover resposta oficial' : 'Responder a este comentário'}">
+                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                 </svg>
+                 <span>${hasReply ? 'Editar Resposta' : 'Responder'}</span>
+               </button>`
+            : '';
+
           const deleteBtnHtml = isAdmin
             ? `<button type="button" class="feedback-delete-btn" data-id="${item.id}" title="Excluir este comentário do mural">
                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -7091,11 +7273,13 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.4rem;">
                   <span class="feedback-item-cat-badge ${catInfo.cls}">${catInfo.label}</span>
+                  ${replyBtnHtml}
                   ${deleteBtnHtml}
                 </div>
               </div>
               <div class="feedback-item-stars" title="${item.rating || 5} de 5 estrelas">${starsStr}</div>
               <p class="feedback-item-message">${escapeHtml(item.message || '')}</p>
+              ${replyBoxHtml}
               <div class="feedback-item-footer">
                 <span>${item.tool_context ? 'Ferramenta: ' + escapeHtml(TOOL_SHORT_NAMES[item.tool_context] || item.tool_context) : 'Klynner PRO'}</span>
                 <span>${dateStr}</span>
@@ -7106,8 +7290,19 @@
 
         cardsGrid.innerHTML = cardsHtml;
 
-        // Ativa handlers de exclusão
+        // Ativa handlers de moderação (resposta e exclusão)
         if (isAdmin) {
+          cardsGrid.querySelectorAll('.feedback-reply-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const feedbackId = Number(btn.dataset.id);
+              const targetItem = items.find(it => it.id === feedbackId);
+              if (targetItem) {
+                openReplyModal(targetItem);
+              }
+            });
+          });
+
           cardsGrid.querySelectorAll('.feedback-delete-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
               e.stopPropagation();

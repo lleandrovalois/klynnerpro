@@ -217,8 +217,8 @@ def test_suite_new_features():
 
     fb_id = fb_json["id"]
 
-    # 7. Testando Moderação e Exclusão de Comentários (Admin API)
-    print("\n[7/7] Testando Moderação e Exclusão de Comentários...")
+    # 7. Testando Moderação, Resposta e Exclusão de Comentários (Admin API)
+    print("\n[7/7] Testando Moderação, Resposta e Exclusão de Comentários...")
     # Tentativa com senha errada (deve falhar com 401)
     bad_auth = client.post("/api/feedback/verify-admin", json={"admin_key": "senha_errada"})
     assert bad_auth.status_code == 401
@@ -227,7 +227,39 @@ def test_suite_new_features():
     good_auth = client.post("/api/feedback/verify-admin", json={"admin_key": "klynneradmin"})
     assert good_auth.status_code == 200
 
-    # Tentativa de exclusão sem chave (deve falhar com 401)
+    # 7.1 Teste de Resposta ao Comentário sem chave (deve falhar 401)
+    unauth_reply = client.post(f"/api/feedback/{fb_id}/reply", json={"reply": "Obrigado!"})
+    assert unauth_reply.status_code == 401
+
+    # 7.2 Teste de Resposta ao Comentário com chave correta
+    auth_reply = client.post(
+        f"/api/feedback/{fb_id}/reply",
+        headers={"x-admin-key": "klynneradmin"},
+        json={"reply": "Muito obrigado pela sugestão! Já está no nosso radar.", "replied_by": "Equipe Klynner"}
+    )
+    assert auth_reply.status_code == 200
+    assert auth_reply.json()["success"] is True
+
+    # Verifica se a resposta aparece no mural público
+    board_after_reply = client.get("/api/feedback/recent")
+    assert board_after_reply.status_code == 200
+    target_fb = next((f for f in board_after_reply.json()["feedbacks"] if f["id"] == fb_id), None)
+    assert target_fb is not None
+    assert "Muito obrigado pela sugestão" in target_fb["admin_reply"]
+    assert target_fb["replied_by"] == "Equipe Klynner"
+    assert target_fb["replied_at"] is not None
+    print("  -> Resposta oficial ao comentário registrada e validada no mural!")
+
+    # 7.3 Teste de Remoção apenas da Resposta (preservando o comentário do usuário)
+    del_reply = client.delete(f"/api/feedback/{fb_id}/reply", headers={"x-admin-key": "klynneradmin"})
+    assert del_reply.status_code == 200
+    board_after_del_reply = client.get("/api/feedback/recent")
+    target_fb_after = next((f for f in board_after_del_reply.json()["feedbacks"] if f["id"] == fb_id), None)
+    assert target_fb_after is not None
+    assert target_fb_after["admin_reply"] is None
+    print("  -> Remoção da resposta oficial validada com preservação do comentário original!")
+
+    # 7.4 Tentativa de exclusão sem chave (deve falhar com 401)
     unauth_del = client.delete(f"/api/feedback/{fb_id}")
     assert unauth_del.status_code == 401
 

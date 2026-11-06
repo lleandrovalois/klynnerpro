@@ -41,7 +41,7 @@ def get_db_connection() -> sqlite3.Connection:
 
 
 def init_feedback_db() -> None:
-    """Inicializa a tabela de feedbacks se não existir."""
+    """Inicializa a tabela de feedbacks se não existir e aplica migrações não destrutivas."""
     with _db_lock:
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -64,6 +64,17 @@ def init_feedback_db() -> None:
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_feedback_cat ON user_feedbacks(category);
             """)
+
+            # Migração segura e não destrutiva para respostas da moderação (preserva dados de produção)
+            cursor.execute("PRAGMA table_info(user_feedbacks);")
+            columns = {row["name"] for row in cursor.fetchall()}
+            if "admin_reply" not in columns:
+                cursor.execute("ALTER TABLE user_feedbacks ADD COLUMN admin_reply TEXT;")
+            if "replied_at" not in columns:
+                cursor.execute("ALTER TABLE user_feedbacks ADD COLUMN replied_at TIMESTAMP;")
+            if "replied_by" not in columns:
+                cursor.execute("ALTER TABLE user_feedbacks ADD COLUMN replied_by TEXT;")
+
             conn.commit()
 
 
@@ -118,7 +129,8 @@ def get_recent_feedbacks(limit: int = 6) -> List[Dict[str, Any]]:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, category, name, rating, message, tool_context, created_at
+                SELECT id, category, name, rating, message, tool_context, created_at,
+                       admin_reply, replied_at, replied_by
                 FROM user_feedbacks
                 ORDER BY created_at DESC
                 LIMIT ?
@@ -138,6 +150,7 @@ def get_recent_feedbacks(limit: int = 6) -> List[Dict[str, Any]]:
             else:
                 display_name = parts[0]
 
+        row_keys = r.keys()
         results.append({
             "id": r["id"],
             "category": r["category"],
@@ -146,8 +159,85 @@ def get_recent_feedbacks(limit: int = 6) -> List[Dict[str, Any]]:
             "message": r["message"],
             "tool_context": r["tool_context"],
             "created_at": r["created_at"],
+            "admin_reply": r["admin_reply"] if "admin_reply" in row_keys else None,
+            "replied_at": r["replied_at"] if "replied_at" in row_keys else None,
+            "replied_by": r["replied_by"] if "replied_by" in row_keys else None,
         })
     return results
+
+
+def get_feedback_by_id(feedback_id: int) -> Optional[Dict[str, Any]]:
+    """Busca um feedback específico pelo ID."""
+    with _db_lock:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, category, name, rating, message, tool_context, created_at,
+                       admin_reply, replied_at, replied_by
+                FROM user_feedbacks
+                WHERE id = ?
+            """, (int(feedback_id),))
+            r = cursor.fetchone()
+            if not r:
+                return None
+
+            row_keys = r.keys()
+            return {
+                "id": r["id"],
+                "category": r["category"],
+                "name": r["name"] or "Usuário Anônimo",
+                "rating": r["rating"],
+                "message": r["message"],
+                "tool_context": r["tool_context"],
+                "created_at": r["created_at"],
+                "admin_reply": r["admin_reply"] if "admin_reply" in row_keys else None,
+                "replied_at": r["replied_at"] if "replied_at" in row_keys else None,
+                "replied_by": r["replied_by"] if "replied_by" in row_keys else None,
+            }
+
+
+def save_feedback_reply(
+    feedback_id: int,
+    reply_text: str,
+    replied_by: Optional[str] = "Equipe Klynner"
+) -> bool:
+    """Salva ou atualiza a resposta oficial de moderação para um comentário."""
+    clean_reply = html.escape(reply_text.strip())
+    clean_author = html.escape(replied_by.strip()) if replied_by and replied_by.strip() else "Equipe Klynner"
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    with _db_lock:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE user_feedbacks
+                SET admin_reply = ?, replied_at = ?, replied_by = ?
+                WHERE id = ?
+            """, (clean_reply, now_iso, clean_author, int(feedback_id)))
+            updated = cursor.rowcount > 0
+            conn.commit()
+
+    if updated:
+        logger.info(f"Feedback #{feedback_id} respondido com sucesso por '{clean_author}'.")
+    return updated
+
+
+def delete_feedback_reply(feedback_id: int) -> bool:
+    """Remove a resposta oficial de um comentário sem excluir o comentário original do usuário."""
+    with _db_lock:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE user_feedbacks
+                SET admin_reply = NULL, replied_at = NULL, replied_by = NULL
+                WHERE id = ?
+            """, (int(feedback_id),))
+            cleared = cursor.rowcount > 0
+            conn.commit()
+
+    if cleared:
+        logger.info(f"Resposta do Feedback #{feedback_id} removida pela moderação.")
+    return cleared
 
 
 def get_feedback_count() -> int:
