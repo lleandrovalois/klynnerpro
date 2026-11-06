@@ -426,6 +426,7 @@
   const btnDensityCompact = document.getElementById('btn-density-compact');
   const btnMergeLayoutGrid = document.getElementById('btn-merge-layout-grid');
   const btnMergeLayoutBoxes = document.getElementById('btn-merge-layout-boxes');
+  const boxesToggleGroup = document.getElementById('boxes-toggle-group');
   const btnMergeCollapseAll = document.getElementById('btn-merge-collapse-all');
   const btnMergeExpandAll = document.getElementById('btn-merge-expand-all');
   const fileList = document.getElementById('file-list');
@@ -1599,14 +1600,15 @@
       });
     }
 
-    // Alternância de Modo de Exibição de Páginas (Todas as Páginas vs Por Arquivo)
+    // Alternância de Modo de Exibição de Páginas (Páginas vs Por Arquivo)
     if (btnMergeLayoutGrid) {
       btnMergeLayoutGrid.addEventListener('click', () => {
         state.mergePageLayout = 'grid';
         btnMergeLayoutGrid.classList.add('active');
         if (btnMergeLayoutBoxes) btnMergeLayoutBoxes.classList.remove('active');
+        if (boxesToggleGroup) boxesToggleGroup.classList.add('hidden');
         renderMergePagesGrid();
-        showToast('Modo de visualização: Grade de Todas as Páginas com Drag & Drop ativo.', 'info');
+        showToast('Modo de visualização: Grade de Todas as Páginas.', 'info');
       });
     }
 
@@ -1615,20 +1617,22 @@
         state.mergePageLayout = 'boxes';
         btnMergeLayoutBoxes.classList.add('active');
         if (btnMergeLayoutGrid) btnMergeLayoutGrid.classList.remove('active');
+        if (boxesToggleGroup) boxesToggleGroup.classList.remove('hidden');
         renderMergePagesGrid();
-        showToast('Modo de visualização: Caixas Minimizáveis por Documento.', 'info');
+        showToast('Modo de visualização: Por Arquivo.', 'info');
       });
     }
 
-    // Controles de Minimizar / Expandir todas as caixas de arquivo
+    // Controles de Recolher / Expandir caixas de arquivo
     if (btnMergeCollapseAll) {
       btnMergeCollapseAll.addEventListener('click', () => {
         state.mergePageLayout = 'boxes';
         if (btnMergeLayoutBoxes) btnMergeLayoutBoxes.classList.add('active');
         if (btnMergeLayoutGrid) btnMergeLayoutGrid.classList.remove('active');
+        if (boxesToggleGroup) boxesToggleGroup.classList.remove('hidden');
         state.mergeFiles.forEach(f => { f.collapsed = true; });
         renderMergePagesGrid();
-        showToast('Todas as caixas de arquivo foram minimizadas.', 'info');
+        showToast('Todas as caixas foram recolhidas.', 'info');
       });
     }
 
@@ -2165,7 +2169,12 @@
       return;
     }
 
-    if (state.mergePageLayout === 'boxes') {
+    const isBoxes = state.mergePageLayout === 'boxes';
+    if (btnMergeLayoutBoxes) btnMergeLayoutBoxes.classList.toggle('active', isBoxes);
+    if (btnMergeLayoutGrid) btnMergeLayoutGrid.classList.toggle('active', !isBoxes);
+    if (boxesToggleGroup) boxesToggleGroup.classList.toggle('hidden', !isBoxes);
+
+    if (isBoxes) {
       renderMergeBoxesLayout();
     } else {
       renderMergeGridLayout();
@@ -2728,7 +2737,11 @@
     const selected = state.mergePages.filter(p => p.selected).length;
 
     if (mergeSelectionStatus) {
-      mergeSelectionStatus.textContent = `${total} páginas • ${selected} selecionada${selected !== 1 ? 's' : ''}`;
+      if (selected > 0) {
+        mergeSelectionStatus.textContent = `${total} págs (${selected} sel.)`;
+      } else {
+        mergeSelectionStatus.textContent = `${total} página${total !== 1 ? 's' : ''}`;
+      }
     }
 
     if (mergeSelectAllCheckbox) {

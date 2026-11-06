@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=2.9.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.9.4">
   <!-- PDF.js para renderização de miniaturas no navegador com zero sobrecarga de RAM do servidor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- Google AdSense Integrado de Forma Discreta (Klynner PRO Monetization) -->
@@ -654,29 +654,41 @@
             </div>
           </div>
 
-          <!-- Sub-Barra do Modo Páginas: Selecionar tudo, Contagem e Ordenação -->
+          <!-- Sub-Barra do Modo Páginas: Seleção, Alternância de Layout e Ordenação -->
           <div class="merge-subbar" id="merge-pages-subbar">
             <div class="subbar-left">
-              <label class="merge-select-all-label">
+              <!-- Checkbox de Selecionar Tudo -->
+              <label class="merge-select-all-label" title="Selecionar ou desselecionar todas as páginas">
                 <input type="checkbox" id="merge-select-all-checkbox">
                 <span>Selecionar tudo</span>
               </label>
+
+              <!-- Contador de Páginas / Selecionadas -->
               <span class="selection-status-badge" id="merge-selection-status">0 de 0 páginas</span>
 
-              <div class="collapse-controls-group">
-                <button type="button" class="btn-subbar-action active" id="btn-merge-layout-grid" title="Visualização completa de todas as páginas em grade contínua com drag & drop">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                  <span>Todas as Páginas</span>
+              <div class="subbar-divider"></div>
+
+              <!-- Seletor de Modo de Visualização (Segmented Control) -->
+              <div class="subbar-segmented-group" role="group" aria-label="Modo de Visualização">
+                <button type="button" class="subbar-segmented-btn active" id="btn-merge-layout-grid" title="Visualização completa de todas as páginas em grade contínua">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <span>Páginas</span>
                 </button>
-                <button type="button" class="btn-subbar-action" id="btn-merge-layout-boxes" title="Agrupar documentos em caixas minimizáveis (ideal para arquivos grandes)">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 12 6 20 14"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+                <button type="button" class="subbar-segmented-btn" id="btn-merge-layout-boxes" title="Agrupar documentos em caixas minimizáveis (ideal para arquivos grandes)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 12 6 20 14"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
                   <span>Por Arquivo</span>
                 </button>
-                <button type="button" class="btn-subbar-action" id="btn-merge-collapse-all" title="Minimizar todos os arquivos em caixas">
-                  <span>Minimizar Todos</span>
+              </div>
+
+              <!-- Ações em Lote para Caixas (visíveis no modo 'Por Arquivo') -->
+              <div class="boxes-toggle-group hidden" id="boxes-toggle-group">
+                <button type="button" class="btn-subbar-action btn-subbar-compact" id="btn-merge-collapse-all" title="Minimizar todas as caixas de documentos">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 12 6 20 14"/></svg>
+                  <span>Recolher</span>
                 </button>
-                <button type="button" class="btn-subbar-action" id="btn-merge-expand-all" title="Expandir todas as caixas de páginas">
-                  <span>Expandir Todos</span>
+                <button type="button" class="btn-subbar-action btn-subbar-compact" id="btn-merge-expand-all" title="Expandir todas as caixas de páginas">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                  <span>Expandir</span>
                 </button>
               </div>
             </div>
@@ -684,7 +696,7 @@
             <div class="subbar-right">
               <!-- Botão Reordenar Rápido em Lista (Ideal para muitos arquivos) -->
               <button type="button" class="btn-subbar-action btn-highlight-action" id="btn-merge-quick-reorder" title="Abrir organizador rápido em lista (ideal para 10 a 60+ arquivos sem arrastar)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="8" y1="6" x2="21" y2="6"></line>
                   <line x1="8" y1="12" x2="21" y2="12"></line>
                   <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -692,14 +704,15 @@
                   <line x1="3" y1="12" x2="3.01" y2="12"></line>
                   <line x1="3" y1="18" x2="3.01" y2="18"></line>
                 </svg>
-                <span>⚡ Reordenar em Lista</span>
+                <span>Reordenar Lista</span>
               </button>
 
               <!-- Menu de Ordenação Rápida -->
               <div class="dropdown-wrapper">
                 <button type="button" class="btn-subbar-action" id="btn-merge-sort-menu" title="Opções de ordenação automática">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
                   <span>Ordenar</span>
+                  <svg class="chevron-down" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <div class="subbar-dropdown-menu hidden" id="merge-sort-dropdown">
                   <div class="dropdown-header-label">Por Nome do Arquivo:</div>
@@ -717,10 +730,10 @@
               <!-- Densidade de Visualização (Grade vs Compacto) -->
               <div class="view-density-group">
                 <button type="button" class="btn-density active" id="btn-density-grid" title="Visualização em Grade">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                 </button>
                 <button type="button" class="btn-density" id="btn-density-compact" title="Visualização Compacta">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                 </button>
               </div>
             </div>
@@ -772,8 +785,8 @@
 
                 <!-- Botão Reordenar Rápido na Lista de Arquivos -->
                 <button type="button" class="btn btn-secondary btn-sm btn-highlight-action" id="btn-files-quick-reorder" title="Abrir organizador rápido em lista">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                  <span>⚡ Reordenar em Lista</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                  <span>Reordenar Lista</span>
                 </button>
 
                 <button type="button" class="btn btn-secondary btn-sm" id="btn-add-more">
@@ -3782,6 +3795,6 @@
     </footer>
   </div>
 
-  <script src="/static/js/app.js?v=2.9.3"></script>
+  <script src="/static/js/app.js?v=2.9.4"></script>
 </body>
 </html>
