@@ -405,6 +405,23 @@
   const btnMergeFinishTop = document.getElementById('btn-merge-finish-top');
   const btnMergeSortMenu = document.getElementById('btn-merge-sort-menu');
   const mergeSortDropdown = document.getElementById('merge-sort-dropdown');
+  const btnMergeQuickReorder = document.getElementById('btn-merge-quick-reorder');
+  const btnFilesQuickReorder = document.getElementById('btn-files-quick-reorder');
+  const btnFilesSortMenu = document.getElementById('btn-files-sort-menu');
+  const filesSortDropdown = document.getElementById('files-sort-dropdown');
+  const quickReorderModal = document.getElementById('quick-reorder-modal');
+  const btnCloseQuickReorder = document.getElementById('btn-close-quick-reorder');
+  const btnCancelQuickReorder = document.getElementById('btn-cancel-quick-reorder');
+  const btnApplyQuickReorder = document.getElementById('btn-apply-quick-reorder');
+  const quickReorderItems = document.getElementById('quick-reorder-items');
+  const quickReorderCountBadge = document.getElementById('quick-reorder-count-badge');
+  const quickReorderSummary = document.getElementById('quick-reorder-summary');
+  const quickReorderSearchInput = document.getElementById('quick-reorder-search-input');
+  const btnReorderSortNameAsc = document.getElementById('btn-reorder-sort-name-asc');
+  const btnReorderSortNameDesc = document.getElementById('btn-reorder-sort-name-desc');
+  const btnReorderSortNameNum = document.getElementById('btn-reorder-sort-name-num');
+  const btnReorderSortReverse = document.getElementById('btn-reorder-sort-reverse');
+  const btnReorderSortOrig = document.getElementById('btn-reorder-sort-orig');
   const btnDensityGrid = document.getElementById('btn-density-grid');
   const btnDensityCompact = document.getElementById('btn-density-compact');
   const btnMergeLayoutGrid = document.getElementById('btn-merge-layout-grid');
@@ -1716,11 +1733,37 @@
       });
     }
 
-    // Menu de Ordenação Rápida
+    // Função auxiliar para ordenar arquivos
+    function sortMergeFilesBy(criteria) {
+      if (!state.mergeFiles || state.mergeFiles.length < 2) return;
+
+      if (criteria === 'name-asc') {
+        state.mergeFiles.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
+        showToast('Arquivos ordenados de A a Z.', 'info');
+      } else if (criteria === 'name-desc') {
+        state.mergeFiles.sort((a, b) => (b.name || '').localeCompare(a.name || '', 'pt-BR', { sensitivity: 'base' }));
+        showToast('Arquivos ordenados de Z a A.', 'info');
+      } else if (criteria === 'name-num') {
+        state.mergeFiles.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { numeric: true, sensitivity: 'base' }));
+        showToast('Arquivos ordenados por numeração natural (1, 2, 10...).', 'info');
+      } else if (criteria === 'reverse') {
+        state.mergeFiles.reverse();
+        showToast('Sequência dos arquivos invertida.', 'info');
+      } else if (criteria === 'orig-files') {
+        state.mergeFiles.sort((a, b) => (a.uploadTimestamp || 0) - (b.uploadTimestamp || 0));
+        showToast('Arquivos restaurados à sequência original de envio.', 'info');
+      }
+
+      renderMergeFileList();
+      syncMergePagesToFileOrder();
+    }
+
+    // Menu de Ordenação Rápida no Modo Páginas
     if (btnMergeSortMenu && mergeSortDropdown) {
       btnMergeSortMenu.addEventListener('click', (e) => {
         e.stopPropagation();
         mergeSortDropdown.classList.toggle('hidden');
+        if (filesSortDropdown) filesSortDropdown.classList.add('hidden');
       });
 
       mergeSortDropdown.querySelectorAll('.subbar-dropdown-item').forEach(btn => {
@@ -1728,19 +1771,16 @@
           e.stopPropagation();
           mergeSortDropdown.classList.add('hidden');
           const sortMode = btn.dataset.sort;
-          if (sortMode === 'orig-files') {
-            state.mergePages.sort((a, b) => {
-              const fileAIdx = state.mergeFiles.findIndex(f => f.id === a.fileId);
-              const fileBIdx = state.mergeFiles.findIndex(f => f.id === b.fileId);
-              if (fileAIdx !== fileBIdx) return fileAIdx - fileBIdx;
-              return (typeof a.origPage === 'number' ? a.origPage : 0) - (typeof b.origPage === 'number' ? b.origPage : 0);
-            });
-            renderMergePagesGrid();
-            showToast('Páginas reordenadas conforme os arquivos originais.', 'info');
+          if (['name-asc', 'name-desc', 'name-num', 'orig-files'].includes(sortMode)) {
+            sortMergeFilesBy(sortMode);
           } else if (sortMode === 'reverse') {
-            state.mergePages.reverse();
-            renderMergePagesGrid();
-            showToast('Sequência das páginas invertida.', 'info');
+            if (state.mergeFiles.length > 1) {
+              sortMergeFilesBy('reverse');
+            } else {
+              state.mergePages.reverse();
+              renderMergePagesGrid();
+              showToast('Sequência das páginas invertida.', 'info');
+            }
           } else if (sortMode === 'group-by-file') {
             state.mergePages.sort((a, b) => a.fileIndex - b.fileIndex);
             renderMergePagesGrid();
@@ -1748,9 +1788,86 @@
           }
         });
       });
+    }
 
-      document.addEventListener('click', () => {
+    // Menu de Ordenação no Modo Arquivos
+    if (btnFilesSortMenu && filesSortDropdown) {
+      btnFilesSortMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        filesSortDropdown.classList.toggle('hidden');
         if (mergeSortDropdown) mergeSortDropdown.classList.add('hidden');
+      });
+
+      filesSortDropdown.querySelectorAll('.subbar-dropdown-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          filesSortDropdown.classList.add('hidden');
+          const sortMode = btn.dataset.sort;
+          sortMergeFilesBy(sortMode);
+        });
+      });
+    }
+
+    document.addEventListener('click', () => {
+      if (mergeSortDropdown) mergeSortDropdown.classList.add('hidden');
+      if (filesSortDropdown) filesSortDropdown.classList.add('hidden');
+    });
+
+    // Botões para abrir o Organizador Rápido de Documentos (Modal)
+    if (btnMergeQuickReorder) btnMergeQuickReorder.addEventListener('click', openQuickReorderModal);
+    if (btnFilesQuickReorder) btnFilesQuickReorder.addEventListener('click', openQuickReorderModal);
+
+    // Eventos do Modal de Reordenação Rápida
+    if (btnCloseQuickReorder) btnCloseQuickReorder.addEventListener('click', closeQuickReorderModal);
+    if (btnCancelQuickReorder) btnCancelQuickReorder.addEventListener('click', closeQuickReorderModal);
+    if (btnApplyQuickReorder) btnApplyQuickReorder.addEventListener('click', applyQuickReorder);
+
+    if (btnReorderSortNameAsc) {
+      btnReorderSortNameAsc.addEventListener('click', () => {
+        tempReorderFiles.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }));
+        renderQuickReorderList();
+      });
+    }
+
+    if (btnReorderSortNameDesc) {
+      btnReorderSortNameDesc.addEventListener('click', () => {
+        tempReorderFiles.sort((a, b) => (b.name || '').localeCompare(a.name || '', 'pt-BR', { sensitivity: 'base' }));
+        renderQuickReorderList();
+      });
+    }
+
+    if (btnReorderSortNameNum) {
+      btnReorderSortNameNum.addEventListener('click', () => {
+        tempReorderFiles.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { numeric: true, sensitivity: 'base' }));
+        renderQuickReorderList();
+      });
+    }
+
+    if (btnReorderSortReverse) {
+      btnReorderSortReverse.addEventListener('click', () => {
+        tempReorderFiles.reverse();
+        renderQuickReorderList();
+      });
+    }
+
+    if (btnReorderSortOrig) {
+      btnReorderSortOrig.addEventListener('click', () => {
+        tempReorderFiles.sort((a, b) => (a.uploadTimestamp || 0) - (b.uploadTimestamp || 0));
+        renderQuickReorderList();
+      });
+    }
+
+    if (quickReorderSearchInput) {
+      quickReorderSearchInput.addEventListener('input', () => {
+        const val = quickReorderSearchInput.value.trim().toLowerCase();
+        if (!quickReorderItems) return;
+        quickReorderItems.querySelectorAll('.quick-reorder-item-row').forEach(row => {
+          const idx = Number(row.dataset.index);
+          const f = tempReorderFiles[idx];
+          if (!f) return;
+          const match = !val || (f.name || '').toLowerCase().includes(val) || (f.menuTitle || '').toLowerCase().includes(val);
+          row.classList.toggle('filtered-out', !match);
+        });
       });
     }
 
@@ -1771,6 +1888,169 @@
     // Botões de Execução (Topo e Rodapé)
     if (btnMergeFinishTop) btnMergeFinishTop.addEventListener('click', onExecuteMerge);
     if (btnStartMerge) btnStartMerge.addEventListener('click', onExecuteMerge);
+  }
+
+  // ==============================================================
+  // MÓDULO DE REORDENAÇÃO RÁPIDA DE ARQUIVOS (MULTI-ARQUIVOS 10-60+)
+  // ==============================================================
+  let tempReorderFiles = [];
+
+  function moveMergeFileToPosition(fromIndex, toIndex) {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= state.mergeFiles.length || toIndex >= state.mergeFiles.length) {
+      return;
+    }
+    const moved = state.mergeFiles.splice(fromIndex, 1)[0];
+    state.mergeFiles.splice(toIndex, 0, moved);
+    renderMergeFileList();
+    syncMergePagesToFileOrder();
+    renderMergePagesGrid();
+    showToast(`"${moved.name}" movido para a posição #${toIndex + 1}.`, 'info');
+  }
+
+  function openQuickReorderModal() {
+    if (!quickReorderModal || state.mergeFiles.length === 0) {
+      showToast('Nenhum arquivo carregado para reordenar.', 'warning');
+      return;
+    }
+    tempReorderFiles = state.mergeFiles.map(f => ({ ...f }));
+    if (quickReorderSearchInput) quickReorderSearchInput.value = '';
+    renderQuickReorderList();
+    quickReorderModal.classList.remove('hidden');
+    setTimeout(() => {
+      if (quickReorderSearchInput) quickReorderSearchInput.focus();
+    }, 120);
+  }
+
+  function closeQuickReorderModal() {
+    if (quickReorderModal) quickReorderModal.classList.add('hidden');
+    tempReorderFiles = [];
+  }
+
+  function renderQuickReorderList() {
+    if (!quickReorderItems) return;
+    quickReorderItems.innerHTML = '';
+
+    if (quickReorderCountBadge) {
+      quickReorderCountBadge.textContent = `${tempReorderFiles.length} arquivo${tempReorderFiles.length === 1 ? '' : 's'}`;
+    }
+    if (quickReorderSummary) {
+      const totalPages = tempReorderFiles.reduce((acc, f) => acc + (f.pageCount || 1), 0);
+      quickReorderSummary.textContent = `${tempReorderFiles.length} arquivos listados • ${totalPages} páginas no total`;
+    }
+
+    const searchTerm = (quickReorderSearchInput ? quickReorderSearchInput.value : '').trim().toLowerCase();
+
+    tempReorderFiles.forEach((fileItem, idx) => {
+      const row = document.createElement('div');
+      row.className = 'quick-reorder-item-row';
+      row.dataset.index = idx;
+
+      const isMatch = !searchTerm ||
+        (fileItem.name || '').toLowerCase().includes(searchTerm) ||
+        (fileItem.menuTitle || '').toLowerCase().includes(searchTerm);
+
+      if (!isMatch) {
+        row.classList.add('filtered-out');
+      }
+
+      row.innerHTML = `
+        <div class="col-pos">
+          <input type="number" min="1" max="${tempReorderFiles.length}" class="quick-order-input" value="${idx + 1}" title="Digite a posição e aperte Enter">
+        </div>
+        <div class="col-name">
+          <span class="quick-item-filename" title="${escapeHtml(fileItem.name)}">${escapeHtml(fileItem.name)}</span>
+          <span class="quick-item-menutitle" title="Nome no sumário: ${escapeHtml(fileItem.menuTitle)}">${escapeHtml(fileItem.menuTitle)}</span>
+        </div>
+        <div class="col-info">
+          <span>${fileItem.pageCount || 1} pág${(fileItem.pageCount || 1) > 1 ? 's' : ''}</span>
+        </div>
+        <div class="col-actions">
+          <button type="button" class="btn-quick-nav btn-quick-top" title="Mover para o topo (1º lugar)" ${idx === 0 ? 'disabled' : ''}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="18 11 12 5 6 11"/><polyline points="18 19 12 13 6 19"/></svg>
+          </button>
+          <button type="button" class="btn-quick-nav btn-quick-up" title="Subir uma posição" ${idx === 0 ? 'disabled' : ''}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button type="button" class="btn-quick-nav btn-quick-down" title="Descer uma posição" ${idx === tempReorderFiles.length - 1 ? 'disabled' : ''}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <button type="button" class="btn-quick-nav btn-quick-bottom" title="Mover para o final (último lugar)" ${idx === tempReorderFiles.length - 1 ? 'disabled' : ''}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 13 12 19 18 13"/><polyline points="6 5 12 11 18 5"/></svg>
+          </button>
+        </div>
+      `;
+
+      // Input numérico para salto direto de posição
+      const numInput = row.querySelector('.quick-order-input');
+      const handlePositionChange = () => {
+        let target = parseInt(numInput.value, 10);
+        if (isNaN(target)) {
+          numInput.value = idx + 1;
+          return;
+        }
+        target = Math.max(1, Math.min(tempReorderFiles.length, target));
+        const targetIndex = target - 1;
+        if (targetIndex !== idx) {
+          const itemToMove = tempReorderFiles.splice(idx, 1)[0];
+          tempReorderFiles.splice(targetIndex, 0, itemToMove);
+          renderQuickReorderList();
+        }
+      };
+
+      numInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handlePositionChange();
+        }
+      });
+      numInput.addEventListener('blur', handlePositionChange);
+
+      // Botões de navegação
+      row.querySelector('.btn-quick-top').addEventListener('click', () => {
+        if (idx > 0) {
+          const item = tempReorderFiles.splice(idx, 1)[0];
+          tempReorderFiles.unshift(item);
+          renderQuickReorderList();
+        }
+      });
+
+      row.querySelector('.btn-quick-up').addEventListener('click', () => {
+        if (idx > 0) {
+          const tmp = tempReorderFiles[idx];
+          tempReorderFiles[idx] = tempReorderFiles[idx - 1];
+          tempReorderFiles[idx - 1] = tmp;
+          renderQuickReorderList();
+        }
+      });
+
+      row.querySelector('.btn-quick-down').addEventListener('click', () => {
+        if (idx < tempReorderFiles.length - 1) {
+          const tmp = tempReorderFiles[idx];
+          tempReorderFiles[idx] = tempReorderFiles[idx + 1];
+          tempReorderFiles[idx + 1] = tmp;
+          renderQuickReorderList();
+        }
+      });
+
+      row.querySelector('.btn-quick-bottom').addEventListener('click', () => {
+        if (idx < tempReorderFiles.length - 1) {
+          const item = tempReorderFiles.splice(idx, 1)[0];
+          tempReorderFiles.push(item);
+          renderQuickReorderList();
+        }
+      });
+
+      quickReorderItems.appendChild(row);
+    });
+  }
+
+  function applyQuickReorder() {
+    if (!tempReorderFiles || tempReorderFiles.length === 0) return;
+    state.mergeFiles = tempReorderFiles;
+    renderMergeFileList();
+    syncMergePagesToFileOrder();
+    closeQuickReorderModal();
+    showToast(`Nova sequência de ${state.mergeFiles.length} arquivos aplicada com sucesso!`, 'success');
   }
 
   /**
@@ -1814,6 +2094,7 @@
         colorIndex: colorIdx,
         isUploaded: false,
         collapsed: pageCount > 15, // Arquivos grandes iniciam minimizados; arquivos com poucas páginas iniciam abertos
+        uploadTimestamp: Date.now() + i,
       };
 
       state.mergeFiles.push(fileItem);
@@ -1844,10 +2125,29 @@
 
     if (mergePagesLoading) mergePagesLoading.classList.add('hidden');
 
+    if (state.mergeFiles.length >= 8 && state.mergePageLayout !== 'boxes') {
+      state.mergePageLayout = 'boxes';
+      if (btnLayoutBoxes) btnLayoutBoxes.classList.add('active');
+      if (btnLayoutGrid) btnLayoutGrid.classList.remove('active');
+    }
+
+    const mergeHintText = document.getElementById('merge-hint-text');
+    if (mergeHintText) {
+      if (state.mergeFiles.length >= 8) {
+        mergeHintText.innerHTML = `Detectados <strong>${state.mergeFiles.length} arquivos</strong>. Organizamos em caixas minimizadas para máxima fluidez. Use <strong>⚡ Reordenar em Lista</strong> para ordenar em massa ou clique no número <strong>(#)</strong> do arquivo para digitar sua posição.`;
+      } else {
+        mergeHintText.innerHTML = `Arquivos organizados em <strong>caixas minimizadas</strong> para eliminar a poluição visual. Arraste a caixa ou use as setas <strong>▲ / ▼</strong> para reordenar o documento inteiro. Clique em <strong>Ver Páginas</strong> para inspecionar ou ajustar páginas individuais.`;
+      }
+    }
+
     renderMergeFileList();
     await renderMergePagesGrid();
     updateMergeSelectionStatus();
-    showToast(`${newFiles.length} arquivo(s) carregado(s). Organize as páginas arrastando como desejar!`, 'success');
+    if (state.mergeFiles.length >= 8) {
+      showToast(`${newFiles.length} arquivo(s) adicionado(s) (${state.mergeFiles.length} no total). Dica: use "⚡ Reordenar em Lista" para organizar rápido!`, 'info', 5000);
+    } else {
+      showToast(`${newFiles.length} arquivo(s) carregado(s). Organize as páginas arrastando como desejar!`, 'success');
+    }
   }
 
   /**
@@ -1949,7 +2249,7 @@
                 <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
               </svg>
             </div>
-            <span class="file-box-order-badge page-doc-badge color-${fileItem.colorIndex}">${fileIdx + 1}</span>
+            <span class="file-box-order-badge page-doc-badge color-${fileItem.colorIndex} interactive-badge" title="Posição #${fileIdx + 1}. Clique para digitar a nova posição diretamente">${fileIdx + 1}</span>
             <div class="file-box-thumb">
               <canvas class="file-box-cover-canvas" width="36" height="48"></canvas>
             </div>
@@ -1971,11 +2271,17 @@
               <span class="toggle-text">${isCollapsed ? `Ver Páginas (${filePages.length})` : 'Ocultar Páginas'}</span>
               <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
+            <button type="button" class="btn-icon btn-file-move-first" title="Mover para o topo (1º lugar)" ${fileIdx === 0 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 11 12 5 6 11"/><polyline points="18 18 12 12 6 18"/></svg>
+            </button>
             <button type="button" class="btn-icon btn-file-move-up" title="Mover este documento para cima" ${fileIdx === 0 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
             </button>
             <button type="button" class="btn-icon btn-file-move-down" title="Mover este documento para baixo" ${fileIdx === state.mergeFiles.length - 1 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <button type="button" class="btn-icon btn-file-move-last" title="Mover para o fim (último lugar)" ${fileIdx === state.mergeFiles.length - 1 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 13 12 19 18 13"/><polyline points="6 6 12 12 18 6"/></svg>
             </button>
             <button type="button" class="btn-icon btn-icon-danger btn-file-remove" title="Remover este arquivo">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -2025,6 +2331,31 @@
         }
       });
 
+      // Clique no badge para escolher posição numérica diretamente
+      const orderBadge = box.querySelector('.file-box-order-badge');
+      if (orderBadge) {
+        orderBadge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetStr = prompt(`Digite a nova posição para "${fileItem.name}" (1 a ${state.mergeFiles.length}):`, (fileIdx + 1).toString());
+          if (targetStr === null) return;
+          const targetPos = parseInt(targetStr.trim(), 10);
+          if (isNaN(targetPos) || targetPos < 1 || targetPos > state.mergeFiles.length) {
+            showToast(`Posição inválida. Digite um número de 1 a ${state.mergeFiles.length}.`, 'warning');
+            return;
+          }
+          moveMergeFileToPosition(fileIdx, targetPos - 1);
+        });
+      }
+
+      // Mover arquivo para o primeiro lugar
+      const btnMoveFirst = box.querySelector('.btn-file-move-first');
+      if (btnMoveFirst) {
+        btnMoveFirst.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (fileIdx > 0) moveMergeFileToPosition(fileIdx, 0);
+        });
+      }
+
       // Mover arquivo para cima
       box.querySelector('.btn-file-move-up').addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2036,6 +2367,15 @@
         e.stopPropagation();
         if (fileIdx < state.mergeFiles.length - 1) swapMergeFiles(fileIdx, fileIdx + 1);
       });
+
+      // Mover arquivo para o último lugar
+      const btnMoveLast = box.querySelector('.btn-file-move-last');
+      if (btnMoveLast) {
+        btnMoveLast.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (fileIdx < state.mergeFiles.length - 1) moveMergeFileToPosition(fileIdx, state.mergeFiles.length - 1);
+        });
+      }
 
       // Remover arquivo
       box.querySelector('.btn-file-remove').addEventListener('click', (e) => {
@@ -2506,7 +2846,7 @@
               <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
             </svg>
           </div>
-          <div class="file-order-badge">${index + 1}</div>
+          <div class="file-order-badge interactive-badge" title="Posição #${index + 1}. Clique para digitar a nova posição diretamente">${index + 1}</div>
           <div class="file-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -2530,11 +2870,17 @@
         </div>
 
         <div class="file-item-right">
+          <button type="button" class="btn-icon btn-move-first" title="Mover para o topo (1º lugar)" ${index === 0 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 11 12 5 6 11"/><polyline points="18 18 12 12 6 18"/></svg>
+          </button>
           <button type="button" class="btn-icon btn-move-up" title="Mover para cima" ${index === 0 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
           </button>
           <button type="button" class="btn-icon btn-move-down" title="Mover para baixo" ${index === state.mergeFiles.length - 1 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <button type="button" class="btn-icon btn-move-last" title="Mover para o fim (último lugar)" ${index === state.mergeFiles.length - 1 ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 13 12 19 18 13"/><polyline points="6 6 12 12 18 6"/></svg>
           </button>
           <button type="button" class="btn-icon btn-icon-danger btn-remove" title="Remover este arquivo">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -2550,6 +2896,31 @@
 
       setupMergeDragDrop(li, index);
 
+      // Clique no badge para escolher posição numérica diretamente
+      const orderBadge = li.querySelector('.file-order-badge');
+      if (orderBadge) {
+        orderBadge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetStr = prompt(`Digite a nova posição para "${item.name}" (1 a ${state.mergeFiles.length}):`, (index + 1).toString());
+          if (targetStr === null) return;
+          const targetPos = parseInt(targetStr.trim(), 10);
+          if (isNaN(targetPos) || targetPos < 1 || targetPos > state.mergeFiles.length) {
+            showToast(`Posição inválida. Digite um número de 1 a ${state.mergeFiles.length}.`, 'warning');
+            return;
+          }
+          moveMergeFileToPosition(index, targetPos - 1);
+        });
+      }
+
+      // Mover para o primeiro lugar
+      const btnMoveFirst = li.querySelector('.btn-move-first');
+      if (btnMoveFirst) {
+        btnMoveFirst.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (index > 0) moveMergeFileToPosition(index, 0);
+        });
+      }
+
       li.querySelector('.btn-move-up').addEventListener('click', (e) => {
         e.stopPropagation();
         if (index > 0) swapMergeFiles(index, index - 1);
@@ -2559,6 +2930,15 @@
         e.stopPropagation();
         if (index < state.mergeFiles.length - 1) swapMergeFiles(index, index + 1);
       });
+
+      // Mover para o último lugar
+      const btnMoveLast = li.querySelector('.btn-move-last');
+      if (btnMoveLast) {
+        btnMoveLast.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (index < state.mergeFiles.length - 1) moveMergeFileToPosition(index, state.mergeFiles.length - 1);
+        });
+      }
 
       li.querySelector('.btn-remove').addEventListener('click', (e) => {
         e.stopPropagation();

@@ -682,16 +682,35 @@
             </div>
 
             <div class="subbar-right">
+              <!-- Botão Reordenar Rápido em Lista (Ideal para muitos arquivos) -->
+              <button type="button" class="btn-subbar-action btn-highlight-action" id="btn-merge-quick-reorder" title="Abrir organizador rápido em lista (ideal para 10 a 60+ arquivos sem arrastar)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                <span>⚡ Reordenar em Lista</span>
+              </button>
+
               <!-- Menu de Ordenação Rápida -->
               <div class="dropdown-wrapper">
-                <button type="button" class="btn-subbar-action" id="btn-merge-sort-menu" title="Opções de ordenação">
+                <button type="button" class="btn-subbar-action" id="btn-merge-sort-menu" title="Opções de ordenação automática">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
                   <span>Ordenar</span>
                 </button>
                 <div class="subbar-dropdown-menu hidden" id="merge-sort-dropdown">
-                  <button type="button" class="subbar-dropdown-item" data-sort="orig-files">Ordem original dos arquivos</button>
-                  <button type="button" class="subbar-dropdown-item" data-sort="reverse">Inverter ordem das páginas</button>
-                  <button type="button" class="subbar-dropdown-item" data-sort="group-by-file">Agrupar por arquivo</button>
+                  <div class="dropdown-header-label">Por Nome do Arquivo:</div>
+                  <button type="button" class="subbar-dropdown-item" data-sort="name-asc">🔤 Nome (A → Z)</button>
+                  <button type="button" class="subbar-dropdown-item" data-sort="name-desc">🔤 Nome (Z → A)</button>
+                  <button type="button" class="subbar-dropdown-item" data-sort="name-num">🔢 Numérico Natural (1, 2, 10...)</button>
+                  <div class="dropdown-header-divider"></div>
+                  <div class="dropdown-header-label">Outras opções:</div>
+                  <button type="button" class="subbar-dropdown-item" data-sort="reverse">🔄 Inverter ordem das páginas</button>
+                  <button type="button" class="subbar-dropdown-item" data-sort="orig-files">📄 Ordem original dos arquivos</button>
+                  <button type="button" class="subbar-dropdown-item" data-sort="group-by-file">📂 Agrupar por arquivo</button>
                 </div>
               </div>
 
@@ -710,7 +729,7 @@
           <!-- Dica de Organização por Caixas Minimizadas -->
           <div class="merge-hint-banner" id="merge-hint-banner">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            <span>Arquivos organizados em <strong>caixas minimizadas</strong> para eliminar a poluição visual. Arraste a caixa ou use as setas <strong>▲ / ▼</strong> para reordenar o documento inteiro. Clique em <strong>Ver Páginas</strong> para inspecionar ou ajustar páginas individuais.</span>
+            <span id="merge-hint-text">Arquivos organizados em <strong>caixas minimizadas</strong> para eliminar a poluição visual. Arraste a caixa ou use as setas <strong>▲ / ▼</strong> para reordenar o documento inteiro. Clique em <strong>Ver Páginas</strong> para inspecionar ou ajustar páginas individuais.</span>
           </div>
 
           <!-- MODO 1: WORKSPACE DE PÁGINAS (ORGANIZADOR MULTI-ARQUIVO COM MINIATURAS E DRAG & DROP) -->
@@ -736,6 +755,27 @@
                 </p>
               </div>
               <div class="files-actions-top">
+                <!-- Menu de Ordenação na Lista de Arquivos -->
+                <div class="dropdown-wrapper">
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-files-sort-menu" title="Opções de ordenação automática dos arquivos">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/></svg>
+                    <span>Ordenar</span>
+                  </button>
+                  <div class="subbar-dropdown-menu hidden" id="files-sort-dropdown">
+                    <button type="button" class="subbar-dropdown-item" data-sort="name-asc">🔤 Nome (A → Z)</button>
+                    <button type="button" class="subbar-dropdown-item" data-sort="name-desc">🔤 Nome (Z → A)</button>
+                    <button type="button" class="subbar-dropdown-item" data-sort="name-num">🔢 Numérico Natural (1, 2, 10...)</button>
+                    <button type="button" class="subbar-dropdown-item" data-sort="reverse">🔄 Inverter Lista</button>
+                    <button type="button" class="subbar-dropdown-item" data-sort="orig-files">📄 Ordem Original</button>
+                  </div>
+                </div>
+
+                <!-- Botão Reordenar Rápido na Lista de Arquivos -->
+                <button type="button" class="btn btn-secondary btn-sm btn-highlight-action" id="btn-files-quick-reorder" title="Abrir organizador rápido em lista">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                  <span>⚡ Reordenar em Lista</span>
+                </button>
+
                 <button type="button" class="btn btn-secondary btn-sm" id="btn-add-more">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Adicionar Mais
@@ -3579,6 +3619,73 @@
       </div>
     </div>
 
+    <!-- Modal de Reordenação Rápida em Lista (Perfeito para 10 a 60+ arquivos) -->
+    <div class="modal-overlay hidden" id="quick-reorder-modal" role="dialog" aria-modal="true" aria-labelledby="quick-reorder-title">
+      <div class="modal-container modal-container-md">
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <h3 class="modal-title" id="quick-reorder-title">⚡ Organizador Rápido de Documentos</h3>
+            <span class="modal-badge badge-primary" id="quick-reorder-count-badge">0 arquivos</span>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-close-quick-reorder" aria-label="Fechar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body quick-reorder-body">
+          <p class="quick-reorder-desc">
+            Organize dezenas de arquivos de forma instantânea sem precisar arrastar miniaturas pesadas. Digite a posição desejada no campo numérico ou use as opções de ordenação com 1 clique:
+          </p>
+
+          <!-- Barra de Ações Rápidas no Modal -->
+          <div class="quick-reorder-actions-bar">
+            <div class="quick-reorder-sort-btns">
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-reorder-sort-name-asc" title="Ordenar de A a Z por nome de arquivo">
+                <span>🔤 A → Z</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-reorder-sort-name-desc" title="Ordenar de Z a A por nome de arquivo">
+                <span>🔤 Z → A</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-reorder-sort-name-num" title="Ordenar por numeração no nome (1, 2, 10...)">
+                <span>🔢 Numérico (1, 2, 10...)</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-reorder-sort-reverse" title="Inverter sequência atual">
+                <span>🔄 Inverter</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-reorder-sort-orig" title="Restaurar sequência original de envio">
+                <span>📄 Original</span>
+              </button>
+            </div>
+            
+            <!-- Campo de Busca/Filtro Rápido -->
+            <div class="quick-reorder-search-box">
+              <input type="text" id="quick-reorder-search-input" class="feedback-input" placeholder="🔍 Filtrar arquivo..." style="padding: 0.35rem 0.65rem; font-size: 0.8rem;">
+            </div>
+          </div>
+
+          <!-- Lista Reordenável Ultraleve -->
+          <div class="quick-reorder-list-wrapper">
+            <div class="quick-reorder-table-header">
+              <span class="col-pos">Ordem</span>
+              <span class="col-name">Nome do Arquivo / Título no Menu</span>
+              <span class="col-info">Páginas</span>
+              <span class="col-actions">Posicionamento Rápido</span>
+            </div>
+            <div class="quick-reorder-items" id="quick-reorder-items"></div>
+          </div>
+
+          <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; padding-top: 0.75rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+            <span class="quick-reorder-summary" id="quick-reorder-summary" style="font-size: 0.8rem; color: var(--text-muted);">0 arquivos listados</span>
+            <div style="display: flex; gap: 0.75rem;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-cancel-quick-reorder">Cancelar</button>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-apply-quick-reorder">
+                <span>Aplicar Nova Sequência</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal de Autenticação do Administrador / Moderação -->
     <div class="modal-overlay hidden" id="admin-auth-modal" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title">
       <div class="modal-container modal-container-sm">
@@ -3675,6 +3782,6 @@
     </footer>
   </div>
 
-  <script src="/static/js/app.js?v=2.9.2"></script>
+  <script src="/static/js/app.js?v=2.9.3"></script>
 </body>
 </html>
