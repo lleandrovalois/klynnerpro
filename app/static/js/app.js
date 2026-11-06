@@ -2171,8 +2171,9 @@
 
     if (state.mergeFiles.length >= 8 && state.mergePageLayout !== 'boxes') {
       state.mergePageLayout = 'boxes';
-      if (btnLayoutBoxes) btnLayoutBoxes.classList.add('active');
-      if (btnLayoutGrid) btnLayoutGrid.classList.remove('active');
+      if (btnMergeLayoutBoxes) btnMergeLayoutBoxes.classList.add('active');
+      if (btnMergeLayoutGrid) btnMergeLayoutGrid.classList.remove('active');
+      if (boxesToggleGroup) boxesToggleGroup.classList.remove('hidden');
     }
 
     const mergeHintText = document.getElementById('merge-hint-text');
@@ -2778,9 +2779,9 @@
 
     if (mergeSelectionStatus) {
       if (selected > 0) {
-        mergeSelectionStatus.textContent = `${total} págs (${selected} sel.)`;
+        mergeSelectionStatus.innerHTML = `<span style="color:#F1F5F9; white-space:nowrap;">${total} págs</span> <span style="opacity:0.4;">&bull;</span> <span style="color:#38BDF8; font-weight:700; white-space:nowrap;">${selected} sel.</span>`;
       } else {
-        mergeSelectionStatus.textContent = `${total} página${total !== 1 ? 's' : ''}`;
+        mergeSelectionStatus.innerHTML = `<span style="white-space:nowrap;">${total} página${total !== 1 ? 's' : ''}</span>`;
       }
     }
 
