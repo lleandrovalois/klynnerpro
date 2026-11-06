@@ -116,6 +116,7 @@ def execute_pdf_to_image(
     base_stem = Path(output_filename or pdf_path.stem).stem
     # Remove caracteres potencialmente problemáticos no nome do arquivo
     clean_stem = re.sub(r'[^\w\s\.-]', '_', base_stem).strip() or "documento"
+    user_provided_name = bool(output_filename and output_filename.strip())
 
     doc = fitz.open(str(pdf_path))
     total_doc_pages = len(doc)
@@ -177,7 +178,10 @@ def execute_pdf_to_image(
             composite_img.paste(img, (x_offset, current_y))
             current_y += img.height
 
-        final_filename = f"{clean_stem}_completo.{ext}"
+        if user_provided_name:
+            final_filename = f"{clean_stem}.{ext}"
+        else:
+            final_filename = f"{clean_stem}_completo.{ext}"
         final_path = output_dir / final_filename
 
         if save_fmt == "JPEG":
@@ -209,7 +213,10 @@ def execute_pdf_to_image(
     # Caso 1: Apenas 1 página selecionada -> Download direto da imagem única
     if selected_count == 1:
         page_num, single_img = rendered_images[0]
-        final_filename = f"{clean_stem}_pagina_{page_num}.{ext}"
+        if user_provided_name:
+            final_filename = f"{clean_stem}.{ext}"
+        else:
+            final_filename = f"{clean_stem}_pagina_{page_num}.{ext}"
         final_path = output_dir / final_filename
 
         if save_fmt == "JPEG":
@@ -234,7 +241,10 @@ def execute_pdf_to_image(
         }
 
     # Caso 2: Múltiplas páginas -> Empacota em arquivo .ZIP
-    final_zip_name = f"{clean_stem}_imagens.zip"
+    if user_provided_name:
+        final_zip_name = f"{clean_stem}.zip"
+    else:
+        final_zip_name = f"{clean_stem}_imagens.zip"
     final_zip_path = output_dir / final_zip_name
 
     with zipfile.ZipFile(str(final_zip_path), "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
@@ -268,3 +278,4 @@ def execute_pdf_to_image(
         "file_size": zip_size,
         "execution_time_seconds": elapsed,
     }
+

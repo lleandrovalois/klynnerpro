@@ -5561,6 +5561,16 @@
 
     const fmtExt = imageFormat === 'jpeg' ? '.jpg' : '.png';
 
+    // Ajusta sugestão de nome padrão de acordo com o modo
+    if (p2iOutputFilename && state.activeDoc) {
+      const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+      if (exportMode === 'unified' && p2iOutputFilename.value === `${base}_imagens`) {
+        p2iOutputFilename.value = `${base}_completo`;
+      } else if (exportMode === 'individual' && p2iOutputFilename.value === `${base}_completo`) {
+        p2iOutputFilename.value = `${base}_imagens`;
+      }
+    }
+
     // RN-01: Se modo individual com 1 página selecionada, baixa direto a imagem sem zip!
     // Se modo individual com > 1 página, baixa em .zip
     // Se modo unificado, baixa direto a imagem contínua
