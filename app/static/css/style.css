@@ -1149,6 +1149,149 @@ select optgroup {
   gap: 1rem;
 }
 
+/* Kindle Send to Kindle Guidance Card */
+.kindle-send-guide-card {
+  max-width: 680px;
+  margin: 2rem auto 0;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(251, 146, 60, 0.03) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.28);
+  border-radius: var(--radius-lg, 16px);
+  text-align: left;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.4s ease;
+}
+
+.kindle-send-guide-card .guide-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.15rem;
+}
+
+.kindle-send-guide-card .guide-icon-badge {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
+  background: rgba(249, 115, 22, 0.18);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FB923C;
+}
+
+.kindle-send-guide-card .guide-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.kindle-send-guide-card .guide-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kindle-send-guide-card .guide-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.2);
+  color: #FB923C;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.kindle-send-guide-card .guide-desc {
+  font-size: 0.9rem;
+  color: #CBD5E1;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
+}
+
+.kindle-send-guide-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.kindle-step-item {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md, 10px);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.kindle-step-number {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #FB923C;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kindle-step-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #F1F5F9;
+}
+
+.kindle-step-text {
+  font-size: 0.82rem;
+  color: #94A3B8;
+  line-height: 1.4;
+}
+
+.kindle-send-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(249, 115, 22, 0.18);
+}
+
+.kindle-action-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #EA580C, #F97316);
+  color: #FFFFFF !important;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-md, 10px);
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kindle-action-link-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(234, 88, 12, 0.45);
+}
+
+.kindle-action-hint {
+  font-size: 0.8rem;
+  color: #94A3B8;
+}
+
 /* Technical Features Section */
 .features-section {
   display: grid;

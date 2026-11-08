@@ -1229,6 +1229,8 @@
     // Se estiver em progresso ou resultado, limpa para a nova ferramenta
     processingStage.classList.add('hidden');
     resultStage.classList.add('hidden');
+    const kindleGuideBoxNav = document.getElementById('kindle-send-guide-box');
+    if (kindleGuideBoxNav) kindleGuideBoxNav.classList.add('hidden');
 
     // Oculta todos os estágios das ferramentas
     document.querySelectorAll('.tool-stage').forEach(el => el.classList.add('hidden'));
@@ -4478,6 +4480,8 @@
     document.querySelectorAll('.tool-stage').forEach(el => el.classList.add('hidden'));
     dropzone.classList.add('hidden');
     resultStage.classList.add('hidden');
+    const kindleGuideBoxProc = document.getElementById('kindle-send-guide-box');
+    if (kindleGuideBoxProc) kindleGuideBoxProc.classList.add('hidden');
 
     processingTitle.textContent = title;
     processingDesc.textContent = subtitle;
@@ -4565,6 +4569,15 @@
       btnPreview.style.display = 'none';
     } else {
       btnPreview.style.display = 'inline-flex';
+    }
+
+    const kindleGuideBox = document.getElementById('kindle-send-guide-box');
+    if (kindleGuideBox) {
+      if (opts.isKindle || (opts.filename && (opts.filename.endsWith('.epub') || opts.filename.endsWith('.mobi')))) {
+        kindleGuideBox.classList.remove('hidden');
+      } else {
+        kindleGuideBox.classList.add('hidden');
+      }
     }
 
     // Renderização protegida do anúncio AdSense na tela de resultado
@@ -7533,6 +7546,8 @@
 
     btnReset.addEventListener('click', () => {
       resultStage.classList.add('hidden');
+      const kindleGuideBoxReset = document.getElementById('kindle-send-guide-box');
+      if (kindleGuideBoxReset) kindleGuideBoxReset.classList.add('hidden');
       if (state.activeTool === 'merge') {
         stageMerge.classList.remove('hidden');
       } else if (state.activeTool === 'image-to-pdf') {

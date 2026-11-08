@@ -101,7 +101,10 @@ def run_kindle_tests():
     assert "kindle-fmt-mobi" in page_html
     assert "kindle-scanned-warning-box" in page_html
     assert "btn-start-kindle" in page_html
-    print("  -> Template index.html renderiza perfeitamente o estágio e controles do conversor Kindle!")
+    assert "kindle-send-guide-box" in page_html
+    assert "https://www.amazon.com.br/sendtokindle" in page_html
+    assert "btn-open-send-to-kindle" in page_html
+    print("  -> Template index.html renderiza perfeitamente o estágio, controles e orientação oficial Send to Kindle (amazon.com.br/sendtokindle)!")
 
     h_res = client.get("/api/health")
     assert h_res.status_code == 200
