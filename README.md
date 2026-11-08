@@ -91,7 +91,7 @@ Klynner PDF PRO disponibiliza uma plataforma unificada de alta performance divid
    - **Controle de Camada e Páginas:** Inserir na frente (sobreposição) ou atrás do conteúdo, em todas as páginas, apenas na primeira ou em intervalos personalizados.
 
 ### 🔄 Conversão & Inteligência
-10. **Imagem para PDF:** *(NOVO)* Conversão de imagens avulsas ou em lote (`.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`, `.tiff`):
+10. **Imagem para PDF:** Conversão de imagens avulsas ou em lote (`.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`, `.tiff`):
     - Correção automática de rotação EXIF (fotos de celulares/câmeras).
     - Formatos: Tamanho original da imagem, A4 ou Carta.
     - Orientação inteligente: Automática, Retrato ou Paisagem.
@@ -99,6 +99,14 @@ Klynner PDF PRO disponibiliza uma plataforma unificada de alta performance divid
     - Reordenação interativa das imagens antes da compilação.
 11. **PDF para Word (DOCX):** Extração e conversão de textos, tabelas e estruturas para documentos editáveis do Microsoft Word.
 12. **Word para PDF:** Conversão de `.docx` para PDF preservando formatação e estilos.
+13. **PDF para Imagem:** Exportação de páginas avulsas em arquivo `.ZIP` ou unificadas em uma única imagem longa contínua (infográfico) com densidade ajustável de 72 a 300 DPI.
+14. **PDF para Kindle (EPUB / MOBI):** *(NOVO)* Conversão especializada de PDFs para leitura em e-readers Amazon Kindle:
+    - **Formato Primário EPUB:** Padrão oficial adotado pela Amazon para o serviço *Send to Kindle* (compatível com Paperwhite, Oasis, Scribe e aplicativo Kindle em iOS/Android/PC).
+    - **Formato Secundário MOBI:** Suporte a dispositivos legados e cópia manual direta via cabo USB.
+    - **Reflow & Tipografia Inteligente:** Detecção e reconstrução de parágrafos, eliminação de quebras de linha duras, de-hifenização e descarte automático de cabeçalhos e numerações de página repetitivas.
+    - **Capa Automática (cover.jpg):** Extração e otimização da primeira página como imagem de capa no e-book.
+    - **Sumário Navegável:** Estruturação de capítulos interativos via `toc.ncx` e `nav.xhtml` herdados dos marcadores (bookmarks) do PDF original.
+    - **Alerta de Scans sem OCR:** Análise prévia da camada de texto com opção de conversão em *Layout Fixo* para documentos escaneados.
 
 ---
 
