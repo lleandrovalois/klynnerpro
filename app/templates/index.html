@@ -468,7 +468,7 @@
             <div class="cat-dropdown-menu dropdown-align-right" id="menu-cat-convert" role="menu">
               <div class="dropdown-cat-header">
                 <span>Conversores de Formato</span>
-                <span class="dropdown-count-pill">3 ferramentas</span>
+                <span class="dropdown-count-pill">5 ferramentas</span>
               </div>
               <div class="dropdown-items-list">
                 <!-- 1. PDF para Word -->
@@ -515,6 +515,18 @@
                   <div class="dropdown-item-info">
                     <span class="dropdown-item-title">PDF para Imagem</span>
                     <span class="dropdown-item-desc">Páginas em ZIP ou Imagem Única Contínua</span>
+                  </div>
+                  <span class="dropdown-check-icon">✓</span>
+                </button>
+
+                <!-- 5. PDF para Kindle -->
+                <button type="button" class="tool-nav-btn dropdown-tool-item" data-tool="pdf-to-kindle" role="menuitem">
+                  <div class="dropdown-item-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><circle cx="12" cy="18" r="1"/></svg>
+                  </div>
+                  <div class="dropdown-item-info">
+                    <span class="dropdown-item-title">PDF para Kindle</span>
+                    <span class="dropdown-item-desc">Reflow dinâmico e sumário (.epub / .mobi)</span>
                   </div>
                   <span class="dropdown-check-icon">✓</span>
                 </button>
@@ -2039,6 +2051,114 @@
                 <polyline points="21 15 16 10 5 21"/>
               </svg>
               <span>Converter e Baixar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ESTADO 2K-3: CONVERSÃO DE PDF PARA KINDLE (.EPUB / .MOBI)       -->
+        <!-- ============================================================== -->
+        <div class="tool-stage hidden" id="stage-pdf-to-kindle">
+          <div class="active-doc-bar">
+            <div class="active-doc-info">
+              <span class="active-doc-label">Documento PDF de Origem:</span>
+              <span class="active-doc-name" id="kindle-doc-name">documento.pdf</span>
+              <span class="active-doc-meta" id="kindle-doc-pages">0 páginas</span>
+              <span class="active-doc-meta" id="kindle-doc-size">0 KB</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-kindle-change-doc">Trocar Arquivo</button>
+          </div>
+
+          <!-- Alerta para PDF digitalizado sem camada de texto OCR (Cenário 3 / RN-04) -->
+          <div class="warning-banner-box hidden" id="kindle-scanned-warning-box" style="margin-bottom: 20px; padding: 16px 20px; border-radius: 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <div style="color: #F59E0B; font-size: 20px; line-height: 1;">⚠️</div>
+              <div style="flex: 1;">
+                <strong style="color: #F59E0B; display: block; margin-bottom: 4px; font-size: 0.95rem;">Atenção: Camada de Texto Não Detectada</strong>
+                <p id="kindle-scanned-warning-text" style="margin: 0; color: #E2E8F0; font-size: 0.88rem; line-height: 1.45;">Este documento não possui camada de texto editável. A formatação no Kindle pode não suportar ajuste dinâmico de fonte.</p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; border-top: 1px solid rgba(245, 158, 11, 0.2); padding-top: 10px;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-kindle-cancel-scan">Cancelar</button>
+              <button type="button" class="btn btn-warning btn-sm" id="btn-kindle-proceed-fixed">Prosseguir com Layout Fixo</button>
+            </div>
+          </div>
+
+          <div class="security-card-box">
+            <div class="security-header">
+              <div class="security-badge-icon" style="background: rgba(249, 115, 22, 0.15); border-color: rgba(249, 115, 22, 0.3);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FB923C" stroke-width="2">
+                  <rect x="4" y="2" width="16" height="20" rx="2"/>
+                  <line x1="8" y1="6" x2="16" y2="6"/>
+                  <line x1="8" y1="10" x2="16" y2="10"/>
+                  <line x1="8" y1="14" x2="12" y2="14"/>
+                  <circle cx="12" cy="18" r="1"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="security-box-title">Otimização e Reflow para E-readers Kindle</h4>
+                <p class="security-box-desc">Converte seu PDF para e-book navegável com ajuste de fonte, capa automática (cover.jpg), sumário interativo e descarte de cabeçalhos repetidos.</p>
+              </div>
+            </div>
+
+            <!-- Seletor de Formato (RN-01) -->
+            <div class="encryption-level-selector" style="margin-top: 16px;">
+              <span class="sub-section-title">Formato de Saída do E-book:</span>
+              <div class="encryption-radios">
+                <label class="enc-radio-card">
+                  <input type="radio" name="kindle-format" value="epub" checked id="kindle-fmt-epub">
+                  <div class="enc-card-body">
+                    <strong>EPUB (.epub) • Recomendado pela Amazon</strong>
+                    <small>Padrão oficial do Send to Kindle (Paperwhite, Oasis, Scribe e App Kindle). Suporta reflow total.</small>
+                  </div>
+                </label>
+                <label class="enc-radio-card">
+                  <input type="radio" name="kindle-format" value="mobi" id="kindle-fmt-mobi">
+                  <div class="enc-card-body">
+                    <strong>MOBI (.mobi) • Dispositivos Legados</strong>
+                    <small>Formato binário Mobipocket clássico para cópia manual via cabo USB em e-readers antigos.</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Metadados do E-book (RN-03) -->
+            <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div class="option-group">
+                <label for="kindle-book-title" class="option-label">Título do E-book (Metadado)</label>
+                <input type="text" id="kindle-book-title" class="text-input" placeholder="Ex: Guia Prático">
+              </div>
+              <div class="option-group">
+                <label for="kindle-book-author" class="option-label">Autor do E-book (Metadado)</label>
+                <input type="text" id="kindle-book-author" class="text-input" placeholder="Ex: Nome do Autor">
+              </div>
+            </div>
+
+            <!-- Nome do arquivo de saída -->
+            <div class="options-panel" style="margin-top: 16px; padding: 0; background: transparent; border: none;">
+              <div class="option-group">
+                <label for="kindle-output-filename" class="option-label">Nome do Arquivo Final</label>
+                <div class="input-with-suffix">
+                  <input type="text" id="kindle-output-filename" class="text-input" value="ebook_kindle">
+                  <span class="input-suffix" id="kindle-filename-suffix">.epub</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-footer">
+            <div class="summary-info">
+              <span class="summary-label">Formato Selecionado:</span>
+              <span class="summary-value" id="kindle-summary-label">EPUB (.epub) • Reflow Dinâmico + Capa</span>
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" id="btn-start-kindle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                <line x1="8" y1="6" x2="16" y2="6"/>
+                <line x1="8" y1="10" x2="16" y2="10"/>
+                <circle cx="12" cy="18" r="1"/>
+              </svg>
+              <span>Converter para Kindle</span>
             </button>
           </div>
         </div>
@@ -3710,7 +3830,7 @@
           <div class="tools-cat-group" data-cat-group="convert">
             <div class="tools-cat-header">
               <span class="tools-cat-pill">Conversão & Imagens</span>
-              <span class="tools-cat-count">4 ferramentas</span>
+              <span class="tools-cat-count">5 ferramentas</span>
             </div>
             <div class="tools-cat-grid">
               
@@ -3755,6 +3875,17 @@
                 <div class="card-info">
                   <span class="card-title">PDF para Imagem</span>
                   <span class="card-desc">Exportar páginas em ZIP ou fundir em imagem única contínua</span>
+                </div>
+              </button>
+
+              <!-- 16. PDF para Kindle -->
+              <button type="button" class="tool-nav-btn all-tools-card" data-tool="pdf-to-kindle" data-keywords="pdf para kindle mobi epub ebook leitor livro digital amazon reflow fonte sumario capa">
+                <div class="card-icon-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/><circle cx="12" cy="18" r="1"/></svg>
+                </div>
+                <div class="card-info">
+                  <span class="card-title">PDF para Kindle</span>
+                  <span class="card-desc">Converter PDF para EPUB/MOBI com reflow dinâmico e capa</span>
                 </div>
               </button>
 

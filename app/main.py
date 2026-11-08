@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 import logging
 import os
 from pathlib import Path
+import time
 from typing import Any, Dict, List, Optional, Union
 import uuid
 import urllib.parse
@@ -49,6 +50,13 @@ from app.logo_adder import execute_add_logo
 from app.footer_customizer import execute_pdf_footer
 from app.footer_remover import execute_pdf_remove_footer
 from app.comparator import execute_pdf_compare
+from app.pdf_to_kindle import (
+    analyze_pdf_for_kindle,
+    execute_pdf_to_kindle,
+    get_kindle_job,
+    update_kindle_job,
+    KINDLE_JOBS,
+)
 from app.storage import (
     BASE_TEMP_DIR,
     cleanup_expired_sessions,
@@ -277,6 +285,21 @@ class PdfToImageRequest(BaseModel):
     start_page: Optional[int] = Field(default=None)
     end_page: Optional[int] = Field(default=None)
     output_filename: Optional[str] = Field(default=None)
+
+
+class KindleAnalyzeRequest(BaseModel):
+    session_id: str
+    file_id: str
+
+
+class PdfToKindleRequest(BaseModel):
+    session_id: str
+    file_id: str
+    output_format: Optional[str] = Field(default="epub", description="Formato de saída: 'epub' (recomendado) ou 'mobi'")
+    title: Optional[str] = Field(default=None, description="Título do e-book")
+    author: Optional[str] = Field(default=None, description="Autor do e-book")
+    output_filename: Optional[str] = Field(default=None, description="Nome base do arquivo gerado")
+    force_fixed_layout: Optional[bool] = Field(default=False, description="Forçar páginas em layout fixo (ideal para scans sem OCR)")
 
 
 class WatermarkRequest(BaseModel):
@@ -1114,6 +1137,130 @@ async def convert_pdf_to_image(request: PdfToImageRequest):
         )
 
 
+@app.post("/api/kindle/analyze")
+async def analyze_kindle(request: KindleAnalyzeRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o arquivo novamente."
+        )
+    safe_name = Path(request.file_id).name
+    try:
+        result = await asyncio.to_thread(
+            analyze_pdf_for_kindle,
+            session_dir=session_dir,
+            file_id=safe_name,
+        )
+        return JSONResponse(result)
+    except FileNotFoundError as fnf:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(fnf))
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Erro ao analisar PDF para Kindle: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Falha ao analisar PDF para Kindle: {str(e)}"
+        )
+
+
+@app.post("/api/convert/pdf-to-kindle")
+async def convert_pdf_to_kindle_endpoint(request: PdfToKindleRequest):
+    session_dir = get_session_dir(request.session_id)
+    if not session_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão não encontrada ou expirada. Por favor, envie o arquivo novamente."
+        )
+
+    safe_name = Path(request.file_id).name
+    file_path = session_dir / safe_name
+    if not file_path.exists() and (session_dir / "output" / safe_name).exists():
+        file_path = session_dir / "output" / safe_name
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Arquivo '{safe_name}' não encontrado na sessão."
+        )
+
+    # RN-04: Limite de tamanho de 50 MB
+    if file_path.stat().st_size > 50 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="O arquivo excede o limite máximo permitido de 50 MB."
+        )
+
+    job_id = f"kindle_{uuid.uuid4().hex[:12]}"
+    KINDLE_JOBS[job_id] = {
+        "job_id": job_id,
+        "session_id": request.session_id,
+        "status": "processing",
+        "progress": 5,
+        "step": "Iniciando processamento...",
+        "result": None,
+        "error": None,
+        "created_at": time.time(),
+        "updated_at": time.time(),
+    }
+
+    def run_conversion():
+        try:
+            execute_pdf_to_kindle(
+                session_dir=session_dir,
+                file_id=safe_name,
+                output_format=request.output_format or "epub",
+                custom_title=request.title,
+                custom_author=request.author,
+                output_basename=request.output_filename,
+                force_fixed_layout=bool(request.force_fixed_layout),
+                job_id=job_id,
+            )
+        except Exception as ex:
+            logger.error(f"Erro em background task de conversão para Kindle: {ex}", exc_info=True)
+            update_kindle_job(job_id, 0, "Falha na conversão", status="error", error=str(ex))
+
+    # Executa em thread assíncrona para permitir polling de status e evitar timeout
+    asyncio.create_task(asyncio.to_thread(run_conversion))
+
+    return JSONResponse({
+        "success": True,
+        "job_id": job_id,
+        "status": "processing",
+        "session_id": request.session_id,
+    })
+
+
+@app.get("/api/convert/pdf-to-kindle/status/{job_id}")
+async def get_kindle_conversion_status(job_id: str):
+    job = get_kindle_job(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job de conversão não encontrado ou expirado."
+        )
+
+    resp: Dict[str, Any] = {
+        "job_id": job_id,
+        "status": job["status"],
+        "progress": job.get("progress", 0),
+        "step": job.get("step", ""),
+    }
+
+    if job["status"] == "completed" and job.get("result"):
+        res = job["result"]
+        out_name = res["output_filename"]
+        sess_id = job["session_id"]
+        resp["download_url"] = f"/api/download/{sess_id}?filename={urllib.parse.quote(out_name)}"
+        resp["output_filename"] = out_name
+        resp["format"] = res["format"]
+        resp["metrics"] = res
+    elif job["status"] == "error":
+        resp["error"] = job.get("error") or "Erro desconhecido durante a conversão."
+
+    return JSONResponse(resp)
+
+
 @app.post("/api/watermark")
 async def add_pdf_watermark(request: WatermarkRequest):
     session_dir = get_session_dir(request.session_id)
@@ -1553,6 +1700,7 @@ async def health_check():
             "Personalizar Rodapé e Numeração (Footer Customizer)",
             "Remover Rodapé e Cabeçalho (Footer Remover)",
             "Comparar PDFs (Text Diff & Auditoria)",
+            "Converter PDF para Kindle (EPUB / MOBI)",
         ],
         "streaming_upload": "Ativo (Zero-RAM Chunking)",
         "menu_system": "Ativo (Página de Menu Visual + Marcadores com UseOutlines)",

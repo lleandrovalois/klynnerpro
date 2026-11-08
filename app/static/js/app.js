@@ -138,6 +138,16 @@
       enginePill: 'Conversor PyMuPDF Ativo',
       stageId: 'stage-pdf-to-image',
     },
+    'pdf-to-kindle': {
+      heroTitle: 'Converta Documentos PDF para Formato Kindle (EPUB / MOBI)',
+      heroSub: 'Otimização com reflow dinâmico, tamanho de fonte ajustável, remoção de cabeçalhos repetidos e sumário navegável compatível com Amazon Send to Kindle.',
+      dropHeading: 'Arraste o arquivo PDF para converter para Kindle',
+      dropSub: 'ou clique para selecionar do computador (máx. 50 MB)',
+      dropBadges: ['Padrão Amazon EPUB (.epub)', 'Opção secundária MOBI (.mobi)', 'Reflow de texto & Capa automática'],
+      multiple: false,
+      enginePill: 'Conversor Kindle & Reflow Ativo',
+      stageId: 'stage-pdf-to-kindle',
+    },
     'add-logo': {
       heroTitle: 'Adicione Logotipo em Arquivos PDF',
       heroSub: 'Insira o logotipo da sua empresa, carimbo institucional ou selo em cabeçalhos, rodapés ou cantos de PDFs com ajuste milimétrico de posição, margens e transparência.',
@@ -225,6 +235,9 @@
     // Ferramentas de 1 Documento
     activeDoc: null, // { name, size, pageCount, serverSavedName, fileObj, pdfDoc }
 
+    // PDF para Kindle
+    kindleForceFixedLayout: false,
+
     // Adicionar Logo
     logoImageDoc: null, // { name, size, fileObj, serverSavedName, previewUrl }
     logoSelectedPos: 'top-right',
@@ -311,6 +324,7 @@
     'word-to-pdf': 'convert',
     'image-to-pdf': 'convert',
     'pdf-to-image': 'convert',
+    'pdf-to-kindle': 'convert',
   };
 
   const TOOL_SHORT_NAMES = {
@@ -327,6 +341,7 @@
     'word-to-pdf': 'Word para PDF',
     'image-to-pdf': 'Imagem para PDF',
     'pdf-to-image': 'PDF para Imagem',
+    'pdf-to-kindle': 'PDF para Kindle',
     watermark: 'Marca d\'água',
     'add-logo': 'Adicionar Logo',
     footer: 'Rodapé & Numeração',
@@ -628,6 +643,25 @@
   const p2iSummaryLabel = document.getElementById('p2i-summary-label');
   const btnStartP2i = document.getElementById('btn-start-p2i');
 
+  // Elementos PDF para Kindle (.epub / .mobi)
+  const stagePdfToKindle = document.getElementById('stage-pdf-to-kindle');
+  const kindleDocName = document.getElementById('kindle-doc-name');
+  const kindleDocPages = document.getElementById('kindle-doc-pages');
+  const kindleDocSize = document.getElementById('kindle-doc-size');
+  const btnKindleChangeDoc = document.getElementById('btn-kindle-change-doc');
+  const kindleScannedWarningBox = document.getElementById('kindle-scanned-warning-box');
+  const kindleScannedWarningText = document.getElementById('kindle-scanned-warning-text');
+  const btnKindleProceedFixed = document.getElementById('btn-kindle-proceed-fixed');
+  const btnKindleCancelScan = document.getElementById('btn-kindle-cancel-scan');
+  const kindleFmtEpub = document.getElementById('kindle-fmt-epub');
+  const kindleFmtMobi = document.getElementById('kindle-fmt-mobi');
+  const kindleBookTitle = document.getElementById('kindle-book-title');
+  const kindleBookAuthor = document.getElementById('kindle-book-author');
+  const kindleOutputFilename = document.getElementById('kindle-output-filename');
+  const kindleFilenameSuffix = document.getElementById('kindle-filename-suffix');
+  const kindleSummaryLabel = document.getElementById('kindle-summary-label');
+  const btnStartKindle = document.getElementById('btn-start-kindle');
+
   // Elementos Marca d'água (.pdf)
   const stageWatermark = document.getElementById('stage-watermark');
   const wmDocName = document.getElementById('wm-doc-name');
@@ -817,6 +851,7 @@
     setupWordToPdfEvents();
     setupImageToPdfEvents();
     setupPdfToImageEvents();
+    setupPdfToKindleEvents();
     setupWatermarkEvents();
     setupAddLogoEvents();
     setupFooterEvents();
@@ -1282,6 +1317,8 @@
       initWordToPdfWorkspace();
     } else if (toolKey === 'pdf-to-image') {
       initPdfToImageWorkspace();
+    } else if (toolKey === 'pdf-to-kindle') {
+      initPdfToKindleWorkspace();
     } else if (toolKey === 'watermark') {
       initWatermarkWorkspace();
     } else if (toolKey === 'add-logo') {
@@ -4518,6 +4555,8 @@
       btnDownloadText.textContent = 'Baixar Documento Word (.DOCX)';
     } else if (opts.isImage) {
       btnDownloadText.textContent = `Baixar Imagem (${(opts.imageFormat || 'PNG').toUpperCase()})`;
+    } else if (opts.isKindle || (opts.filename && (opts.filename.endsWith('.epub') || opts.filename.endsWith('.mobi')))) {
+      btnDownloadText.textContent = `Baixar E-book Kindle (${opts.filename.endsWith('.mobi') ? '.MOBI' : '.EPUB'})`;
     } else {
       btnDownloadText.textContent = 'Baixar Documento (.PDF)';
     }
@@ -5700,6 +5739,239 @@
       console.error(e);
       showToast(e.message || 'Erro durante a conversão do PDF para imagem.', 'error');
       stopProcessingUI(stagePdfToImage);
+    }
+  }
+
+  // =========================================================================
+  // FERRAMENTA: CONVERSÃO DE PDF PARA KINDLE (.EPUB / .MOBI)
+  // =========================================================================
+  function setupPdfToKindleEvents() {
+    if (btnKindleChangeDoc) btnKindleChangeDoc.addEventListener('click', resetCurrentDocument);
+
+    // Alternador de formato (.epub vs .mobi) (RN-01)
+    const formatRadios = document.querySelectorAll('input[name="kindle-format"]');
+    formatRadios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        const isEpub = radio.value === 'epub' && radio.checked;
+        if (kindleFilenameSuffix) kindleFilenameSuffix.textContent = isEpub ? '.epub' : '.mobi';
+        if (kindleSummaryLabel) {
+          if (state.kindleForceFixedLayout) {
+            kindleSummaryLabel.textContent = isEpub
+              ? 'EPUB (.epub) • Páginas em Layout Fixo de Alta Resolução'
+              : 'MOBI (.mobi) • Páginas em Layout Fixo de Alta Resolução';
+          } else {
+            kindleSummaryLabel.textContent = isEpub
+              ? 'EPUB (.epub) • Reflow Dinâmico + Capa'
+              : 'MOBI (.mobi) • Dispositivos Legados';
+          }
+        }
+      });
+    });
+
+    // Botões de alerta para scanned PDF (Cenário 3 / RN-04)
+    if (btnKindleProceedFixed) {
+      btnKindleProceedFixed.addEventListener('click', () => {
+        state.kindleForceFixedLayout = true;
+        if (kindleScannedWarningBox) kindleScannedWarningBox.classList.add('hidden');
+        if (kindleSummaryLabel) {
+          const isEpub = kindleFmtEpub && kindleFmtEpub.checked;
+          kindleSummaryLabel.textContent = isEpub
+            ? 'EPUB (.epub) • Páginas em Layout Fixo de Alta Resolução'
+            : 'MOBI (.mobi) • Páginas em Layout Fixo de Alta Resolução';
+        }
+        showToast('Modo de layout fixo ativado para preservação das páginas escaneadas.', 'info');
+      });
+    }
+
+    if (btnKindleCancelScan) {
+      btnKindleCancelScan.addEventListener('click', resetCurrentDocument);
+    }
+
+    if (btnStartKindle) btnStartKindle.addEventListener('click', onExecutePdfToKindle);
+  }
+
+  async function initPdfToKindleWorkspace() {
+    if (!state.activeDoc) return;
+
+    state.kindleForceFixedLayout = false;
+    if (kindleScannedWarningBox) kindleScannedWarningBox.classList.add('hidden');
+
+    // Validação RN-04: Limite operacional de 50 MB
+    if (state.activeDoc.size > 50 * 1024 * 1024) {
+      showToast('O arquivo excede o limite máximo permitido de 50 MB para conversão.', 'error');
+      resetCurrentDocument();
+      return;
+    }
+
+    if (kindleDocName) kindleDocName.textContent = state.activeDoc.name;
+    if (kindleDocPages) kindleDocPages.textContent = `${state.activeDoc.pageCount} pág${state.activeDoc.pageCount > 1 ? 's' : ''}`;
+    if (kindleDocSize) kindleDocSize.textContent = formatBytes(state.activeDoc.size);
+
+    const base = cleanFileNameToTitle(state.activeDoc.name).replace(/\s+/g, '_');
+    if (kindleOutputFilename) kindleOutputFilename.value = `${base}_kindle`;
+    if (kindleBookTitle) kindleBookTitle.value = cleanFileNameToTitle(state.activeDoc.name);
+    if (kindleBookAuthor) kindleBookAuthor.value = 'Autor';
+
+    // Análise prévia no backend (/api/kindle/analyze) para validação de segurança e OCR
+    try {
+      await ensureDocUploaded(state.activeDoc);
+
+      const res = await fetch('/api/kindle/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: state.sessionId,
+          file_id: state.activeDoc.serverSavedName,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        // Cenário 2: Validação de arquivo protegido por senha
+        if (res.status === 400 && err.detail && err.detail.includes('protegido por senha')) {
+          showToast(err.detail, 'error');
+          alert(err.detail);
+          resetCurrentDocument();
+          return;
+        }
+        throw new Error(err.detail || 'Falha ao analisar estrutura do PDF.');
+      }
+
+      const info = await res.json();
+
+      if (info.suggested_title && kindleBookTitle) {
+        kindleBookTitle.value = info.suggested_title;
+      }
+      if (info.suggested_author && kindleBookAuthor) {
+        kindleBookAuthor.value = info.suggested_author;
+      }
+      if (info.total_pages && kindleDocPages) {
+        kindleDocPages.textContent = `${info.total_pages} pág${info.total_pages > 1 ? 's' : ''}`;
+      }
+
+      // Cenário 3: Alerta para PDF digitalizado sem OCR
+      if (info.is_scanned) {
+        if (kindleScannedWarningBox) {
+          kindleScannedWarningBox.classList.remove('hidden');
+          if (kindleScannedWarningText && info.warning_message) {
+            kindleScannedWarningText.textContent = info.warning_message;
+          }
+        }
+        showToast('Documento digitalizado sem texto OCR detectado.', 'warning');
+      } else if (info.has_bookmarks) {
+        showToast(`${info.chapters_count} capítulos detectados para o sumário do Kindle!`, 'info');
+      }
+
+    } catch (err) {
+      console.warn('Aviso durante análise prévia do Kindle:', err);
+      showToast(err.message || 'Erro na verificação do documento.', 'error');
+    }
+  }
+
+  async function onExecutePdfToKindle() {
+    if (!state.activeDoc) return;
+
+    // Garante arquivo no servidor
+    await ensureDocUploaded(state.activeDoc);
+
+    const fmt = (kindleFmtMobi && kindleFmtMobi.checked) ? 'mobi' : 'epub';
+    let cleanName = (kindleOutputFilename ? kindleOutputFilename.value.trim() : '') || 'ebook_kindle';
+    cleanName = cleanName.replace(/\.(epub|mobi)$/i, '');
+
+    const title = (kindleBookTitle ? kindleBookTitle.value.trim() : '') || state.activeDoc.name;
+    const author = (kindleBookAuthor ? kindleBookAuthor.value.trim() : '') || 'Autor Desconhecido';
+
+    startProcessingUI(
+      'Convertendo PDF para Kindle...',
+      'Iniciando processamento com reflow inteligente e descarte de cabeçalhos...'
+    );
+
+    try {
+      updateProcessingStep(1, 'Validando parâmetros e enviando requisição...', 10);
+
+      const payload = {
+        session_id: state.sessionId,
+        file_id: state.activeDoc.serverSavedName,
+        output_format: fmt,
+        title: title,
+        author: author,
+        output_filename: cleanName,
+        force_fixed_layout: !!state.kindleForceFixedLayout,
+      };
+
+      const res = await fetch('/api/convert/pdf-to-kindle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.detail || 'Falha ao iniciar conversão para Kindle.');
+      }
+
+      const postData = await res.json();
+      const jobId = postData.job_id;
+
+      // Polling de progresso com timeout de segurança
+      const maxWaitSeconds = 120;
+      const startTime = Date.now();
+      let jobResult = null;
+
+      while ((Date.now() - startTime) < (maxWaitSeconds * 1000)) {
+        await delay(400);
+
+        const pollRes = await fetch(`/api/convert/pdf-to-kindle/status/${jobId}`);
+        if (!pollRes.ok) continue;
+
+        const pollData = await pollRes.json();
+
+        if (pollData.progress) {
+          updateProgress(pollData.progress, pollData.step || 'Processando e-book Kindle...');
+          if (pollData.progress < 40) {
+            updateProcessingStep(1, pollData.step || 'Extraindo capa e analisando cabeçalhos...', pollData.progress);
+          } else if (pollData.progress < 85) {
+            updateProcessingStep(2, pollData.step || 'Executando reflow dinâmico e parágrafos...', pollData.progress);
+          } else {
+            updateProcessingStep(3, pollData.step || 'Compilando e-book e sumário interativo...', pollData.progress);
+          }
+        }
+
+        if (pollData.status === 'completed') {
+          jobResult = pollData;
+          break;
+        } else if (pollData.status === 'error') {
+          throw new Error(pollData.error || 'Erro durante o processamento do e-book.');
+        }
+      }
+
+      if (!jobResult) {
+        throw new Error('Tempo limite excedido na conversão para Kindle.');
+      }
+
+      updateProgress(100, 'Conversão para Kindle concluída!');
+      await delay(300);
+
+      const metrics = jobResult.metrics || {};
+      showResultUI({
+        title: fmt === 'epub' ? 'E-book EPUB para Kindle Criado com Sucesso!' : 'E-book MOBI Criado com Sucesso!',
+        filename: jobResult.output_filename,
+        downloadUrl: jobResult.download_url,
+        previewUrl: null,
+        isZip: false,
+        isDocx: false,
+        isKindle: true,
+        label1: 'Capítulos / Páginas',
+        val1: `${metrics.chapters_count || 1} seções`,
+        label2: 'Formato de Saída',
+        val2: `${fmt.toUpperCase()} (Kindle Otimizado)`,
+        sizeBytes: metrics.filesize || 0,
+        durationSec: metrics.duration_seconds || 1.0,
+      });
+
+    } catch (err) {
+      console.error('Erro na conversão para Kindle:', err);
+      showProcessingError(err.message || 'Falha ao converter PDF para Kindle.');
     }
   }
 
