@@ -484,10 +484,16 @@ class ContactRequest(BaseModel):
 async def handle_contact_submission(req: ContactRequest):
     logger.info(f"Mensagem de contato recebida: Nome='{req.name}', Email='{req.email}', Assunto='{req.subject}'")
     try:
-        from app.feedback import send_email_notification
-        subject = f"[Klynner Contato] {req.subject} ({req.name})"
-        body_text = f"Novo contato recebido pelo site Klynner:\n\nNome: {req.name}\nE-mail: {req.email}\nAssunto: {req.subject}\n\nMensagem:\n{req.message}\n"
-        send_email_notification("admin@klynner.com.br", subject, body_text)
+        from app.email_service import is_smtp_configured, send_feedback_reply_email
+        if is_smtp_configured():
+            send_feedback_reply_email(
+                to_email="admin@klynner.com.br",
+                recipient_name="Administrador Klynner",
+                original_message=f"De: {req.name} <{req.email}>\nAssunto: {req.subject}",
+                reply_message=req.message,
+                replied_by=req.name,
+                subject=f"[Klynner Contato] {req.subject} ({req.name})"
+            )
     except Exception as e:
         logger.warning(f"Aviso ao notificar contato por e-mail: {e}")
 
