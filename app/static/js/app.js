@@ -8416,6 +8416,68 @@
   }
 
   // =========================================================================
+  // GESTÃO DE COOKIES (LGPD & GOOGLE ADSENSE) E ACCORDION FAQ
+  // =========================================================================
+  function initFaqAccordion() {
+    const faqItems = document.querySelectorAll('.faq-item');
+    faqItems.forEach(item => {
+      const btn = item.querySelector('.faq-question');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const isActive = item.classList.contains('active');
+          faqItems.forEach(other => {
+            if (other !== item) other.classList.remove('active');
+          });
+          if (isActive) {
+            item.classList.remove('active');
+          } else {
+            item.classList.add('active');
+          }
+        });
+      }
+    });
+  }
+
+  function initCookieConsent() {
+    const banner = document.getElementById('cookie-consent-banner');
+    const btnAccept = document.getElementById('btn-cookie-accept');
+    const btnReject = document.getElementById('btn-cookie-reject');
+    const btnReopen = document.getElementById('footer-btn-cookie-settings');
+
+    const consent = localStorage.getItem('klynner_cookie_consent');
+    if (!consent && banner) {
+      setTimeout(() => {
+        banner.classList.remove('hidden');
+      }, 1000);
+    }
+
+    if (btnAccept && banner) {
+      btnAccept.addEventListener('click', () => {
+        localStorage.setItem('klynner_cookie_consent', 'all');
+        banner.classList.add('hidden');
+        showToast('Preferências de cookies salvas.', 'info');
+      });
+    }
+
+    if (btnReject && banner) {
+      btnReject.addEventListener('click', () => {
+        localStorage.setItem('klynner_cookie_consent', 'essential');
+        banner.classList.add('hidden');
+        showToast('Apenas cookies essenciais ativados.', 'info');
+      });
+    }
+
+    if (btnReopen && banner) {
+      btnReopen.addEventListener('click', () => {
+        banner.classList.remove('hidden');
+      });
+    }
+  }
+
+  initFaqAccordion();
+  initCookieConsent();
+
+  // =========================================================================
   // MONETIZAÇÃO DISCRETA (GOOGLE ADSENSE)
   // =========================================================================
   function initDiscreetAdSense() {

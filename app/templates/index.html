@@ -8,11 +8,76 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=2.9.6">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.9.7">
   <!-- PDF.js para renderização de miniaturas no navegador com zero sobrecarga de RAM do servidor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- Google AdSense Integrado de Forma Discreta (Klynner PRO Monetization) -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ADSENSE_CLIENT_ID}}" crossorigin="anonymous"></script>
+  <!-- Schema.org Structured Data (FAQPage & WebApplication) para Autoridade SEO e AdSense -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Klynner PDF PRO",
+    "url": "https://klynner.com.br",
+    "description": "Suíte online de alta performance para juntar, dividir, organizar e converter arquivos PDF para Kindle e Imagem com segurança e privacidade total.",
+    "applicationCategory": "ProductivityApplication",
+    "operatingSystem": "All",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Meus documentos e arquivos PDF ficam salvos no servidor?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Não. O Klynner adota arquitetura estrita de processamento efêmero. Seus arquivos são manipulados em diretórios temporários isolados em memória e são permanentemente destruídos de forma automatizada após o download ou após 60 minutos de inatividade. Nenhum documento é lido, copiado ou retido por nós."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Como funciona a conversão de PDF para Kindle (EPUB e MOBI)?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "O conversor analisa a estrutura do PDF. Em documentos textuais, aplica reflow inteligente, remoção de cabeçalhos repetidos e preservação do sumário. Em gibis, quadrinhos e mangás (como Turma da Mônica), ativa automaticamente o Modo Quadrinhos em tela cheia com metadados pre-paginated oficiais da Amazon, pronto para envio pelo Send to Kindle."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Existe limite de tamanho ou quantidade de arquivos para juntar PDFs?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "O Klynner é equipado com o motor nativo QPDF compilado em C++, suportando documentos gigantescos de múltiplos gigabytes e dezenas de arquivos simultâneos sem travar o navegador ou o servidor."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "O serviço do Klynner PDF PRO é gratuito?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sim, todas as ferramentas do Klynner são 100% gratuitas, ilimitadas e sem exigência de cadastro, assinatura ou cartão de crédito. A manutenção dos servidores é viabilizada por anúncios discretos do Google AdSense."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "O site está em conformidade com a LGPD (Lei Geral de Proteção de Dados)?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sim. Atendemos integralmente à Lei Federal nº 13.709/2018 (LGPD), assegurando o descarte total dos dados após o uso, criptografia de ponta a ponta via HTTPS e transparência nas políticas de privacidade e cookies."
+        }
+      }
+    ]
+  }
+  </script>
   <style>
     /* Resiliência visual: Impede que botões de ferramentas fiquem brancos com borda preta */
     .tools-nav-bar {
@@ -3610,6 +3675,143 @@
           </div>
         </div>
       </section>
+
+      <!-- SEÇÃO EDUCATIVA, ENGENHARIA E FAQ COMPLETO (COMPLIANCE ADSENSE & AUTORIDADE) -->
+      <section class="klynner-educational-section" id="faq-section" aria-label="Informações e Perguntas Frequentes">
+        <!-- Cards de Destaque Tecnológico e de Privacidade -->
+        <div class="edu-features-grid">
+          <div class="edu-feature-card">
+            <div class="edu-card-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <h3>Motor QPDF C++ Nativo</h3>
+            <p>Diferente de ferramentas lentas em JavaScript puro, utilizamos o motor C++ industrial QPDF para manipular arquivos gigabytes em segundos, preservando marcadores e aplicando Fast Web View (linearização).</p>
+          </div>
+
+          <div class="edu-feature-card">
+            <div class="edu-card-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3>Privacidade Absoluta (LGPD)</h3>
+            <p>Seus documentos são processados em áreas isoladas de memória e excluídos de forma permanente e automatizada após o download. Nunca lemos, armazenamos ou compartilhamos seus dados.</p>
+          </div>
+
+          <div class="edu-feature-card">
+            <div class="edu-card-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </div>
+            <h3>Kindle Reflow & Gibis</h3>
+            <p>Conversor exclusivo que gera e-books EPUB/MOBI limpos com marcadores originais ou ativa o Modo Quadrinhos em alta resolução para ler Turma da Mônica e mangás no Kindle sem erro.</p>
+          </div>
+        </div>
+
+        <!-- Accordion FAQ Completo -->
+        <div class="faq-container">
+          <div class="faq-header-box">
+            <span class="faq-badge">Perguntas Frequentes &bull; Ajuda</span>
+            <h2 class="faq-title">Dúvidas Frequentes sobre o Klynner PRO</h2>
+            <p class="faq-subtitle">Tudo o que você precisa saber sobre o processamento, privacidade, formatos suportados e gratuidade da nossa plataforma.</p>
+          </div>
+
+          <div class="faq-list">
+            <div class="faq-item active">
+              <button type="button" class="faq-question">
+                <span>1. Meus arquivos PDF e documentos ficam salvos no servidor?</span>
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="faq-answer" style="max-height: 400px;">
+                <div class="faq-answer-inner">
+                  <strong>Não.</strong> O Klynner adota uma política rigorosa de <em>processamento efêmero</em>. Quando você faz upload de um arquivo, ele é alocado em um diretório temporário protegido por identificador único (UUID). Assim que você clica em "Limpar" ou fecha a aba, ou após decorridos no máximo 60 minutos de inatividade, o sistema de limpeza automática varre e destrói definitivamente o diretório do disco. Nenhum documento é indexado ou salvo em banco de dados permanente.
+                </div>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button type="button" class="faq-question">
+                <span>2. Como funciona a união de PDFs com menu e marcadores?</span>
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="faq-answer">
+                <div class="faq-answer-inner">
+                  Quando você ativa a opção <strong>"Gerar Marcadores / Sumário"</strong>, nosso motor analisa a árvore de favoritos (*bookmarks*) de cada PDF inserido. Ele cria um sumário hierárquico navegável no PDF final unificado, permitindo que leitores como Adobe Acrobat, navegadores web e tablets saltem imediatamente para cada arquivo ou capítulo correspondente.
+                </div>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button type="button" class="faq-question">
+                <span>3. Como converter quadrinhos, gibis e mangás em PDF para ler no Kindle?</span>
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="faq-answer">
+                <div class="faq-answer-inner">
+                  Gibis e mangás geralmente não possuem camada de texto editável (são páginas 100% ilustradas). O Klynner detecta automaticamente essa ausência de OCR e ativa o <strong>Modo Quadrinhos (Layout Fixo)</strong>. Cada página é convertida como uma imagem de altíssima nitidez (1.6x Matrix) em tela cheia com metadados <code>rendition:layout: pre-paginated</code> e <code>book-type: comic</code>, compatível nativamente com o serviço oficial Send to Kindle da Amazon.
+                </div>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button type="button" class="faq-question">
+                <span>4. Existe limite de tamanho de arquivo ou limite diário de uso?</span>
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="faq-answer">
+                <div class="faq-answer-inner">
+                  <strong>Zero limites arbitrários.</strong> Você pode processar arquivos grandes de dezenas ou centenas de megabytes (e até múltiplos gigabytes com nossa ordenação em caixas). Diferente de concorrentes que impõem limite de 2 tarefas por hora, o Klynner é gratuito e ilimitado.
+                </div>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button type="button" class="faq-question">
+                <span>5. O Klynner PDF PRO é gratuito? Como a plataforma é mantida?</span>
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="faq-answer">
+                <div class="faq-answer-inner">
+                  Sim, o Klynner é 100% gratuito. Para cobrir os custos contínuos de servidores dedicados de alta performance e tráfego ilimitado, exibimos anúncios contextuais discretos do Google AdSense e recebemos contribuições espontâneas via PIX da nossa comunidade de usuários.
+                </div>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button type="button" class="faq-question">
+                <span>6. Como converter PDF para imagens (Individual em ZIP ou Imagem Longa Contínua)?</span>
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="faq-answer">
+                <div class="faq-answer-inner">
+                  Na ferramenta <strong>PDF para Imagem</strong>, você pode escolher o <em>Modo Imagens Individuais</em> (que empacota todas as páginas em alta definição em um arquivo .zip ou download direto se for página única) ou o <em>Modo Imagem Longa Unificada</em>, que concatena todas as páginas verticalmente em um único infográfico contínuo, perfeito para postar em redes sociais e apresentações.
+                </div>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button type="button" class="faq-question">
+                <span>7. O site cumpre os requisitos da LGPD (Lei Geral de Proteção de Dados)?</span>
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="faq-answer">
+                <div class="faq-answer-inner">
+                  Sim, em sua totalidade. Cumprimos todos os preceitos da Lei nº 13.709/2018 (LGPD). Seus dados não são comercializados, cedidos a terceiros ou usados para treinamento de modelos sem o seu consentimento expresso. Consulte nossa <a href="/politica-de-privacidade" style="color: #38BDF8; text-decoration: underline;">Política de Privacidade</a> para detalhes completos.
+                </div>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button type="button" class="faq-question">
+                <span>8. Como entrar em contato ou sugerir melhorias para a equipe?</span>
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="faq-answer">
+                <div class="faq-answer-inner">
+                  Você pode deixar sua opinião pública no nosso Mural de Sugestões logo acima nesta página ou enviar um e-mail direto para nossa equipe pelo canal oficial: <a href="mailto:admin@klynner.com.br" style="color: #60A5FA; font-weight: 600;">admin@klynner.com.br</a> ou pela página <a href="/contato" style="color: #60A5FA; text-decoration: underline;">Fale Conosco</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Modal de Pré-Visualização -->
@@ -4207,11 +4409,85 @@
 
     <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
-    <footer class="app-footer">
-      <p>Klynner PDF &bull; Suíte de Alta Performance para Documentos &bull; Versão 2.0.0 &bull; <span id="footer-visits-count">... acessos</span></p>
+    <!-- Rodapé Completo, Profissional e Conforme com o AdSense & LGPD -->
+    <footer class="app-footer-extended">
+      <div class="footer-container">
+        <div class="footer-grid">
+          <div class="footer-brand-col">
+            <div class="brand">
+              <div class="logo-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z" stroke="#6366F1" stroke-width="2"/><path d="M14 2V8H20" stroke="#6366F1" stroke-width="2"/><path d="M12 18V12" stroke="#38BDF8" stroke-width="2"/><path d="M9 15L12 12L15 15" stroke="#38BDF8" stroke-width="2"/></svg>
+              </div>
+              <div class="brand-text">
+                <span class="brand-title" style="font-size: 1.15rem;">Klynner <span class="badge-pro">PRO</span></span>
+              </div>
+            </div>
+            <p>A suíte online mais rápida, limpa e segura para manipular documentos PDF, converter para Kindle e imagens sem limites abusivos e com respeito total à privacidade.</p>
+            <div class="footer-security-badges">
+              <span class="footer-sec-badge">🛡️ LGPD Conforme</span>
+              <span class="footer-sec-badge">🔒 HTTPS 256-bit</span>
+              <span class="footer-sec-badge">⚡ QPDF C++ Engine</span>
+              <span class="footer-sec-badge" id="footer-visits-count">... acessos</span>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="footer-col-title">Ferramentas</h4>
+            <ul class="footer-links-list">
+              <li><a href="/#tools-container">📂 Juntar PDFs com Marcadores</a></li>
+              <li><a href="/#tools-container">✂️ Dividir & Extrair Páginas</a></li>
+              <li><a href="/#tools-container">🖼️ Converter PDF para Imagem</a></li>
+              <li><a href="/#tools-container">📖 Converter PDF para Kindle</a></li>
+              <li><a href="/#tools-container">🏷️ Adicionar Logo & Marca d'água</a></li>
+              <li><a href="/#tools-container">🔄 Girar e Reorganizar Páginas</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="footer-col-title">Institucional</h4>
+            <ul class="footer-links-list">
+              <li><a href="/sobre">Sobre Nós</a></li>
+              <li><a href="/contato">Fale Conosco & Suporte</a></li>
+              <li><a href="/#faq-section">Perguntas Frequentes (FAQ)</a></li>
+              <li><a href="/#feedback-section">Mural de Sugestões</a></li>
+              <li><a href="/#donation-section">Apoiar o Projeto (PIX)</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="footer-col-title">Privacidade & Legal</h4>
+            <ul class="footer-links-list">
+              <li><a href="/politica-de-privacidade">Política de Privacidade</a></li>
+              <li><a href="/termos-de-uso">Termos de Uso</a></li>
+              <li><a href="/ads.txt">Inventário ads.txt</a></li>
+              <li><a href="javascript:void(0)" id="footer-btn-cookie-settings">Preferências de Cookies</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom-bar">
+          <div>&copy; 2026 Klynner Suite &bull; Todos os direitos reservados &bull; Arquitetura Efêmera &bull; Versão 2.0.0</div>
+          <div>E-mail de contato: <a href="mailto:admin@klynner.com.br">admin@klynner.com.br</a></div>
+        </div>
+      </div>
     </footer>
   </div>
 
-  <script src="/static/js/app.js?v=2.9.6"></script>
+  <!-- Banner de Consentimento de Cookies (LGPD & Google AdSense) -->
+  <div class="cookie-consent-banner hidden" id="cookie-consent-banner" role="region" aria-label="Aviso de Cookies">
+    <div class="cookie-content">
+      <div class="cookie-icon">🍪</div>
+      <div class="cookie-text">
+        <h4>Privacidade e Gestão de Cookies</h4>
+        <p>Utilizamos cookies e tecnologias similares para veicular anúncios não intrusivos através do Google AdSense, analisar métricas anônimas de tráfego e manter nossos servidores gratuitos, em total conformidade com a <strong>LGPD</strong>. Saiba mais em nossa <a href="/politica-de-privacidade">Política de Privacidade</a>.</p>
+      </div>
+    </div>
+    <div class="cookie-actions">
+      <button type="button" class="btn-cookie-reject" id="btn-cookie-reject">Apenas Essenciais</button>
+      <button type="button" class="btn-cookie-accept" id="btn-cookie-accept">Aceitar e Continuar</button>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js?v=2.9.7"></script>
 </body>
 </html>

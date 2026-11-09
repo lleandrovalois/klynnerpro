@@ -377,31 +377,53 @@ class ComparePdfRequest(BaseModel):
 
 
 
-@app.get("/", response_class=HTMLResponse)
+def render_page_template(template_name: str) -> HTMLResponse:
+    tmpl_file = TEMPLATES_DIR / template_name
+    if not tmpl_file.exists():
+        raise HTTPException(status_code=404, detail="Página institucional não encontrada")
+
+    content = tmpl_file.read_text(encoding="utf-8")
+    css_path = STATIC_DIR / "css" / "style.css"
+    v_css = int(css_path.stat().st_mtime) if css_path.exists() else 2100
+
+    content = content.replace("{{VERSION}}", str(v_css))
+    content = content.replace("{{ADSENSE_CLIENT_ID}}", ADSENSE_CLIENT_ID)
+    is_placeholder = (ADSENSE_CLIENT_ID in ("ca-pub-XXXXXXXXXXXXXXXX", "", "none"))
+    content = content.replace("{{ADSENSE_MODE_CLASS}}", "adsense-placeholder-mode" if is_placeholder else "adsense-live-mode")
+
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "public, max-age=1800",
+        }
+    )
+
+
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def serve_index():
     index_file = TEMPLATES_DIR / "index.html"
     if not index_file.exists():
         raise HTTPException(status_code=404, detail="Template index.html não encontrado")
-    
+
     content = index_file.read_text(encoding="utf-8")
-    
+
     # Versionamento dinâmico baseado na modificação dos arquivos estáticos para quebra de cache infalível
     import re
     css_path = STATIC_DIR / "css" / "style.css"
     js_path = STATIC_DIR / "js" / "app.js"
     v_css = int(css_path.stat().st_mtime) if css_path.exists() else 2100
     v_js = int(js_path.stat().st_mtime) if js_path.exists() else 2100
-    
+
     content = re.sub(r'/static/css/style\.css(\?[^"\'\s>]*)?', f'/static/css/style.css?v={v_css}', content)
     content = re.sub(r'/static/js/app\.js(\?[^"\'\s>]*)?', f'/static/js/app.js?v={v_js}', content)
-    
+
     # Injeção de variáveis de monetização (Google AdSense)
     is_placeholder = (ADSENSE_CLIENT_ID in ("ca-pub-XXXXXXXXXXXXXXXX", "", "none"))
     content = content.replace("{{ADSENSE_CLIENT_ID}}", ADSENSE_CLIENT_ID)
     content = content.replace("{{ADSENSE_SLOT_RESULT}}", ADSENSE_SLOT_RESULT)
     content = content.replace("{{ADSENSE_SLOT_FOOTER}}", ADSENSE_SLOT_FOOTER)
     content = content.replace("{{ADSENSE_MODE_CLASS}}", "adsense-placeholder-mode" if is_placeholder else "adsense-live-mode")
-    
+
     return HTMLResponse(
         content=content,
         headers={
@@ -412,7 +434,7 @@ async def serve_index():
     )
 
 
-@app.get("/ads.txt", response_class=PlainTextResponse)
+@app.api_route("/ads.txt", methods=["GET", "HEAD"], response_class=PlainTextResponse)
 async def serve_ads_txt():
     """Endpoint obrigatório do Google AdSense para verificação de domínio e integridade de inventário."""
     root_ads_txt = CURRENT_DIR.parent / "ads.txt"
@@ -427,6 +449,49 @@ async def serve_ads_txt():
 
     ads_content = f"# Google AdSense ads.txt - Klynner PDF PRO\ngoogle.com, {clean_pub}, DIRECT, f08c47fec0942fa0\n"
     return PlainTextResponse(ads_content, media_type="text/plain")
+
+
+@app.api_route("/politica-de-privacidade", methods=["GET", "HEAD"], response_class=HTMLResponse)
+@app.api_route("/privacidade", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def serve_privacy():
+    return render_page_template("privacy.html")
+
+
+@app.api_route("/termos-de-uso", methods=["GET", "HEAD"], response_class=HTMLResponse)
+@app.api_route("/termos", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def serve_terms():
+    return render_page_template("terms.html")
+
+
+@app.api_route("/sobre", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def serve_about():
+    return render_page_template("about.html")
+
+
+@app.api_route("/contato", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def serve_contact():
+    return render_page_template("contact.html")
+
+
+class ContactRequest(BaseModel):
+    name: str = Field(..., max_length=100)
+    email: str = Field(..., max_length=150)
+    subject: str = Field(..., max_length=200)
+    message: str = Field(..., max_length=5000)
+
+
+@app.post("/api/contact")
+async def handle_contact_submission(req: ContactRequest):
+    logger.info(f"Mensagem de contato recebida: Nome='{req.name}', Email='{req.email}', Assunto='{req.subject}'")
+    try:
+        from app.feedback import send_email_notification
+        subject = f"[Klynner Contato] {req.subject} ({req.name})"
+        body_text = f"Novo contato recebido pelo site Klynner:\n\nNome: {req.name}\nE-mail: {req.email}\nAssunto: {req.subject}\n\nMensagem:\n{req.message}\n"
+        send_email_notification("admin@klynner.com.br", subject, body_text)
+    except Exception as e:
+        logger.warning(f"Aviso ao notificar contato por e-mail: {e}")
+
+    return {"status": "success", "message": "Sua mensagem foi recebida com sucesso! Responderemos em breve."}
 
 
 @app.post("/api/upload")

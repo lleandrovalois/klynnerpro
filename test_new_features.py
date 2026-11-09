@@ -274,6 +274,69 @@ def test_suite_new_features():
     assert not any(f["id"] == fb_id for f in after_del.json()["feedbacks"])
     print("  -> Autenticação de Moderador e Exclusão de Comentário validadas com sucesso!")
 
+    # 8. Validação de Compliance Google AdSense, LGPD e Páginas Institucionais
+    print("\n[8/8] Testando Compliance Google AdSense, LGPD e Páginas Institucionais...")
+    
+    # 8.1 HEAD e GET em / e /ads.txt (elimina erro 405 para robôs do Google)
+    head_root = client.head("/")
+    assert head_root.status_code == 200
+    head_ads = client.head("/ads.txt")
+    assert head_ads.status_code == 200
+    get_ads = client.get("/ads.txt")
+    assert get_ads.status_code == 200
+    assert "pub-1653358832177043" in get_ads.text
+    print("  -> HEAD e GET /ads.txt e / respondem com 200 OK para robôs!")
+
+    # 8.2 Política de Privacidade (obrigatória para AdSense)
+    priv_res = client.get("/politica-de-privacidade")
+    assert priv_res.status_code == 200
+    assert "LGPD" in priv_res.text
+    assert "Google AdSense" in priv_res.text
+    assert "cookies" in priv_res.text
+    assert "adssettings.google.com" in priv_res.text
+    
+    priv_alias = client.get("/privacidade")
+    assert priv_alias.status_code == 200
+    print("  -> Página /politica-de-privacidade validada com cláusulas AdSense e LGPD!")
+
+    # 8.3 Termos de Uso
+    terms_res = client.get("/termos-de-uso")
+    assert terms_res.status_code == 200
+    assert "Termos de Uso" in terms_res.text
+    assert "Propriedade Intelectual" in terms_res.text
+    print("  -> Página /termos-de-uso validada!")
+
+    # 8.4 Sobre Nós
+    about_res = client.get("/sobre")
+    assert about_res.status_code == 200
+    assert "Sobre o Klynner PDF PRO" in about_res.text
+    print("  -> Página /sobre validada!")
+
+    # 8.5 Contato e Endpoint de Envio de Mensagens
+    contact_res = client.get("/contato")
+    assert contact_res.status_code == 200
+    assert "admin@klynner.com.br" in contact_res.text
+    
+    post_contact = client.post("/api/contact", json={
+        "name": "Maria Teste",
+        "email": "maria@teste.com",
+        "subject": "Dúvida sobre AdSense",
+        "message": "Parabéns pela plataforma excelente!",
+    })
+    assert post_contact.status_code == 200
+    assert post_contact.json()["status"] == "success"
+    print("  -> Página /contato e endpoint POST /api/contact validados com sucesso!")
+
+    # 8.6 FAQ Schema JSON-LD e Banner de Cookies no index.html
+    home_res = client.get("/")
+    assert home_res.status_code == 200
+    home_html = home_res.text
+    assert "FAQPage" in home_html
+    assert "faq-section" in home_html
+    assert "cookie-consent-banner" in home_html
+    assert "app-footer-extended" in home_html
+    print("  -> Home com FAQ Schema.org, Banner de Cookies e Rodapé de 4 colunas 100% validados!")
+
     print("\n==================================================")
     print("  SUCESSO ABSOLUTO! TODOS OS TESTES PASSARAM!     ")
     print("==================================================")
