@@ -487,7 +487,7 @@ async def handle_contact_submission(req: ContactRequest):
         from app.email_service import is_smtp_configured, send_feedback_reply_email
         if is_smtp_configured():
             send_feedback_reply_email(
-                to_email="admin@klynner.com.br",
+                to_email="lleandrovalois@gmail.com",
                 recipient_name="Administrador Klynner",
                 original_message=f"De: {req.name} <{req.email}>\nAssunto: {req.subject}",
                 reply_message=req.message,

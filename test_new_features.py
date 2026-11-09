@@ -315,7 +315,7 @@ def test_suite_new_features():
     # 8.5 Contato e Endpoint de Envio de Mensagens
     contact_res = client.get("/contato")
     assert contact_res.status_code == 200
-    assert "admin@klynner.com.br" in contact_res.text
+    assert "lleandrovalois@gmail.com" in contact_res.text
     
     post_contact = client.post("/api/contact", json={
         "name": "Maria Teste",
