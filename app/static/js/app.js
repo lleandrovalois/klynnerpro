@@ -660,6 +660,7 @@
   const kindleOutputFilename = document.getElementById('kindle-output-filename');
   const kindleFilenameSuffix = document.getElementById('kindle-filename-suffix');
   const kindleSummaryLabel = document.getElementById('kindle-summary-label');
+  const toggleKindleFixedLayout = document.getElementById('toggle-kindle-fixed-layout');
   const btnStartKindle = document.getElementById('btn-start-kindle');
 
   // Elementos Marca d'água (.pdf)
@@ -5758,6 +5759,20 @@
   // =========================================================================
   // FERRAMENTA: CONVERSÃO DE PDF PARA KINDLE (.EPUB / .MOBI)
   // =========================================================================
+  function updateKindleSummaryLabel() {
+    if (!kindleSummaryLabel) return;
+    const isEpub = !kindleFmtMobi || !kindleFmtMobi.checked;
+    if (state.kindleForceFixedLayout) {
+      kindleSummaryLabel.textContent = isEpub
+        ? 'EPUB (.epub) • Modo Quadrinhos (Páginas em Alta Resolução)'
+        : 'MOBI (.mobi) • Modo Quadrinhos (Páginas em Alta Resolução)';
+    } else {
+      kindleSummaryLabel.textContent = isEpub
+        ? 'EPUB (.epub) • Reflow Dinâmico + Capa'
+        : 'MOBI (.mobi) • Dispositivos Legados';
+    }
+  }
+
   function setupPdfToKindleEvents() {
     if (btnKindleChangeDoc) btnKindleChangeDoc.addEventListener('click', resetCurrentDocument);
 
@@ -5767,32 +5782,29 @@
       radio.addEventListener('change', () => {
         const isEpub = radio.value === 'epub' && radio.checked;
         if (kindleFilenameSuffix) kindleFilenameSuffix.textContent = isEpub ? '.epub' : '.mobi';
-        if (kindleSummaryLabel) {
-          if (state.kindleForceFixedLayout) {
-            kindleSummaryLabel.textContent = isEpub
-              ? 'EPUB (.epub) • Páginas em Layout Fixo de Alta Resolução'
-              : 'MOBI (.mobi) • Páginas em Layout Fixo de Alta Resolução';
-          } else {
-            kindleSummaryLabel.textContent = isEpub
-              ? 'EPUB (.epub) • Reflow Dinâmico + Capa'
-              : 'MOBI (.mobi) • Dispositivos Legados';
-          }
-        }
+        updateKindleSummaryLabel();
       });
     });
+
+    // Checkbox / Alternador Manual do Modo Quadrinhos / Layout Fixo
+    if (toggleKindleFixedLayout) {
+      toggleKindleFixedLayout.addEventListener('change', () => {
+        state.kindleForceFixedLayout = !!toggleKindleFixedLayout.checked;
+        updateKindleSummaryLabel();
+        if (state.kindleForceFixedLayout) {
+          showToast('Modo Quadrinhos / Layout Fixo ativado!', 'info');
+        }
+      });
+    }
 
     // Botões de alerta para scanned PDF (Cenário 3 / RN-04)
     if (btnKindleProceedFixed) {
       btnKindleProceedFixed.addEventListener('click', () => {
         state.kindleForceFixedLayout = true;
+        if (toggleKindleFixedLayout) toggleKindleFixedLayout.checked = true;
         if (kindleScannedWarningBox) kindleScannedWarningBox.classList.add('hidden');
-        if (kindleSummaryLabel) {
-          const isEpub = kindleFmtEpub && kindleFmtEpub.checked;
-          kindleSummaryLabel.textContent = isEpub
-            ? 'EPUB (.epub) • Páginas em Layout Fixo de Alta Resolução'
-            : 'MOBI (.mobi) • Páginas em Layout Fixo de Alta Resolução';
-        }
-        showToast('Modo de layout fixo ativado para preservação das páginas escaneadas.', 'info');
+        updateKindleSummaryLabel();
+        showToast('Modo Quadrinhos / Layout Fixo confirmado!', 'info');
       });
     }
 
@@ -5807,7 +5819,9 @@
     if (!state.activeDoc) return;
 
     state.kindleForceFixedLayout = false;
+    if (toggleKindleFixedLayout) toggleKindleFixedLayout.checked = false;
     if (kindleScannedWarningBox) kindleScannedWarningBox.classList.add('hidden');
+    updateKindleSummaryLabel();
 
     // Validação RN-04: Limite operacional de 50 MB
     if (state.activeDoc.size > 50 * 1024 * 1024) {
@@ -5862,15 +5876,19 @@
         kindleDocPages.textContent = `${info.total_pages} pág${info.total_pages > 1 ? 's' : ''}`;
       }
 
-      // Cenário 3: Alerta para PDF digitalizado sem OCR
+      // Cenário 3: Alerta para PDF digitalizado sem OCR / Quadrinhos / Gibis
       if (info.is_scanned) {
+        state.kindleForceFixedLayout = true;
+        if (toggleKindleFixedLayout) toggleKindleFixedLayout.checked = true;
+        updateKindleSummaryLabel();
+
         if (kindleScannedWarningBox) {
           kindleScannedWarningBox.classList.remove('hidden');
           if (kindleScannedWarningText && info.warning_message) {
             kindleScannedWarningText.textContent = info.warning_message;
           }
         }
-        showToast('Documento digitalizado sem texto OCR detectado.', 'warning');
+        showToast('Gibi / PDF ilustrado detectado: Modo Quadrinhos ativado automaticamente.', 'info');
       } else if (info.has_bookmarks) {
         showToast(`${info.chapters_count} capítulos detectados para o sumário do Kindle!`, 'info');
       }

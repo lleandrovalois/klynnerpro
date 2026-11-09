@@ -156,6 +156,24 @@ def run_kindle_tests():
         assert any("images/page_1.jpg" in name for name in zf.namelist())
     print("  -> Cenário 3 (Opção Prosseguir com layout fixo) validado com sucesso!")
 
+    # Conversão do scan com force_fixed_layout=False (Fallback automático para gibi / gibi da Turma da Mônica sem OCR)
+    auto_comic_res = execute_pdf_to_kindle(
+        session_dir=session_dir,
+        file_id=scan_file_id,
+        output_format="epub",
+        force_fixed_layout=False,
+    )
+    assert auto_comic_res["is_fixed_layout"] is True
+    auto_epub_path = session_dir / "output" / auto_comic_res["output_filename"]
+    assert auto_epub_path.exists()
+    with zipfile.ZipFile(auto_epub_path, "r") as zf:
+        assert any("images/page_1.jpg" in name for name in zf.namelist())
+        opf = zf.read("OEBPS/content.opf").decode("utf-8")
+        assert 'pre-paginated' in opf
+        assert 'name="fixed-layout" content="true"' in opf
+        assert 'name="book-type" content="comic"' in opf
+    print("  -> Fallback automático para gibis e quadrinhos sem camada de texto validado com sucesso!")
+
     # 4. Cenário 1: Conversão bem-sucedida de PDF baseado em texto para .epub (Cenário 1 BDD)
     print("\n[4/7] Testando Cenário 1 (Conversão bem-sucedida para .epub com reflow e marcadores)...")
     text_data = create_text_pdf_with_bookmarks(num_pages=3)

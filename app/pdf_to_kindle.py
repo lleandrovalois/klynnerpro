@@ -339,6 +339,14 @@ body {
   color: #111111;
   background-color: transparent;
 }
+html.fixed-layout, body.fixed-layout {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw;
+  height: 100vh;
+  background-color: transparent;
+  overflow: hidden;
+}
 h1 {
   font-family: "Amazon Ember", "Helvetica Neue", "Arial", sans-serif;
   font-size: 1.6rem;
@@ -391,15 +399,23 @@ p.no-indent {
   margin: 0 auto;
 }
 .fixed-page-container {
-  text-align: center;
-  page-break-after: always;
-  break-after: page;
+  width: 100vw;
+  height: 100vh;
   margin: 0;
   padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  page-break-inside: avoid;
+  page-break-after: always;
+  break-after: page;
 }
 .fixed-page-image {
   max-width: 100%;
-  max-height: 96vh;
+  max-height: 100%;
+  width: auto;
+  height: auto;
   object-fit: contain;
   display: block;
   margin: 0 auto;
@@ -419,6 +435,64 @@ nav#toc a {
 """
 
 
+def generate_fixed_layout_chapters(
+    doc: pymupdf.Document,
+    session_dir: Path,
+    job_id: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Renderiza todas as páginas do PDF como imagens de alta nitidez em tela cheia (Fixed Layout),
+    otimizadas especificamente para gibis, mangás, quadrinhos e PDFs escaneados no Kindle.
+    """
+    total_pages = len(doc)
+    chapters: List[Dict[str, Any]] = []
+
+    # Mapeia marcadores existentes para dar título aos capítulos se houver
+    pdf_toc = doc.get_toc()
+    page_to_title = {}
+    for item in pdf_toc:
+        if len(item) >= 3:
+            lvl, c_title, c_page = item[0], item[1], item[2]
+            c_page_idx = max(0, c_page - 1)
+            if c_page_idx not in page_to_title:
+                page_to_title[c_page_idx] = c_title
+
+    current_title = "Página 1"
+
+    for page_idx in range(total_pages):
+        if job_id:
+            pct = 50 + int((page_idx / max(1, total_pages)) * 35)
+            update_kindle_job(job_id, pct, f"Renderizando página {page_idx + 1} de {total_pages} (Modo Quadrinhos)...")
+
+        page = doc[page_idx]
+        if page_idx in page_to_title:
+            current_title = page_to_title[page_idx]
+        else:
+            current_title = f"Página {page_idx + 1}"
+
+        # Escala 1.6x para garantir leitura nítida de balões de diálogo e textos finos
+        mat = pymupdf.Matrix(1.6, 1.6)
+        pix = page.get_pixmap(matrix=mat, alpha=False)
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+
+        img_path = session_dir / f"page_{page_idx + 1}.jpg"
+        img.save(str(img_path), "JPEG", quality=86, optimize=True)
+
+        w, h = pix.width, pix.height
+        page_html = f"""<div class="fixed-page-container">
+  <img src="images/page_{page_idx + 1}.jpg" alt="{html.escape(current_title)}" class="fixed-page-image"/>
+</div>"""
+        chapters.append({
+            "title": current_title,
+            "html": page_html,
+            "image_file": img_path,
+            "width": w,
+            "height": h,
+        })
+
+    return chapters
+
+
 def build_epub_file(
     out_path: Path,
     title: str,
@@ -426,13 +500,18 @@ def build_epub_file(
     cover_image_path: Optional[Path],
     chapters: List[Dict[str, Any]],
     lang: str = "pt-BR",
+    is_fixed_layout: bool = False,
 ) -> None:
     """
     Compila um arquivo .epub (EPUB 3 / 2 hibrido para compatibilidade total com Amazon Send to Kindle).
     Gera mimetype uncompressed, META-INF/container.xml, OEBPS/content.opf, toc.ncx, nav.xhtml,
     styles.css, cover.xhtml e os capítulos.
+    Oferece suporte total ao modo Fixed Layout / Quadrinhos para gibis, mangás e scans no Kindle.
     """
     book_id = str(uuid.uuid4())
+    # Detecta se é fixed layout (explícito ou se os capítulos são compostos por imagens)
+    has_image_chapters = any(bool(ch.get("image_file")) for ch in chapters)
+    is_fixed = is_fixed_layout or has_image_chapters
 
     with zipfile.ZipFile(out_path, "w") as zf:
         # 1. mimetype como primeiro arquivo obrigatório sem compressão (ZIP_STORED)
@@ -464,14 +543,17 @@ def build_epub_file(
                 zf.writestr("OEBPS/images/cover.jpg", f_cov.read(), compress_type=zipfile.ZIP_DEFLATED)
             manifest_items.append('<item id="cover-image" href="images/cover.jpg" media-type="image/jpeg" properties="cover-image"/>')
 
+            cover_viewport = '<meta name="viewport" content="width=1200, height=1600"/>' if is_fixed else ''
+            cover_body_cls = ' class="fixed-layout"' if is_fixed else ''
             cover_xhtml = f"""<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="{lang}">
 <head>
   <title>Capa - {html.escape(title)}</title>
+  {cover_viewport}
   <link rel="stylesheet" href="styles.css" type="text/css"/>
 </head>
-<body>
+<body{cover_body_cls}>
   <div class="cover-container">
     <img src="images/cover.jpg" alt="Capa" class="cover-image"/>
   </div>
@@ -498,17 +580,26 @@ def build_epub_file(
                     zf.writestr(f"OEBPS/images/{img_name}", fi.read(), compress_type=zipfile.ZIP_DEFLATED)
                 manifest_items.append(f'<item id="img_{idx}" href="images/{img_name}" media-type="image/jpeg"/>')
                 body_content = content_html
+                ch_w = ch.get("width") or 1200
+                ch_h = ch.get("height") or 1600
+                ch_viewport = f'<meta name="viewport" content="width={ch_w}, height={ch_h}"/>'
+                ch_body_cls = ' class="fixed-layout"'
+                ch_html_cls = ' class="fixed-layout"'
             else:
                 body_content = f"<h1>{html.escape(ch_title)}</h1>\n  {content_html}"
+                ch_viewport = ""
+                ch_body_cls = ""
+                ch_html_cls = ""
 
             ch_xhtml = f"""<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="{lang}">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="{lang}"{ch_html_cls}>
 <head>
   <title>{html.escape(ch_title)}</title>
+  {ch_viewport}
   <link rel="stylesheet" href="styles.css" type="text/css"/>
 </head>
-<body>
+<body{ch_body_cls}>
   {body_content}
 </body>
 </html>"""
@@ -565,6 +656,14 @@ def build_epub_file(
         spine_str = "\n    ".join(spine_items)
         cover_meta = '<meta name="cover" content="cover-image"/>' if has_cover else ''
 
+        fixed_layout_meta = """
+    <meta property="rendition:layout">pre-paginated</meta>
+    <meta property="rendition:orientation">auto</meta>
+    <meta property="rendition:spread">auto</meta>
+    <meta name="fixed-layout" content="true"/>
+    <meta name="book-type" content="comic"/>
+    <meta name="orientation-lock" content="none"/>""" if is_fixed else ""
+
         content_opf = f"""<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="BookId">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -574,7 +673,7 @@ def build_epub_file(
     <dc:language>{lang}</dc:language>
     <dc:publisher>Klynner Pro PDF Converter</dc:publisher>
     <meta property="dcterms:modified">{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}</meta>
-    {cover_meta}
+    {cover_meta}{fixed_layout_meta}
   </metadata>
   <manifest>
     {manifest_str}
@@ -783,29 +882,11 @@ def execute_pdf_to_kindle(
         pdf_toc = doc.get_toc()  # [[lvl, title, page], ...]
         chapters: List[Dict[str, Any]] = []
 
-        # Se for PDF puramente escaneado sem OCR e o usuário solicitou layout fixo
+        # Se for PDF puramente escaneado sem OCR ou o usuário solicitou layout fixo
         if force_fixed_layout:
             if job_id:
-                update_kindle_job(job_id, 50, "Processando páginas em layout fixo de alta fidelidade...")
-
-            for page_idx in range(total_pages):
-                page = doc[page_idx]
-                mat = pymupdf.Matrix(1.5, 1.5)
-                pix = page.get_pixmap(matrix=mat, alpha=False)
-                img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                
-                # Salva imagem da página
-                img_path = session_dir / f"page_{page_idx + 1}.jpg"
-                img.save(str(img_path), "JPEG", quality=85)
-                
-                page_html = f"""<div class="fixed-page-container">
-  <img src="images/page_{page_idx + 1}.jpg" alt="Página {page_idx + 1}" class="fixed-page-image"/>
-</div>"""
-                chapters.append({
-                    "title": f"Página {page_idx + 1}",
-                    "html": page_html,
-                    "image_file": img_path,
-                })
+                update_kindle_job(job_id, 50, "Processando páginas em Modo Quadrinhos / Layout Fixo...")
+            chapters = generate_fixed_layout_chapters(doc, session_dir, job_id)
         else:
             # Modo Reflow de Texto Inteligente (RN-02)
             if job_id:
@@ -861,12 +942,17 @@ def execute_pdf_to_kindle(
                     "html": "\n".join(current_chapter_html_parts),
                 })
 
-            # Se não detectou nenhum texto ou capítulos vazios, cria capítulo de fallback
-            if not chapters or not any(c.get("html") for c in chapters):
-                chapters = [{
-                    "title": title,
-                    "html": "<p>O documento PDF não possui texto editável extraível ou consiste primariamente em imagens.</p>",
-                }]
+            # AUTO-FALLBACK: Se não detectou texto ou se o texto total é insignificante (< 60 caracteres)
+            total_extracted_chars = sum(len(c.get("html", "").strip()) for c in chapters)
+            if not chapters or total_extracted_chars < 60:
+                logger.info(
+                    f"PDF '{file_path.name}' sem camada textual útil ({total_extracted_chars} caracteres). "
+                    "Ativando fallback automático para Modo Quadrinhos / Layout Fixo..."
+                )
+                if job_id:
+                    update_kindle_job(job_id, 55, "Gibi/Quadrinho sem texto editável detectado. Convertendo para Modo Quadrinhos de alta nitidez...")
+                force_fixed_layout = True
+                chapters = generate_fixed_layout_chapters(doc, session_dir, job_id)
 
         # 5. Compilação do arquivo de saída (.epub ou .mobi) (RN-01)
         if job_id:
@@ -887,6 +973,7 @@ def execute_pdf_to_kindle(
                 author=author,
                 cover_image_path=cover_path,
                 chapters=chapters,
+                is_fixed_layout=force_fixed_layout,
             )
 
         elapsed = time.time() - t0
