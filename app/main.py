@@ -14,12 +14,14 @@ import urllib.parse
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from dotenv import load_dotenv
 load_dotenv()
+
+from app.tool_seo import TOOL_SEO_DATA
 
 from app.analytics import get_current_stats, init_analytics_db, record_page_visit
 from app.email_service import get_smtp_config, is_smtp_configured, send_feedback_reply_email
@@ -423,6 +425,7 @@ async def serve_index():
     content = content.replace("{{ADSENSE_SLOT_RESULT}}", ADSENSE_SLOT_RESULT)
     content = content.replace("{{ADSENSE_SLOT_FOOTER}}", ADSENSE_SLOT_FOOTER)
     content = content.replace("{{ADSENSE_MODE_CLASS}}", "adsense-placeholder-mode" if is_placeholder else "adsense-live-mode")
+    content = content.replace("<!-- TOOL_EDITORIAL_PLACEHOLDER -->", "")
 
     return HTMLResponse(
         content=content,
@@ -432,6 +435,134 @@ async def serve_index():
             "Expires": "0",
         }
     )
+
+
+def render_tool_landing_page(tool_slug: str) -> HTMLResponse:
+    if tool_slug not in TOOL_SEO_DATA:
+        raise HTTPException(status_code=404, detail="Ferramenta não encontrada")
+
+    index_file = TEMPLATES_DIR / "index.html"
+    if not index_file.exists():
+        raise HTTPException(status_code=404, detail="Template index.html não encontrado")
+
+    content = index_file.read_text(encoding="utf-8")
+    seo = TOOL_SEO_DATA[tool_slug]
+
+    import re
+    css_path = STATIC_DIR / "css" / "style.css"
+    js_path = STATIC_DIR / "js" / "app.js"
+    v_css = int(css_path.stat().st_mtime) if css_path.exists() else 2100
+    v_js = int(js_path.stat().st_mtime) if js_path.exists() else 2100
+
+    content = re.sub(r'/static/css/style\.css(\?[^"\'\s>]*)?', f'/static/css/style.css?v={v_css}', content)
+    content = re.sub(r'/static/js/app\.js(\?[^"\'\s>]*)?', f'/static/js/app.js?v={v_js}', content)
+
+    # Injeção de variáveis de monetização (Google AdSense)
+    is_placeholder = (ADSENSE_CLIENT_ID in ("ca-pub-XXXXXXXXXXXXXXXX", "", "none"))
+    content = content.replace("{{ADSENSE_CLIENT_ID}}", ADSENSE_CLIENT_ID)
+    content = content.replace("{{ADSENSE_SLOT_RESULT}}", ADSENSE_SLOT_RESULT)
+    content = content.replace("{{ADSENSE_SLOT_FOOTER}}", ADSENSE_SLOT_FOOTER)
+    content = content.replace("{{ADSENSE_MODE_CLASS}}", "adsense-placeholder-mode" if is_placeholder else "adsense-live-mode")
+
+    # Injeção de dados de SEO específicos da ferramenta (Title, Meta Description, Canonical)
+    content = re.sub(r'<title>.*?</title>', f"<title>{seo['title']}</title>", content, count=1)
+    content = re.sub(r'<meta name="description" content=".*?">', f'<meta name="description" content="{seo["meta_desc"]}">', content, count=1)
+    content = re.sub(r'<link rel="canonical" href=".*?">', f'<link rel="canonical" href="{seo["canonical"]}">', content, count=1)
+
+    # Injeção do conteúdo editorial profundo
+    editorial = seo.get("editorial_html", "")
+    content = content.replace("<!-- TOOL_EDITORIAL_PLACEHOLDER -->", editorial)
+
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "public, max-age=1800",
+        }
+    )
+
+
+# Rotas dedicadas das Ferramentas Principais (SEO & AdSense Value Hub)
+@app.api_route("/juntar-pdf", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_juntar_pdf():
+    return render_tool_landing_page("juntar-pdf")
+
+
+@app.api_route("/dividir-pdf", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_dividir_pdf():
+    return render_tool_landing_page("dividir-pdf")
+
+
+@app.api_route("/pdf-para-kindle", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_pdf_para_kindle():
+    return render_tool_landing_page("pdf-para-kindle")
+
+
+@app.api_route("/pdf-para-imagem", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_pdf_para_imagem():
+    return render_tool_landing_page("pdf-para-imagem")
+
+
+@app.api_route("/marca-dagua-pdf", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_marca_dagua_pdf():
+    return render_tool_landing_page("marca-dagua-pdf")
+
+
+@app.api_route("/adicionar-logo-pdf", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_adicionar_logo_pdf():
+    return render_tool_landing_page("adicionar-logo-pdf")
+
+
+@app.api_route("/organizar-pdf", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_organizar_pdf():
+    return render_tool_landing_page("organizar-pdf")
+
+
+@app.api_route("/comprimir-pdf", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_comprimir_pdf():
+    return render_tool_landing_page("comprimir-pdf")
+
+
+# Rotas da Central de Guias & Tutoriais Educativos
+@app.api_route("/guias", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_guias_hub():
+    return render_page_template("guides/hub.html")
+
+
+@app.api_route("/guias/como-enviar-pdf-gibi-kindle", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_guia_gibi_kindle():
+    return render_page_template("guides/gibi_kindle.html")
+
+
+@app.api_route("/guias/como-juntar-pdf-grandes-volumes", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_guia_juntar_grandes_volumes():
+    return render_page_template("guides/juntar_grandes_volumes.html")
+
+
+@app.api_route("/guias/otimizar-pdf-tribunais-pje", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_guia_otimizar_tribunais():
+    return render_page_template("guides/otimizar_pdf_tribunais.html")
+
+
+@app.api_route("/guias/converter-pdf-em-imagem-continua", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def page_guia_imagem_continua():
+    return render_page_template("guides/imagem_continua.html")
+
+
+# Sitemaps & Robots para indexação imediata do Googlebot
+@app.api_route("/sitemap.xml", methods=["GET", "HEAD"], response_class=Response)
+async def serve_sitemap():
+    sitemap_file = TEMPLATES_DIR / "sitemap.xml"
+    if not sitemap_file.exists():
+        raise HTTPException(status_code=404, detail="sitemap.xml não encontrado")
+    return Response(content=sitemap_file.read_text(encoding="utf-8"), media_type="application/xml")
+
+
+@app.api_route("/robots.txt", methods=["GET", "HEAD"], response_class=PlainTextResponse)
+async def serve_robots_txt():
+    robots_file = TEMPLATES_DIR / "robots.txt"
+    if not robots_file.exists():
+        raise HTTPException(status_code=404, detail="robots.txt não encontrado")
+    return PlainTextResponse(content=robots_file.read_text(encoding="utf-8"), media_type="text/plain")
 
 
 @app.api_route("/ads.txt", methods=["GET", "HEAD"], response_class=PlainTextResponse)

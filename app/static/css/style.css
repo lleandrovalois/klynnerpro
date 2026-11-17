@@ -7079,3 +7079,288 @@ body.adsense-live-mode .ad-preview-fallback {
   background: rgba(255, 255, 255, 0.12);
   color: var(--text-main);
 }
+
+/* ==========================================================================
+   ESTILOS DE PÁGINAS DEDICADAS DE FERRAMENTAS & CENTRAL DE GUIAS (ADSENSE)
+   ========================================================================== */
+
+/* Hero da Ferramenta Específica */
+.tool-landing-hero {
+  text-align: center;
+  max-width: 860px;
+  margin: 1.5rem auto 2.5rem;
+  padding: 0 1rem;
+}
+
+.tool-landing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.35rem 0.95rem;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #A5B4FC;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.tool-landing-title {
+  font-size: 2.35rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.25;
+  margin-bottom: 0.85rem;
+  letter-spacing: -0.5px;
+}
+
+.tool-landing-desc {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Conteúdo Editorial Rico Abaixo da Ferramenta */
+.tool-editorial-wrapper {
+  max-width: 1000px;
+  margin: 4rem auto 2rem;
+  padding: 0 1.5rem;
+}
+
+.editorial-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 2.75rem 2.5rem;
+  margin-bottom: 2.5rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.editorial-section h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.editorial-section h2::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 22px;
+  background: var(--accent-primary);
+  border-radius: 3px;
+}
+
+.editorial-section p {
+  color: #CBD5E1;
+  font-size: 0.98rem;
+  line-height: 1.8;
+  margin-bottom: 1.25rem;
+}
+
+.editorial-section ul, .editorial-section ol {
+  margin: 1rem 0 1.5rem 1.75rem;
+  color: #CBD5E1;
+  font-size: 0.96rem;
+  line-height: 1.75;
+}
+
+.editorial-section li {
+  margin-bottom: 0.6rem;
+}
+
+/* Grid de Passos (How To) */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.step-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  position: relative;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.step-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.step-number {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.step-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.step-card p {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Cards da Central de Guias */
+.guides-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.75rem;
+  margin: 2.5rem 0 3.5rem;
+}
+
+.guide-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  text-decoration: none;
+}
+
+.guide-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow: var(--shadow-md);
+}
+
+.guide-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #38BDF8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.75rem;
+}
+
+.guide-card h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.35;
+  margin-bottom: 0.75rem;
+}
+
+.guide-card p {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  flex: 1;
+}
+
+.guide-read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #818CF8;
+}
+
+.guide-read-more svg {
+  transition: transform var(--transition-fast);
+}
+
+.guide-card:hover .guide-read-more svg {
+  transform: translateX(4px);
+}
+
+/* Layout de Artigo de Guia Individual */
+.guide-article-wrapper {
+  max-width: 860px;
+  margin: 2rem auto 4rem;
+  padding: 0 1.5rem;
+}
+
+.guide-article-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2.5rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.guide-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.guide-article-card h1 {
+  font-size: 2.3rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.25;
+  margin-bottom: 1rem;
+}
+
+.guide-article-card h2 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #E2E8F0;
+  margin: 2.25rem 0 0.85rem;
+}
+
+.guide-article-card h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #CBD5E1;
+  margin: 1.75rem 0 0.65rem;
+}
+
+.guide-article-card p {
+  color: #CBD5E1;
+  font-size: 1rem;
+  line-height: 1.8;
+  margin-bottom: 1.35rem;
+}
+
+.guide-callout {
+  background: rgba(99, 102, 241, 0.08);
+  border-left: 4px solid var(--accent-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 1.25rem 1.5rem;
+  margin: 1.75rem 0;
+}
+
+.guide-callout p {
+  color: #E0E7FF;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin: 0;
+}

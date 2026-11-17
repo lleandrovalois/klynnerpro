@@ -337,6 +337,64 @@ def test_suite_new_features():
     assert "app-footer-extended" in home_html
     print("  -> Home com FAQ Schema.org, Banner de Cookies e Rodapé de 4 colunas 100% validados!")
 
+    # 9. Testes de Conformidade com Google AdSense (Páginas de Conteúdo de Alto Valor & SEO)
+    print("\n[9/9] Testando páginas de ferramentas dedicadas, Guias e Sitemap XML...")
+    
+    # 9.1 Sitemap e Robots
+    sm_res = client.get("/sitemap.xml")
+    assert sm_res.status_code == 200
+    assert "urlset" in sm_res.text
+    assert "https://klynner.com.br/juntar-pdf" in sm_res.text
+    assert "https://klynner.com.br/guias" in sm_res.text
+    print("  -> /sitemap.xml validado com todas as URLs!")
+
+    rb_res = client.get("/robots.txt")
+    assert rb_res.status_code == 200
+    assert "Allow: /" in rb_res.text
+    assert "sitemap.xml" in rb_res.text
+    print("  -> /robots.txt validado!")
+
+    # 9.2 Tool Landing Pages com Conteúdo Editorial Rico
+    tool_urls = [
+        "/juntar-pdf",
+        "/dividir-pdf",
+        "/pdf-para-kindle",
+        "/pdf-para-imagem",
+        "/comprimir-pdf",
+        "/marca-dagua-pdf",
+        "/adicionar-logo-pdf",
+        "/organizar-pdf"
+    ]
+    for t_url in tool_urls:
+        t_res = client.get(t_url)
+        assert t_res.status_code == 200
+        assert "tool-editorial-wrapper" in t_res.text
+        assert f"https://klynner.com.br{t_url}" in t_res.text
+    print(f"  -> Todas as {len(tool_urls)} páginas dedicadas de ferramentas possuem conteúdo editorial rico e canonical!")
+
+    # 9.3 Central de Guias e Artigos
+    g_hub = client.get("/guias")
+    assert g_hub.status_code == 200
+    assert "Guias Práticos para Produtividade" in g_hub.text
+    assert "/guias/como-enviar-pdf-gibi-kindle" in g_hub.text
+
+    g_kindle = client.get("/guias/como-enviar-pdf-gibi-kindle")
+    assert g_kindle.status_code == 200
+    assert "Turma da Mônica" in g_kindle.text
+
+    g_merge = client.get("/guias/como-juntar-pdf-grandes-volumes")
+    assert g_merge.status_code == 200
+    assert "Marcadores" in g_merge.text
+
+    g_pje = client.get("/guias/otimizar-pdf-tribunais-pje")
+    assert g_pje.status_code == 200
+    assert "PJe" in g_pje.text
+
+    g_img = client.get("/guias/converter-pdf-em-imagem-continua")
+    assert g_img.status_code == 200
+    assert "Imagens Contínuas" in g_img.text
+    print("  -> Central de Guias (/guias) e todos os 4 tutoriais profundos 100% validados!")
+
     print("\n==================================================")
     print("  SUCESSO ABSOLUTO! TODOS OS TESTES PASSARAM!     ")
     print("==================================================")

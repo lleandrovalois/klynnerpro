@@ -865,9 +865,39 @@
     setupCategoryDropdowns();
     setupFeedbackSection();
 
-    // Suporte a hash da URL (ex: #split, #protect, #image-to-pdf, #watermark)
+    // Suporte a rotas dedicadas por ferramenta (SEO e AdSense) e hash de URL
+    const pathname = (window.location.pathname || '').toLowerCase();
+    let initialTool = null;
+    if (pathname.includes('/pdf-para-kindle') || pathname.includes('/kindle')) {
+      initialTool = 'pdf-to-kindle';
+    } else if (pathname.includes('/juntar-pdf') || pathname.includes('/unir-pdf')) {
+      initialTool = 'merge';
+    } else if (pathname.includes('/dividir-pdf') || pathname.includes('/extrair-paginas')) {
+      initialTool = 'split';
+    } else if (pathname.includes('/pdf-para-imagem') || pathname.includes('/pdf-para-png')) {
+      initialTool = 'pdf-to-image';
+    } else if (pathname.includes('/marca-dagua-pdf') || pathname.includes('/marca-dagua')) {
+      initialTool = 'watermark';
+    } else if (pathname.includes('/adicionar-logo-pdf') || pathname.includes('/adicionar-logo')) {
+      initialTool = 'add-logo';
+    } else if (pathname.includes('/girar-pdf') || pathname.includes('/rotacionar-pdf')) {
+      initialTool = 'rotate';
+    } else if (pathname.includes('/organizar-pdf')) {
+      initialTool = 'organize';
+    } else if (pathname.includes('/comprimir-pdf')) {
+      initialTool = 'compress';
+    } else if (pathname.includes('/proteger-pdf')) {
+      initialTool = 'protect';
+    } else if (pathname.includes('/desbloquear-pdf')) {
+      initialTool = 'unlock';
+    } else if (pathname.includes('/adicionar-numero-pdf')) {
+      initialTool = 'page-numbers';
+    }
+
     const hash = window.location.hash.replace('#', '');
-    if (TOOL_CONFIGS[hash]) {
+    if (initialTool && TOOL_CONFIGS[initialTool]) {
+      switchTool(initialTool);
+    } else if (TOOL_CONFIGS[hash]) {
       switchTool(hash);
     } else {
       switchTool('merge');
@@ -1222,9 +1252,11 @@
       .map(b => `<span class="dropzone-badge">${escapeHtml(b)}</span>`)
       .join('');
 
-    // Sincroniza hash sem scroll desnecessário
-    if (window.location.hash !== '#' + toolKey) {
-      history.replaceState(null, '', '#' + toolKey);
+    // Sincroniza hash apenas se na home ou se o usuário alternar para ferramenta diferente da rota atual
+    if (window.location.pathname === '/' || !window.location.pathname.includes(toolKey.replace(/_/g, '-'))) {
+      if (window.location.hash !== '#' + toolKey) {
+        history.replaceState(null, '', '#' + toolKey);
+      }
     }
 
     // Se estiver em progresso ou resultado, limpa para a nova ferramenta
